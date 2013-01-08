@@ -1,0 +1,136 @@
+##########################################
+# Zenity front-end function declarations #
+##########################################
+
+# Display an info box
+info_window()
+{
+	zenity --info --title="$title" --text="$dialogtext"
+}
+
+ask_question()
+{
+	zenity --question --title="$questiontitle" --text="$dialogtext"
+	Answer=$?
+}
+
+apt_update_interactive()
+{
+  apt-get update | tee >(zenity --progress --pulsate --auto-close --text="Updating APT package database...")
+}
+
+# Installs a package and gives a relatively nice-ish message whilst doing so - Zenity is kind of limited...
+install_package_interactive()
+{
+	apt-get -y install $PkgName | tee >(zenity --progress --pulsate --auto-close --text "Installing $PkgName ...")
+	sleep 1 # Prevent possible dpkg race condition (had that with Xubuntu 12.04 for some reason)
+}
+
+remove_xrdp_package_interactive()
+{
+	apt-get -y remove xrdp | tee >(zenity --progress --pulsate --auto-close --text "Removing but not purging the xrdp package ...") >/dev/null 2>&1
+}
+
+downloadX11rdp_inter()
+{
+	svn co svn://server1.xrdp.org/srv/svn/repos/main/x11rdp_xorg71 | tee >(zenity --progress --pulsate --auto-close --text "Downloading X11rdp Source from SVN repo...") >/dev/null
+}
+
+download_xrdp_inter()
+{
+	git clone https://github.com/FreeRDP/xrdp.git xrdp.git | tee >(zenity --progress --pulsate --auto-close --text "Retrieving the xrdp source code ...") >/dev/null
+}
+
+display_privelege_error()
+{
+				zenity --error --text="You tried running the ScaryGliders X11rdp-O-Matic installation script as a normal user. Please run as root or sudo.\n\n\n<b>Click OK to end this program.</b>"
+}
+
+compile_xrdp()
+{
+	./bootstrap | tee >(zenity --progress --pulsate --auto-close --text "Bootstrapping the xrdp source...")
+	./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var | tee >(zenity --progress --pulsate --auto-close --text "Configuring the xrdp source...")
+	make
+	make install
+}
+
+# Reads all normal (non-system) accounts in from /etc/passwd, and presents them as a list
+# If your system also has "machine accounts" (i.e. accounts for PC's to be added under a
+# SAMBA domain controller - marked with a "$" at the end) these will be ignored.
+# smbguest is also ignored.
+select_local_user_accounts_to_config()
+{
+	userlist=""
+	usercount=0
+	while read line
+	do 
+		userno=`echo $line | cut -d":" -f3`
+		if [ $userno -gt 999 ] && [ $userno -lt 65534 ]
+		then
+			username=`echo $line | cut -d":" -f1`
+			if [[ $username != *$ && $username != *smbguest* ]]
+			then
+					userlist="$userlist FALSE $username"
+					let "usercount += 1"
+			fi
+		fi
+	done </etc/passwd
+	selectedusers=`zenity --title="Select Usernames" --width=400 --height=400 --text="$selecttext" --list --column "Select" --column "Username" --checklist $userlist`
+	if [ "$selectedusers" == "" ]
+	then
+			zenity --error --text="You did not select any users!\n\nClick <b>OK</b> to exit."
+			exit
+	fi
+}
+
+
+create_desktop_dialog_list()
+{
+	desktoplist=""
+	case $Dist in
+	*Xubuntu*)
+		list='Xfce' # Offering anything other than Xfce on Xubuntu (even though we can) misses the whole point of Xubuntu.
+		;;
+	Ubuntu*)
+		list='Gnome-Classic Xfce LXDE KDE Unity-2D'
+		;;
+	Debian*)
+		list='Gnome-Classic Xfce LXDE KDE'
+		;;
+	*Mint*)
+		list='Gnome-Classic Xfce LXDE MATE'
+		;;
+	esac
+
+	for i in $list
+	do
+		desktoplist=" $desktoplist FALSE $i"
+	done
+}
+
+# creates a .xsession file for each selected local user account
+# based on the selected desktop environment
+create_xsession()
+{
+	dialogtext="You selected $usercount user(s).    Do you wish to proceed?"
+	ask_question
+	if [ $Answer = 0 ]
+	then
+	  IFS="|"
+		for username in $selectedusers
+		do
+			homedir=`grep "^$username:" /etc/passwd | cut -d":" -f6`
+			echo "Creating .xsession file for $username in $homedir with entry \"$session\".."
+			echo $session > $homedir/.xsession
+			chown $username:$username $homedir/.xsession
+			chmod u+x $homedir/.xsession
+		done
+	fi
+}
+
+select_desktop()
+{
+	desktop=`zenity  --list  --width 400 --height 400 --text "Please select which desktop you wish to configure your user(s) RDP session(s)..." --column "Select" --column "Desktop" --radiolist $desktoplist`
+	echo "desktop choice = $desktop"
+}
+

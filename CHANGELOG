@@ -1,0 +1,56 @@
+V1 Original release.
+V1.1 point release.
+
+Changelog...
+
+v2
+X11rdp-o-Matic
+-------------------------
+. Added package repository update before checking for required packages
+. Modularized for multiple dialog front-ends
+. Added a text dialog front-end
+. Added a check for running on a non-X display terminal (will revert to text-only if so)
+. Uses the text mode front-end by default - Zenity is limited and rubbish!
+. Added command line parameters: --justdoit , --nocpuoptimze , --zenityfrontend , --keepsource , --nocleanup
+. Now runs in a text only environment - suitable for "Server" distro variants with no Xorg installed as yet, or
+  basically for anyone who prefers the text interface over the Zenity one.
+. Added a non-interactive, "just do it" mode so script will run from start to end, with "sane" defaults
+. Really tidied up the script, should make it easier to read and edit later
+. Source code is downloaded to inside wherever the ScaryMatic directory is located
+. Added alteration of xrdp source code Makefile.am so the PID file is now in /var/run/xrdp/
+. Changed "PIDDIR=/var/run/" to "PIDDIR=/var/run/xrdp/" in the xrdp init script
+
+
+RDPsesconfig
+-----------------------
+. Added package repository update before checking for required packages
+. Modularized for multiple dialog front-ends
+. Added a text dialog front-end
+. Added a check for running on a non-X display terminal (will revert to text-only if so)
+. Uses the text mode front-end by default - Zenity is limited and rubbish!
+. Added command line parameter: --zenityfrontend
+. Really tidied up the script, should make it easier to read and edit later
+. Removed the experimental PolicyKit rules generator. System admins should consider implementing their policies carefully.
+. Source code is downloaded to inside wherever the ScaryMatic directory is located
+
+V2.1
+X11rdp-o-Matic
+-------------------------
+. corrected error in package status test condition on line 166 - thanks to Daniel for pointing it out ;)
+
+v2.2
+RDPsesconfig
+-----------------------
+. fixed naive grepping for username in /etc/passwd.
+
+v2.3
+. now works and tested with Ubuntu 10.04 LTS
+
+v2.4
+. set LANG so that dpkg etc. return the expected responses so the script is guaranteed to work under different locales
+
+v2.5
+X11rdp-o-Matic
+------------------------
+. dpkg-status response has changed in Debian Wheezy! Changed the package status test to reflect this, which will also work with older distros.
+
