@@ -50,7 +50,6 @@ compile_X11rdp_noninteractive()
 {
   cd $workingdir/xrdp/xorg/X11R7.6/
   sh buildx.sh /opt/X11rdp
-	cp $workingdir/xrdp/xorg/X11R7.6/rdp/X11rdp $workingdir/packages/
 }
 
 compile_xrdp_interactive()

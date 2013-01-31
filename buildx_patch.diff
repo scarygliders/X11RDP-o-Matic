@@ -1,5 +1,5 @@
---- buildx.sh.orig	2013-01-26 19:04:13.141093939 +0000
-+++ buildx.sh	2013-01-28 20:06:38.759778179 +0000
+--- buildx.sh.orig	2013-01-31 14:32:35.245173991 +0000
++++ buildx.sh	2013-01-31 16:03:11.876826277 +0000
 @@ -27,6 +27,15 @@
  {
      file=$1
@@ -34,16 +34,23 @@
      if [ $? -ne 0 ]; then
          echo ""
          echo "make install failed for module $mod_name"
-@@ -382,7 +391,11 @@
+@@ -375,15 +384,15 @@
+ 
+ cd rdp
+ make
+-if [ $? -ne 0 ]; then
+-    echo "error building rdp"
+-    exit 1
+-fi
  
  # this will copy the build X server with the other X server binaries
  strip X11rdp
--cp X11rdp $X11RDPBASE/bin
-+#cp X11rdp $X11RDPBASE/bin
-+
+ cp X11rdp $X11RDPBASE/bin
+ 
 +# Scarygliders patch to have checkinstall make an X11rdp package file...
 +x11rdpVer=$(grep "X11RDPVER" rdp.h | cut -d" " -f3 | grep  -Eo '[0-9]+\.[0-9].[0-9]+')
 +checkinstall -D --dpkgflags=--force-overwrite --fstrans=no --pakdir ../../../../packages --pkgname=X11rdp --pkgversion=$x11rdpVer --install=yes --default make install
- 
++
  if [ "$2" = "drop" ]; then
    echo ""
+   echo "dropping you in dir, type exit to get out"
