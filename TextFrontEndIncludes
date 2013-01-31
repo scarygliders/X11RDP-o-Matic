@@ -2,6 +2,9 @@
 # Text/dialog front-end function declarations #
 ###############################################
 
+let "HEIGHT = $LINES - 3"
+let "WIDTH = $COLUMNS - 8"
+
 # Display a message box
 info_window()
 {
@@ -16,7 +19,7 @@ ask_question()
 
 apt_update_interactive()
 {
-  apt-get update | dialog --progressbox "Updating package databases..." 20 90
+  apt-get update | dialog --progressbox "Updating package databases..." 30 100
 }
 
 # Installs a package
@@ -26,52 +29,51 @@ install_package_interactive()
 	sleep 1 # Prevent possible dpkg race condition (had that with Xubuntu 12.04 for some reason)
 }
 
-remove_xrdp_package_interactive()
+download_xrdp_interactive()
 {
-	debconf-apt-progress --dlwaypoint 50 -- apt-get -y remove xrdp
+	git clone git://github.com/FreeRDP/xrdp.git 2>&1 | dialog  --progressbox "Downloading xrdp source..." 30 100
 }
 
-remove_xrdp_package_noninteractive()
-{
-	apt-get -y remove xrdp
-}
-
-downloadX11rdp_inter()
-{
-	svn co svn://server1.xrdp.org/srv/svn/repos/main/x11rdp_xorg71 | dialog  --progressbox "Downloading X11rdp source from SVN repo..." 20 90
-}
-
-downloadX11rdp_noninter()
-{
-	echo "Downloading X11rdp source from SVN repository..."
-	svn -q co svn://server1.xrdp.org/srv/svn/repos/main/x11rdp_xorg71
-}
-
-download_xrdp_inter()
-{
-	git clone https://github.com/FreeRDP/xrdp.git xrdp.git 2>&1 | dialog  --progressbox "Downloading xrdp source..." 20 90
-}
-
-download_xrdp_noninter()
+download_xrdp_noninteractive()
 {
 	echo "Downloading xrdp source from the GIT repository..."
-	git clone https://github.com/FreeRDP/xrdp.git xrdp.git
+	git clone git://github.com/FreeRDP/xrdp.git
 }
 
 compile_X11rdp_interactive()
 {
-  cd $workingdir/x11rdp_xorg71
-  (sh buildx.sh /opt/X11rdp) 2>&1 | dialog  --progressbox "Compiling and installing X11rdp..." 20 90
+  cd $workingdir/xrdp/xorg/X11R7.6/
+  (sh buildx.sh /opt/X11rdp) 2>&1 | dialog  --progressbox "Compiling and installing X11rdp. This will take a while...." 30 100
+}
+
+compile_X11rdp_noninteractive()
+{
+  cd $workingdir/xrdp/xorg/X11R7.6/
+  sh buildx.sh /opt/X11rdp
+	cp $workingdir/xrdp/xorg/X11R7.6/rdp/X11rdp $workingdir/packages/
 }
 
 compile_xrdp_interactive()
 {
-  cd $workingdir/xrdp.git
-  git checkout 4cd0c118c273730043cc77b749537dedc7051571 # revert to an earlier, working version
-(	./bootstrap
-	./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var
-	make
-	make install) 2>&1 | dialog  --progressbox "Compiling and installing xrdp..." 20 90
+  cd $workingdir/xrdp
+  xrdpVersion=$(grep xrdp readme.txt | head -1 | cut -d" " -f2)
+	(	./bootstrap && ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var )  2>&1 | dialog  --progressbox "Compiling and installing xrdp..." 30 100
+	( patch -b -d $workingdir/xrdp/xorg/X11R7.6/rdp Makefile < $workingdir/x11rdpMakefile.patch ) 2>&1 | dialog  --progressbox "Compiling and installing xrdp..." 30 100
+	( make && checkinstall -D --dpkgflags=--force-overwrite --fstrans=no --pakdir $workingdir/packages/xrdp/ --pkgname=xrdp --pkgversion=$xrdpVersion --install=yes --default make install ) 2>&1 | dialog  --progressbox "Compiling and installing xrdp..." 20 90
+}
+
+compile_xrdp_noninteractive()
+{
+  cd $workingdir/xrdp
+  xrdpVersion=$(grep xrdp readme.txt | head -1 | cut -d" " -f2)
+  ./bootstrap && 	./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var
+  patch -b -d $workingdir/xrdp/xorg/X11R7.6/rdp Makefile < $workingdir/x11rdpMakefile.patch
+  make && checkinstall -D --dpkgflags=--force-overwrite --fstrans=no --pakdir $workingdir/packages/xrdp/ --pkgname=xrdp --pkgversion=$xrdpVersion --install=yes --default make install
+}
+
+remove_x11rdp_packages()
+{
+    (apt-get remove --purge x11rdp-*) 2>&1 | dialog --progressbox "Completely removeing previously installed x11rdp packages..." 30 100
 }
 
 # Reads all normal (non-system) accounts in from /etc/passwd, and presents them as a list
@@ -110,7 +112,7 @@ select_local_user_accounts_to_config()
 			echo "Processed $processed of $linecount entries in /etc/passwd ...$hit"
 			echo XXX
 			echo $percent
-	done </etc/passwd ) | dialog --backtitle "$backtitle" --title "$title" "$@" --gauge "Processing..." 10 70 0
+	done </etc/passwd ) | dialog --backtitle "$backtitle" --title "$title" "$@" --gauge "Processing..." 15 75 0
   
   allusers=""
   usercount=0
@@ -143,6 +145,7 @@ select_local_user_accounts_to_config()
   then
     selectedusers=$allusers
   fi
+  rm ./usernames.tmp
 }
 
 create_desktop_dialog_list()
@@ -151,8 +154,11 @@ create_desktop_dialog_list()
 	*Xubuntu*)
 		desktoplist=( "Xfce" "Xfce Desktop" on ) # Offering anything other than Xfce on Xubuntu (even though we can) misses the whole point of Xubuntu.
 		;;
-	Ubuntu*)
-		desktoplist=( "Gnome Classic" "Classic Gnome Desktop" on  "Xfce" "Xfce Desktop" off "LXDE" "LXDE Desktop" off "KDE" "KDE Desktop" off "Unity-2D" "Unity 2D Desktop" off )
+	"Ubuntu 12.10"*)
+	    desktoplist=( "Unity" "Default Ubuntu Unity (not recommended for RDP" on "Xfce" "Xfce Desktop" off "LXDE" "LXDE Desktop" off "KDE" "KDE Desktop" off "MATE" "Install MATE (experimental)" off )
+	    ;;
+	"Ubuntu 12.04"* | "Ubuntu 11.10"*)
+		desktoplist=( "Gnome Classic" "Classic Gnome Desktop" on  "Xfce" "Xfce Desktop" off "LXDE" "LXDE Desktop" off "KDE" "KDE Desktop" off "Unity-2D" "Unity 2D Desktop" off "MATE" "Install MATE (experimental)" off )
 		;;
 	Debian*)
 		desktoplist=( "Gnome Classic" "Classic Gnome Desktop" on  "Xfce" "Xfce Desktop" off "LXDE" "LXDE Desktop" off "KDE" "KDE Desktop" off )
@@ -174,7 +180,7 @@ create_xsession()
 			echo $session > $homedir/.xsession
 			chown $username:$username $homedir/.xsession
 			chmod u+x $homedir/.xsession
-		done) | dialog --backtitle "$backtitle" --title "creating .xsession files..." --progressbox "Processing..." 10 80
+		done) | dialog --backtitle "$backtitle" --title "creating .xsession files..." --progressbox "Processing..." 12 80
 		sleep 3
 }
 

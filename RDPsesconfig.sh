@@ -3,7 +3,7 @@
 # Automatic RDP session configurator
 # a.k.a. ScaryGliders RDPsesconfig
 #
-# Version 2.5
+# Version 3.0-BETA
 #
 # Version release date : 20120825
 ##################(yyyyMMDD)
@@ -47,23 +47,7 @@ fi
 # Initialise variables and parse any command line switches here #
 #################################################################
 
-TEXT=1				# Use text front-end dialogs by default, unless Zenity requested below
-INTERACTIVE=1	
-# Parse the command line for any arguments
-while [ $# -gt 0 ];
-do
-	case "$1" in
-		--zenityfrontend)
-			TEXT=0				# Use Zenity
-		;;
-  esac
-  shift
-done
-
-if [ "$DISPLAY" == '' ] # If we're running on a non-X terminal/console, switch to Text Mode anyway.
-then
-	TEXT=1
-fi
+INTERACTIVE=1
 
 Dist=`lsb_release -d -s` # What are we running on
 
@@ -163,7 +147,7 @@ config_for_gnome_classic()
 			;;
 		*)
 			session="gnome-session --session=gnome-fallback"
-		  RequiredPackages=(gnome-session-fallback gnome-tweak-tool)
+		    RequiredPackages=(gnome-session-fallback gnome-tweak-tool)
 			;;
 	esac
 	selecttext="Select which user(s) to configure a Gnome Classic RDP session for..."
@@ -197,8 +181,8 @@ config_for_kde()
 #	questiontitle="KDE RDP session configuration"
 }
 
-# configure a MATE environment
-config_for_mate()
+# configure a MATE environment on Linux Mint
+config_for_mate_on_mint()
 {
 	session="mate-session"
 	RequiredPackages=(mint-meta-mate)
@@ -215,6 +199,38 @@ config_for_lxde()
 #	questiontitle="LXDE RDP session configuration"
 }
 
+# configure a MATE environment on Ubuntu 12.10 (experimental - could break)
+config_for_mate_on_ubuntu()
+{
+    session="mate-session"
+    selecttext="Select which user(s) to configure a MATE session for..."
+    RequiredPackages=(mate-core mate-desktop-environment)
+    
+}
+
+config_for_mate_on_mint()
+{
+    session="mate-session"
+    selecttext="Select which user(s) to configure a MATE session for..."
+    RequiredPackages=(mate-core mate-desktop-environment)
+    
+}
+
+add_mate_repo_ubuntu()
+{
+    case $Dist in
+        "Ubuntu 12.10"* )
+            ( add-apt-repository -y "deb http://packages.mate-desktop.org/repo/ubuntu quantal main" && apt-get update && apt-get install -y --force-yes mate-archive-keyring && apt-get update ) 2>&1 | dialog --progressbox "Adding MATE repository for Ubuntu 12.10..." 90 70
+            ;;
+        "Ubuntu 12.04"* )
+            ( add-apt-repository -y "deb http://packages.mate-desktop.org/repo/ubuntu precise main" && apt-get update && apt-get install -y --force-yes mate-archive-keyring && apt-get update ) 2>&1 | dialog --progressbox "Adding MATE repository for Ubuntu 12.04..." 90 70
+            ;;
+        "Ubuntu 11.10"* )
+            ( add-apt-repository -y "deb http://packages.mate-desktop.org/repo/ubuntu oneiric main" && apt-get update && apt-get install -y --force-yes mate-archive-keyring && apt-get update ) 2>&1 | dialog --progressbox "Adding MATE repository for Ubuntu 11.10..." 90 70
+            ;;
+    esac
+}
+
 ##########################################################
 ######## End of internal function declarations ###########
 ##########################################################
@@ -223,17 +239,9 @@ config_for_lxde()
 ######## Main routine starts here ############
 ##############################################
 
-# Source the "Front End"
-case $TEXT in
-	0)
-		. ./ZenityFrontEndIncludes
-		;;
-	1)
-		DIALOG="dialog"
-		. ./TextFrontEndIncludes
-		;;
-esac
-
+# Source the common functions...
+DIALOG="dialog"
+. ./TextFrontEndIncludes
 
 case "$supported" in
 	"1")
@@ -266,9 +274,17 @@ case "$desktop" in
 		config_for_lxde
 		;;
 	"MATE")
-		config_for_mate
-		;;
+	    case "$Dist" in
+	        "Ubuntu 12.10"* | "Ubuntu 12.04"* | "Ubuntu 11.10"*)
+	            add_mate_repo_ubuntu
+	            config_for_mate_on_ubuntu
+	            ;;
+	        "Linux Mint"*)
+		        config_for_mate_on_mint
+		        ;;
+        esac
 esac
+
 install_required_packages # Check if packages for selected desktop are installed and install if not.	
 select_local_user_accounts_to_config
 create_xsession

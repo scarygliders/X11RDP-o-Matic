@@ -1,0 +1,17 @@
+Brief Instructions
+------------------
+
+1) The two files you need to run are x11rdp-o-matic.sh , and RDPsesconfig.sh
+
+2) x11rdp-o-matic.sh will compile, install, and set up X11rdp and xrdp on your system.
+
+3) RDPsesconfig.sh will configure the .xsession file for each selected user on your system and
+	with whatever desktop environment you've chosen for them.
+
+4) Both utilities need to be run as root, so use su to get to your root prompt, or use sudo to start them
+
+5) Relax as the utilities walk you through the process of both getting RDP installed, and configuring your RDP user's sessions ;)
+
+6) Please consider a donation if you found this useful :)
+
+More details at http://scarygliders.net/?p=1398
