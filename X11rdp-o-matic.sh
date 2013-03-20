@@ -359,6 +359,7 @@ then
 	alter_xrdp_source
 	if  [ "$X11RDP" == "1" ]; then
 	  compile_X11rdp_interactive 
+	  package_X11rdp $VERSION $RELEASE $X11DIR
 	fi
 	compile_xrdp_interactive $VERSION $RELEASE $INSTOPT
 else
@@ -370,9 +371,9 @@ else
 	alter_xrdp_source
 	if  [ "$X11RDP" == "1" ]; then
 	  compile_X11rdp_noninteractive 
+	  package_X11rdp $VERSION $RELEASE $X11DIR
 	fi
 	compile_xrdp_noninteractive $VERSION $RELEASE $INSTOPT
-	package_X11rdp $VERSION $RELEASE $X11DIR
 fi
 
 if [ "$INSTFLAG" == "0" ]; then
