@@ -94,7 +94,7 @@ do
   --reuse         : re-use downloaded X11rdp / xrdp source code if it exists. (Default is to download source)
   --nocleanup     : do not remove X11rdp / xrdp source code after installation. (Default is to clean up).
   --noinstall     : do no install anything, just build the packages
-  --nox11rdp      : only build xrdp, without the x11rdp backened
+  --nox11rdp      : only build xrdp, without the x11rdp backend
   
   "
 	    exit
