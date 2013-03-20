@@ -155,7 +155,7 @@ update_repositories()
 	  apt_update_interactive
 	else
 	  echo "running apt-get update"
-	  apt-get update 2>1 >/deb/null
+	  apt-get update  >& /dev/null
 	fi
 }
 

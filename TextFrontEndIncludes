@@ -42,12 +42,14 @@ download_xrdp_noninteractive()
 
 compile_X11rdp_interactive()
 {
+  patch -b -d $WORKINGDIR/xrdp/xorg/X11R7.6/rdp Makefile < $WORKINGDIR/x11rdpMakefile.patch
   cd $WORKINGDIR/xrdp/xorg/X11R7.6/
   (sh buildx.sh /opt/X11rdp ) 2>&1 | dialog  --progressbox "Compiling and installing X11rdp. This will take a while...." 30 100
 }
 
 compile_X11rdp_noninteractive()
 {
+  patch -b -d $WORKINGDIR/xrdp/xorg/X11R7.6/rdp Makefile < $WORKINGDIR/x11rdpMakefile.patch
   cd $WORKINGDIR/xrdp/xorg/X11R7.6/
   sh buildx.sh /opt/X11rdp 
   RC=$?
@@ -64,7 +66,6 @@ compile_xrdp_interactive()
   cd $WORKINGDIR/xrdp
   xrdpVersion=$(grep xrdp readme.txt | head -1 | cut -d" " -f2)
 	(	./bootstrap && ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse --enable-simplesound)  2>&1 | dialog  --progressbox "Compiling and installing xrdp..." 30 100
-	( patch -b -d $WORKINGDIR/xrdp/xorg/X11R7.6/rdp Makefile < $WORKINGDIR/x11rdpMakefile.patch ) 2>&1 | dialog  --progressbox "Compiling and installing xrdp..." 30 100
 	( make && checkinstall -D --dpkgflags=--force-overwrite --fstrans=no --pakdir $WORKINGDIR/packages/xrdp/ --pkgname=xrdp --pkgversion=$xrdpVersion --install=$INSTOPT --default make install && make uninstall) 2>&1 | dialog  --progressbox "Compiling and installing xrdp..." 20 90
 }
 
@@ -75,7 +76,6 @@ compile_xrdp_noninteractive()
   cd $WORKINGDIR/xrdp
   xrdpVersion=$(grep xrdp readme.txt | head -1 | cut -d" " -f2)
   ./bootstrap && 	./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var
-  patch -b -d $WORKINGDIR/xrdp/xorg/X11R7.6/rdp Makefile < $WORKINGDIR/x11rdpMakefile.patch
   make && checkinstall -D --dpkgflags=--force-overwrite --fstrans=no --pakdir $WORKINGDIR/packages/xrdp/ --pkgname=xrdp --pkgversion=$xrdpVersion --install=$INSTOPT --default make install && make uninstall 
 }
 
