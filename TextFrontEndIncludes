@@ -66,7 +66,7 @@ compile_xrdp_interactive()
   cd $WORKINGDIR/xrdp
   xrdpVersion=$(grep xrdp readme.txt | head -1 | cut -d" " -f2)
 	(	./bootstrap && ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse --enable-simplesound)  2>&1 | dialog  --progressbox "Compiling and installing xrdp..." 30 100
-	( make && checkinstall -D --dpkgflags=--force-overwrite --fstrans=no --pakdir $WORKINGDIR/packages/xrdp/ --pkgname=xrdp --pkgversion=$xrdpVersion --install=$INSTOPT --default make install && make uninstall) 2>&1 | dialog  --progressbox "Compiling and installing xrdp..." 20 90
+	( make && checkinstall -D --dpkgflags=--force-overwrite --fstrans=yes --pakdir $WORKINGDIR/packages/xrdp/ --pkgname=xrdp --pkgversion=$xrdpVersion --install=$INSTOPT --default make install ) 2>&1 | dialog  --progressbox "Compiling and installing xrdp..." 20 90
 }
 
 compile_xrdp_noninteractive()
@@ -76,7 +76,7 @@ compile_xrdp_noninteractive()
   cd $WORKINGDIR/xrdp
   xrdpVersion=$(grep xrdp readme.txt | head -1 | cut -d" " -f2)
   ./bootstrap && 	./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var
-  make && checkinstall -D --dpkgflags=--force-overwrite --fstrans=no --pakdir $WORKINGDIR/packages/xrdp/ --pkgname=xrdp --pkgversion=$xrdpVersion --install=$INSTOPT --default make install && make uninstall 
+  make && checkinstall -D --dpkgflags=--force-overwrite --fstrans=yes --pakdir $WORKINGDIR/packages/xrdp/ --pkgname=xrdp --pkgversion=$xrdpVersion --install=$INSTOPT --default make install 
 }
 
 remove_x11rdp_packages()
