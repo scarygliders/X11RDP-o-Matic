@@ -67,6 +67,9 @@ RELEASE=$2
 X11DIR=$3
 PKGDEST=$WORKINGDIR/packages/Xorg
 
+  if [ ! -e $PKGDEST ]; then
+    mkdir -p $PKGDEST
+  fi
   cd $WORKINGDIR/xrdp/xorg/debuild
   ./debX11rdp.sh $VERSION $RELEASE $X11DIR $PKGDEST
 }
