@@ -74,21 +74,26 @@ PKGDEST=$WORKINGDIR/packages/Xorg
 compile_xrdp_interactive()
 {
 
-  INSTOPT=$1
-  cd $WORKINGDIR/xrdp
-  xrdpVersion=$(grep xrdp readme.txt | head -1 | cut -d" " -f2)
-	(	./bootstrap && ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse --enable-simplesound)  2>&1 | dialog  --progressbox "Compiling and installing xrdp..." 30 100
-	( make && checkinstall -D --dpkgflags=--force-overwrite --fstrans=yes --pakdir $WORKINGDIR/packages/xrdp/ --pkgname=xrdp --pkgversion=$xrdpVersion --install=$INSTOPT --default make install ) 2>&1 | dialog  --progressbox "Compiling and installing xrdp..." 20 90
+VERSION=$1
+RELEASE=$2
+INSTOPT=$3
+
+    cd $WORKINGDIR/xrdp
+    (	./bootstrap && ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse --enable-simplesound)  2>&1 | dialog  --progressbox "Compiling and installing xrdp..." 30 100
+    ( make && checkinstall -D --dpkgflags=--force-overwrite --fstrans=yes --pakdir $WORKINGDIR/packages/xrdp/ --pkgname=xrdp --pkgversion=$VERSION --pkgrelease=$RELEASE --install=$INSTOPT --default make install ) 2>&1 | dialog  --progressbox "Compiling and installing xrdp..." 20 90
 }
 
 compile_xrdp_noninteractive()
 {
   
-  INSTOPT=$1
+VERSION=$1
+RELEASE=$2
+INSTOPT=$3
+
   cd $WORKINGDIR/xrdp
-  xrdpVersion=$(grep xrdp readme.txt | head -1 | cut -d" " -f2)
   ./bootstrap && 	./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var
-  make && checkinstall -D --dpkgflags=--force-overwrite --fstrans=yes --pakdir $WORKINGDIR/packages/xrdp/ --pkgname=xrdp --pkgversion=$xrdpVersion --install=$INSTOPT --default make install 
+  make && checkinstall -D --dpkgflags=--force-overwrite --fstrans=yes --pakdir $WORKINGDIR/packages/xrdp/ --pkgname=xrdp --pkgversion=$VERSION --pkgrelease=$RELEASE --install=$INSTOPT --default make install 
+
 }
 
 remove_x11rdp_packages()

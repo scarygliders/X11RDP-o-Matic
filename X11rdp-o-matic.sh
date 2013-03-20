@@ -363,7 +363,7 @@ then
 	if  [ "$X11RDP" == "1" ]; then
 	  compile_X11rdp_interactive 
 	fi
-	compile_xrdp_interactive $INSTOPT
+	compile_xrdp_interactive $VERSION $RELEASE $INSTOPT
 else
 	download_xrdp_noninteractive $XRDPGIT
 	if [ "$PARALLELMAKE" == "1" ]
@@ -374,7 +374,7 @@ else
 	if  [ "$X11RDP" == "1" ]; then
 	  compile_X11rdp_noninteractive 
 	fi
-	compile_xrdp_noninteractive $INSTOPT
+	compile_xrdp_noninteractive $VERSION $RELEASE $INSTOPT
 	package_X11rdp $VERSION $RELEASE $X11DIR
 fi
 
