@@ -37,11 +37,14 @@
 # set LANG so that dpkg etc. return the expected responses so the script is guaranteed to work under different locales
 export LANG="C"
 
+# this is the release number for the Debian packages
+RELEASE=1
+
 #XRDPGIT=https://github.com/FreeRDP/xrdp.git
 XRDPGIT=https://github.com/ghomem/xrdp.git
 X11DIR=/opt/X11rdp
-
 WORKINGDIR=`pwd` # Would have used /tmp for this, but some distros I tried mount /tmp as tmpfs, and filled up.
+VERSION=$(grep xrdp $WORKINGDIR/xrdp/readme.txt | head -1 | cut -d" " -f2)
 
 if [ ! -e /usr/bin/dialog ]
 then
@@ -321,6 +324,8 @@ rm -rf $BASEDIR/xrdp
 # Main stuff starts here #
 ##########################
 
+package_X11rdp $VERSION $RELEASE $X11DIR
+exit
 
 # trap keyboard interrupt (control-c)
 trap control_c SIGINT
@@ -370,6 +375,7 @@ else
 	  compile_X11rdp_noninteractive 
 	fi
 	compile_xrdp_noninteractive $INSTOPT
+	package_X11rdp $VERSION $RELEASE $X11DIR
 fi
 
 if [ "$INSTFLAG" == "0" ]; then

@@ -44,19 +44,31 @@ compile_X11rdp_interactive()
 {
   patch -b -d $WORKINGDIR/xrdp/xorg/X11R7.6/rdp Makefile < $WORKINGDIR/x11rdpMakefile.patch
   cd $WORKINGDIR/xrdp/xorg/X11R7.6/
-  (sh buildx.sh /opt/X11rdp ) 2>&1 | dialog  --progressbox "Compiling and installing X11rdp. This will take a while...." 30 100
+  (sh buildx.sh $X11DIR ) 2>&1 | dialog  --progressbox "Compiling and installing X11rdp. This will take a while...." 30 100
 }
 
 compile_X11rdp_noninteractive()
 {
   patch -b -d $WORKINGDIR/xrdp/xorg/X11R7.6/rdp Makefile < $WORKINGDIR/x11rdpMakefile.patch
   cd $WORKINGDIR/xrdp/xorg/X11R7.6/
-  sh buildx.sh /opt/X11rdp 
+  sh buildx.sh $X11DIR 
   RC=$?
   if [ $RC -ne 0 ]; then
     echo "error building X11rdp"
     exit $RC
  fi
+}
+
+package_X11rdp()
+{
+
+VERSION=$1
+RELEASE=$2
+X11DIR=$3
+PKGDEST=$WORKINGDIR/packages/Xorg
+
+  cd $WORKINGDIR/xrdp/xorg/debuild
+  ./debX11rdp.sh $VERSION $RELEASE $X11DIR $PKGDEST
 }
 
 compile_xrdp_interactive()
