@@ -324,9 +324,6 @@ rm -rf $BASEDIR/xrdp
 # Main stuff starts here #
 ##########################
 
-package_X11rdp $VERSION $RELEASE $X11DIR
-exit
-
 # trap keyboard interrupt (control-c)
 trap control_c SIGINT
 
