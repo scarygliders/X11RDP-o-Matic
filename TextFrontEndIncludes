@@ -82,10 +82,15 @@ RELEASE=$2
 INSTOPT=$3
 ARCH=$( dpkg --print-architecture )
 
+# work around checkinstall problem - http://bugtrack.izto.org/show_bug.cgi?id=33
+WADIR=/usr/lib/xrdp
+
     cd $WORKINGDIR/xrdp
     (	./bootstrap && ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse --enable-simplesound)  2>&1 | dialog  --progressbox "Compiling and installing xrdp..." 30 100
+    mkdir $WADIR
     ( make && checkinstall -D --dpkgflags=--force-overwrite --fstrans=yes --arch $ARCH --pakdir $WORKINGDIR/packages/xrdp/ --pkgname=xrdp --pkgversion=$VERSION --pkgrelease=$RELEASE --install=$INSTOPT --default make install ) 2>&1 | dialog  --progressbox "Compiling and installing xrdp..." 20 90
 }
+   rm -rf $WADIR
 
 compile_xrdp_noninteractive()
 {
@@ -95,9 +100,14 @@ RELEASE=$2
 INSTOPT=$3
 ARCH=$( dpkg --print-architecture )
 
+# work around checkinstall problem - http://bugtrack.izto.org/show_bug.cgi?id=33
+WADIR=/usr/lib/xrdp
+
   cd $WORKINGDIR/xrdp
   ./bootstrap && 	./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var
+   mkdir $WADIR
   make && checkinstall -D --dpkgflags=--force-overwrite --fstrans=yes --arch $ARCH --pakdir $WORKINGDIR/packages/xrdp/ --pkgname=xrdp --pkgversion=$VERSION --pkgrelease=$RELEASE --install=$INSTOPT --default make install 
+  rm -rf $WADIR
 
 }
 
