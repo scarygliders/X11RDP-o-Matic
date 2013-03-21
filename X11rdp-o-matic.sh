@@ -37,7 +37,14 @@
 # set LANG so that dpkg etc. return the expected responses so the script is guaranteed to work under different locales
 export LANG="C"
 
-workingdir=`pwd` # Would have used /tmp for this, but some distros I tried mount /tmp as tmpfs, and filled up.
+# this is the release number for the Debian packages
+RELEASE=1
+
+#XRDPGIT=https://github.com/FreeRDP/xrdp.git
+XRDPGIT=https://github.com/ghomem/xrdp.git
+X11DIR=/opt/X11rdp
+WORKINGDIR=`pwd` # Would have used /tmp for this, but some distros I tried mount /tmp as tmpfs, and filled up.
+VERSION=$(grep xrdp $WORKINGDIR/xrdp/readme.txt | head -1 | cut -d" " -f2)
 
 if [ ! -e /usr/bin/dialog ]
 then
@@ -45,7 +52,7 @@ then
 fi
 
 # Declare a list of packages required to download sources, and compile them...
-RequiredPackages=(build-essential checkinstall automake automake1.9 git git-core libssl-dev libpam0g-dev zlib1g-dev libtool libx11-dev libxfixes-dev pkg-config flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2 g++ xutils)
+RequiredPackages=(build-essential checkinstall automake automake1.9 git git-core libssl-dev libpam0g-dev zlib1g-dev libtool libx11-dev libxfixes-dev pkg-config flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2 g++ xutils libfuse-dev )
 
 questiontitle="X11rdp Install-O-Matic Question..."
 title="X11rdp Install-O-Matic"
@@ -70,7 +77,10 @@ INTERACTIVE=1     	# Interactive by default.
 PARALLELMAKE=1		# Utilise all available CPU's for compilation by default.
 RE_USE_XSOURCE=0  	# Do not reuse existing X11rdp&xrdp source by default unless specified.
 CLEANUP=1		# Cleanup the x11rdp and xrdp sources by default - to keep requires --nocleanup command line switch
+INSTFLAG=1              # Install xrdp and x11rdp on this system
+X11RDP=1		# Build and package x11rdp
 
+echo ""
 
 # Parse the command line for any arguments
 while [ $# -gt 0 ];
@@ -86,6 +96,8 @@ do
   --nocpuoptimize : do not change X11rdp build script to utilize more than 1 of your CPU cores.
   --reuse         : re-use downloaded X11rdp / xrdp source code if it exists. (Default is to download source)
   --nocleanup     : do not remove X11rdp / xrdp source code after installation. (Default is to clean up).
+  --noinstall     : do no install anything, just build the packages
+  --nox11rdp      : only build xrdp, without the x11rdp backend
   
   "
 	    exit
@@ -106,6 +118,14 @@ do
 		--nocleanup)
 			CLEANUP=0 		# Don't remove the xrdp and x11rdp sources from the working directory after compilation/installation
 			echo "Will keep the xrdp and x11rdp sources in the working directory after compilation/installation..."
+		;;
+		--noinstall)
+			INSTFLAG=0 		# do no install anything, just build the packages
+			echo "Will not install anything on the system but will build the packages"
+		;;
+		--nox11rdp)
+			X11RDP=0 		# do not build and package x11rdp
+			echo "Will not build and package x11rdp"
 		;;
   esac
   shift
@@ -137,7 +157,8 @@ update_repositories()
 	  welcome_message
 	  apt_update_interactive
 	else
-	  apt-get update
+	  echo "running apt-get update"
+	  apt-get update  >& /dev/null
 	fi
 }
 
@@ -199,7 +220,7 @@ calc_cpu_cores()
 cpu_cores_interactive()
 {
 	# See how many cpu cores we have to play with - we can speed up compilation if we have more cores ;)
-	if [ ! -e $workingdir/PARALLELMAKE ] # No need to perform this if for some reason we've been here before...
+	if [ ! -e $WORKINGDIR/PARALLELMAKE ] # No need to perform this if for some reason we've been here before...
 	then
 		dialogtext="Good news!\n\nYou can speed up the compilation because there are $Cores CPU cores available to this system.\n\nI can patch the X11rdp build script for you, to utilize the additional CPU cores.\nWould you like me to do this for you?\n\n(Answering Yes will add the \"-j [#cores+1]\" switch to the make command in the build script.\n\nIn this case it will be changed to \"$makeCommand\")."
 		ask_question
@@ -208,9 +229,9 @@ cpu_cores_interactive()
 		case "$Question" in
 			"0") # Yes please warm up my computer even more! ;)
 				# edit the buildx.sh patch file ;)
-				sed -i -e "s/make -j 1/$makeCommand/g" $workingdir/buildx_patch.diff
+				sed -i -e "s/make -j 1/$makeCommand/g" $WORKINGDIR/buildx_patch.diff
 				# create a file flag to say we've already done this
-				touch $workingdir/PARALLELMAKE
+				touch $WORKINGDIR/PARALLELMAKE
 				dialogtext="Ok, the optimization has been made.\n\nLooks like your system is going to be working hard soon ;)\n\nClick OK to proceed with the compilation."
 				info_window
 				;;
@@ -224,10 +245,10 @@ cpu_cores_interactive()
 
 cpu_cores_noninteractive()
 {
-	if [ ! -e $workingdir/PARALLELMAKE ] # No need to perform this if for some reason we've been here before...
+	if [ ! -e $WORKINGDIR/PARALLELMAKE ] # No need to perform this if for some reason we've been here before...
 	then
-		sed -i -e "s/make -j 1/$makeCommand/g" $workingdir/buildx_patch.diff
-		touch $workingdir/PARALLELMAKE
+		sed -i -e "s/make -j 1/$makeCommand/g" $WORKINGDIR/buildx_patch.diff
+		touch $WORKINGDIR/PARALLELMAKE
 	fi
 }
 
@@ -247,51 +268,79 @@ welcome_message()
 
 # Make a directory, to which the X11rdp build system will 
 # place all the built binaries and files. 
-make_X11rdp_directory()
+
+make_X11rdp_env()
 {
-	if [ ! -e /opt/X11rdp ]
-	then
-		mkdir -p /opt/X11rdp
-		if [ -e /usr/bin/X11rdp ]
-		then
-			rm /usr/bin/X11rdp
-		fi
-	fi
+MYDIR=$1
+WDIR=$2
+	  
+
+	if [ -e $MYDIR ]; then
+	  rm -rf $MYDIR
+        fi
+	mkdir -p $MYDIR
+	
+	if [ -e $WDIR/xrdp ]; then
+   	  rm -rf $WDIR/xrdp
+       fi
 }
 
 #Alter xrdp source code Makefile.am so the PID file is now in /var/run/xrdp/
 alter_xrdp_source()
 {
-  cd $workingdir/xrdp
+  cd $WORKINGDIR/xrdp
   for file in `rgrep "localstatedir\}" . | cut -d":" -f1`
   do
     sed 's/localstatedir\}\/run/localstatedir\}\/run\/xrdp/' < $file > $file.new
     rm $file
     mv $file.new $file
   done
-  cd $workingdir
+  cd $WORKINGDIR
   # Patch Jay's buildx.sh.
   # This will add checkinstall to create distribution packages
   # Also, will patch the make command for parallel makes if that was requested,
   # which should speed up compilation. It will make a backup copy of the original buildx.sh.
-  patch -b -d $workingdir/xrdp/xorg/X11R7.6 buildx.sh < $workingdir/buildx_patch.diff
+  patch -b -d $WORKINGDIR/xrdp/xorg/X11R7.6 buildx.sh < $WORKINGDIR/buildx_patch.diff
 }
 
 control_c()
 {
   clear
-  cd $workingdir
+  cd $WORKINGDIR
   echo "*** CTRL-C was pressed - aborted ***"
   exit
+}
+
+cleanup ()
+{
+
+BASEDIR=$1
+
+rm -rf $BASEDIR/xrdp
+
 }
 
 ##########################
 # Main stuff starts here #
 ##########################
 
-
 # trap keyboard interrupt (control-c)
 trap control_c SIGINT
+
+echo
+echo " *** Will remove the contents of $X11DIR and $WORKINGDIR/xrdp ***"
+echo
+echo "Press ENTER to continue or CTRL+C to abort"
+read DUMMY
+clear
+
+if [ "$INSTFLAG" == "0" ]; then
+  INSTOPT="no"
+else
+  INSTOPT="yes"
+fi
+
+make_X11rdp_env $X11DIR $WORKINGDIR
 
 calc_cpu_cores # find out how many cores we have to play with, and if >1, set a possible make command
 
@@ -299,36 +348,51 @@ update_repositories # perform an apt update to make sure we have a current list 
 
 install_required_packages # install any packages required for xrdp/Xorg/X11rdp compilation
 
-make_X11rdp_directory # make or clear-and-remake /opt/X11rdp directory
 
 if [ "$INTERACTIVE" == "1" ]
 then
-	download_xrdp_interactive
+	download_xrdp_interactive $XRDPGIT
 	if [[ "$PARALLELMAKE" == "1"  && "$Cores" -gt "1" ]] # Ask about parallel make if requested AND if you have more than 1 CPU core...
 	then
 	  cpu_cores_interactive
 	fi
 	alter_xrdp_source
-	compile_X11rdp_interactive
-	compile_xrdp_interactive
+	if  [ "$X11RDP" == "1" ]; then
+	  compile_X11rdp_interactive 
+	  package_X11rdp $VERSION $RELEASE $X11DIR
+	fi
+	compile_xrdp_interactive $VERSION $RELEASE $INSTOPT
 else
-	download_xrdp_noninteractive
+	download_xrdp_noninteractive $XRDPGIT
 	if [ "$PARALLELMAKE" == "1" ]
 	then
 	  cpu_cores_noninteractive
 	fi
 	alter_xrdp_source
-	compile_X11rdp_noninteractive
-	compile_xrdp_noninteractive
+	if  [ "$X11RDP" == "1" ]; then
+	  compile_X11rdp_noninteractive 
+	  package_X11rdp $VERSION $RELEASE $X11DIR
+	fi
+	compile_xrdp_noninteractive $VERSION $RELEASE $INSTOPT
 fi
 
+if [ "$INSTFLAG" == "0" ]; then
+  # this is stupid but some Makefiles from X11rdp don't have an uninstall target (ex: Python!)
+  # ... so instead of not installing X11rdp we remove it in the end
+  rm -rf $X11DIR
+  if [ "$CLEANUP" == "1" ]; then
+    cleanup $WORKINGDIR
+  fi
+  echo "Will exit now, since we are not installing on this system..."
+  exit
+fi
 
 # make the /usr/bin/X11rdp symbolic link if it doesn't exist...
 if [ ! -e /usr/bin/X11rdp ]
 then
-    if [ -e /opt/X11rdp/bin/X11rdp ]
+    if [ -e $X11DIR/bin/X11rdp ]
     then
-        ln -s /opt/X11rdp/bin/X11rdp /usr/bin/X11rdp
+        ln -s $X11DIR/bin/X11rdp /usr/bin/X11rdp
     else
         clear
         echo "There was a problem... the /opt/X11rdp/bin/X11rdp binary could not be found. Did the compilation complete?"
@@ -346,178 +410,7 @@ fi
 # Do other necessary stuff that doesn't need user intervention, like handle the rsa keys, create the startwm.sh symbolic link, etc...
 sh -c "mv /etc/xrdp/rsakeys.ini /usr/share/doc/xrdp/; chmod 600 /usr/share/doc/xrdp/rsakeys.ini; chown xrdp:xrdp /usr/share/doc/xrdp/rsakeys.ini; mv /etc/xrdp/startwm.sh /etc/xrdp/startwm.sh.BACKUP; ln -s /etc/X11/Xsession /etc/xrdp/startwm.sh"
 
-# Write a slightly altered version of the /etc/init.d/xrdp init script...
-#--------Begin here document-----------#
-tee /etc/init.d/xrdp >/dev/null << "EOF"
-#!/bin/sh -e
-#
-# start/stop xrdp and sesman daemons
-#
-### BEGIN INIT INFO
-# Provides:          xrdp
-# Required-Start:    $network $remote_fs
-# Required-Stop:     $network $remote_fs
-# Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
-# Short-Description: Start xrdp and sesman daemons
-# Description:       XRDP uses the Remote Desktop Protocol to present a
-#                    graphical login to a remote client allowing connection
-#                    to a VNC server or another RDP server.
-### END INIT INFO
-
-PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-DAEMON=/usr/sbin/xrdp
-PIDDIR=/var/run/xrdp/
-SESMAN_START=yes
-USERID=root
-RSAKEYS=/etc/xrdp/rsakeys.ini
-NAME=xrdp
-DESC="Remote Desktop Protocol server"
-
-test -x $DAEMON || exit 0
-
-. /lib/lsb/init-functions
-
-check_root()  {
-    if [ "$(id -u)" != "0" ]; then
-        log_failure_msg "You must be root to start, stop or restart $NAME."
-        exit 4
-    fi
-}
-
-if [ -r /etc/default/$NAME ]; then
-   . /etc/default/$NAME
-fi
-
-# Tasks that can only be run as root
-if [ "$(id -u)" = "0" ]; then
-    # Check for pid dir
-    if [ ! -d $PIDDIR ] ; then
-        mkdir $PIDDIR
-    fi
-    chown $USERID:$USERID $PIDDIR
-
-    # Check for rsa key 
-    if [ ! -f $RSAKEYS ] || cmp $RSAKEYS /usr/share/doc/xrdp/rsakeys.ini > /dev/null; then
-        log_action_begin_msg "Generating xrdp RSA keys..."
-        (umask 077 ; xrdp-keygen xrdp $RSAKEYS)
-        chown $USERID:$USERID $RSAKEYS
-        if [ ! -f $RSAKEYS ] ; then
-            log_action_end_msg 1 "could not create $RSAKEYS"
-            exit 1
-        fi
-        log_action_end_msg 0 "done"
-    fi
-fi
-
-
-case "$1" in
-  start)
-        check_root
-        exitval=0
-        log_daemon_msg "Starting $DESC " 
-        if pidofproc -p $PIDDIR/$NAME.pid $DAEMON > /dev/null; then
-            log_progress_msg "$NAME apparently already running"
-            log_end_msg 0
-            exit 0
-        fi
-        log_progress_msg $NAME
-        start-stop-daemon --start --quiet --oknodo  --pidfile $PIDDIR/$NAME.pid \
-	    --chuid $USERID:$USERID --exec $DAEMON
-        exitval=$?
-	if [ "$SESMAN_START" = "yes" ] ; then
-            log_progress_msg "sesman"
-            start-stop-daemon --start --quiet --oknodo --pidfile $PIDDIR/xrdp-sesman.pid \
-	       --exec /usr/sbin/xrdp-sesman
-            value=$?
-            [ $value -gt 0 ] && exitval=$value
-        fi
-        # Make pidfile readables for all users (for status to work)
-        [ -e $PIDDIR/xrdp-sesman.pid ] && chmod 0644 $PIDDIR/xrdp-sesman.pid
-        [ -e $PIDDIR/$NAME.pid ] && chmod 0644 $PIDDIR/$NAME.pid
-        # Note: Unfortunately, xrdp currently takes too long to create
-        # the pidffile unless properly patched
-        log_end_msg $exitval
-	;;
-  stop)
-        check_root
-	[ -n "$XRDP_UPGRADE" -a "$RESTART_ON_UPGRADE" = "no" ] && {
-	    echo "Upgrade in progress, no restart of xrdp."
-	    exit 0
-	}
-        exitval=0
-        log_daemon_msg "Stopping RDP Session manager " 
-        log_progress_msg "sesman"
-        if pidofproc -p  $PIDDIR/xrdp-sesman.pid /usr/sbin/xrdp-sesman  > /dev/null; then
-            start-stop-daemon --stop --quiet --oknodo --pidfile $PIDDIR/xrdp-sesman.pid \
-                --chuid $USERID:$USERID --exec /usr/sbin/xrdp-sesman
-            exitval=$?
-        else
-            log_progress_msg "apparently not running"
-        fi
-        log_progress_msg $NAME
-        if pidofproc -p  $PIDDIR/$NAME.pid $DAEMON  > /dev/null; then
-            start-stop-daemon --stop --quiet --oknodo --pidfile $PIDDIR/$NAME.pid \
-	    --exec $DAEMON
-            value=$?
-            [ $value -gt 0 ] && exitval=$value
-        else
-            log_progress_msg "apparently not running"
-        fi
-        log_end_msg $exitval
-	;;
-  restart|force-reload)
-        check_root
-	$0 stop
-        # Wait for things to settle down
-        sleep 1
-	$0 start
-	;;
-  reload)
-        log_warning_msg "Reloading $NAME daemon: not implemented, as the daemon"
-        log_warning_msg "cannot re-read the config file (use restart)."
-        ;;
-  status)
-        exitval=0
-        log_daemon_msg "Checking status of $DESC" "$NAME"
-        if pidofproc -p  $PIDDIR/$NAME.pid $DAEMON  > /dev/null; then
-            log_progress_msg "running"
-            log_end_msg 0
-        else
-            log_progress_msg "apparently not running"
-            log_end_msg 1 || true
-            exitval=1
-        fi
-	if [ "$SESMAN_START" = "yes" ] ; then
-            log_daemon_msg "Checking status of RDP Session Manager" "sesman"
-            if pidofproc -p  $PIDDIR/xrdp-sesman.pid /usr/sbin/xrdp-sesman  > /dev/null; then
-                log_progress_msg "running"
-                log_end_msg 0
-            else
-                log_progress_msg "apparently not running"
-                log_end_msg 1 || true
-                exitval=1
-            fi
-	fi
-        exit $exitval
-        ;;
-  *)
-	N=/etc/init.d/$NAME
-	echo "Usage: $N {start|stop|restart|force-reload|status}" >&2
-	exit 1
-	;;
-esac
-
-exit 0
-EOF
-#----------End here document-----------#
-
-
 clear
-
-# Make written script executable...
-chmod a+x /etc/init.d/xrdp
-
 
 # Update rc scripts so xrdp starts upon boot...
 sudo update-rc.d xrdp defaults
