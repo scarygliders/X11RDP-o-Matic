@@ -3,16 +3,16 @@
 # Automatic RDP session configurator
 # a.k.a. ScaryGliders RDPsesconfig
 #
-# Version 3.0-BETA
+# Version 3.0-beta2
 #
-# Version release date : 20120825
+# Version release date : 20130401
 ##################(yyyyMMDD)
 #
 # See CHANGELOG for release detials
 #
 # Will run on Debian-based systems only at the moment. RPM based distros perhaps some time in the future...
 #
-# Copyright (C) 2012, Kevin Cave <kevin@scarygliders.net>
+# Copyright (C) 2013, Kevin Cave <kevin@scarygliders.net>
 #
 # ISC License (ISC)
 #

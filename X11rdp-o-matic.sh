@@ -3,16 +3,17 @@
 # Automatic X11rdp Compiler/Installer
 # a.k.a. ScaryGliders X11rdp-O-Matic installation script
 #
-# Version 3.0-BETA
+# Version 3.0-beta2
 #
-# Version release date : 20130125
+# Version release date : 20130401
 ##################(yyyyMMDD)
 #
 # See CHANGELOG for release details
 #
 # Will run on Debian-based systems only at the moment. RPM based distros perhaps some time in the future...
 #
-# Copyright (C) 2012, Kevin Cave <kevin@scarygliders.net>
+# Copyright (C) 2013, Kevin Cave <kevin@scarygliders.net>
+# With contributions from Gustavo Homem
 #
 # ISC License (ISC)
 #
