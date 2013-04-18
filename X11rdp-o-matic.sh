@@ -41,10 +41,11 @@ export LANG="C"
 RELEASE=1
 
 XRDPGIT=https://github.com/FreeRDP/xrdp.git
+README=https://raw.github.com/FreeRDP/xrdp/master/readme.txt
+TMPFILE=/tmp/xrdpver
 #XRDPGIT=https://github.com/ghomem/xrdp.git
 X11DIR=/opt/X11rdp
 WORKINGDIR=`pwd` # Would have used /tmp for this, but some distros I tried mount /tmp as tmpfs, and filled up.
-VERSION=$(grep xrdp $WORKINGDIR/xrdp/readme.txt | head -1 | cut -d" " -f2)
 
 if [ ! -e /usr/bin/dialog ]
 then
@@ -323,6 +324,14 @@ rm -rf $BASEDIR/xrdp
 ##########################
 # Main stuff starts here #
 ##########################
+
+# checking latest xrdp version in master
+
+wget -O $TMPFILE $README
+VERSION=$(grep xrdp $TMPFILE | head -1 | cut -d " " -f2)
+rm -f $TMPFILE
+
+echo " *** xrdp version is $VERSION ***"
 
 # trap keyboard interrupt (control-c)
 trap control_c SIGINT
