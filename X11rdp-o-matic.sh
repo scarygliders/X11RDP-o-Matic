@@ -40,8 +40,8 @@ export LANG="C"
 # this is the release number for the Debian packages
 RELEASE=1
 
-#XRDPGIT=https://github.com/FreeRDP/xrdp.git
-XRDPGIT=https://github.com/ghomem/xrdp.git
+XRDPGIT=https://github.com/FreeRDP/xrdp.git
+#XRDPGIT=https://github.com/ghomem/xrdp.git
 X11DIR=/opt/X11rdp
 WORKINGDIR=`pwd` # Would have used /tmp for this, but some distros I tried mount /tmp as tmpfs, and filled up.
 VERSION=$(grep xrdp $WORKINGDIR/xrdp/readme.txt | head -1 | cut -d" " -f2)
