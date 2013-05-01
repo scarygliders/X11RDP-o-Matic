@@ -41,11 +41,13 @@ export LANG="C"
 # this is the release number for the Debian packages
 RELEASE=1
 
-#XRDPGIT=https://github.com/FreeRDP/xrdp.git
-XRDPGIT=https://github.com/ghomem/xrdp.git
+XRDPGIT=https://github.com/FreeRDP/xrdp.git
+README=https://raw.github.com/FreeRDP/xrdp/master/readme.txt
+TMPFILE=/tmp/xrdpver
+#XRDPGIT=https://github.com/ghomem/xrdp.git
 X11DIR=/opt/X11rdp
 WORKINGDIR=`pwd` # Would have used /tmp for this, but some distros I tried mount /tmp as tmpfs, and filled up.
-VERSION=$(grep xrdp $WORKINGDIR/xrdp/readme.txt | head -1 | cut -d" " -f2)
+CONFIGUREFLAGS="--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse"
 
 if [ ! -e /usr/bin/dialog ]
 then
@@ -272,14 +274,14 @@ welcome_message()
 
 make_X11rdp_env()
 {
-MYDIR=$1
+X11DIR=$1
 WDIR=$2
-	  
+X11RDP=$3	  
 
-	if [ -e $MYDIR ]; then
-	  rm -rf $MYDIR
+	if [ -e $X11DIR ] && [ $X11RDP -eq 1 ]; then
+	  rm -rf $X11DIR
+	  mkdir -p $X11DIR
         fi
-	mkdir -p $MYDIR
 	
 	if [ -e $WDIR/xrdp ]; then
    	  rm -rf $WDIR/xrdp
@@ -325,12 +327,23 @@ rm -rf $BASEDIR/xrdp
 # Main stuff starts here #
 ##########################
 
+# checking latest xrdp version in master
+
+echo
+wget -O $TMPFILE $README >& /dev/null
+VERSION=$(grep xrdp $TMPFILE | head -1 | cut -d " " -f2)
+rm -f $TMPFILE
+
+echo " *** xrdp version is $VERSION ***"
+
 # trap keyboard interrupt (control-c)
 trap control_c SIGINT
 
 echo
-echo " *** Will remove the contents of $X11DIR and $WORKINGDIR/xrdp ***"
-echo
+if  [ "$X11RDP" == "1" ]; then
+    echo " *** Will remove the contents of $X11DIR and $WORKINGDIR/xrdp ***"
+    echo
+fi
 echo "Press ENTER to continue or CTRL+C to abort"
 read DUMMY
 clear
@@ -341,7 +354,7 @@ else
   INSTOPT="yes"
 fi
 
-make_X11rdp_env $X11DIR $WORKINGDIR
+make_X11rdp_env $X11DIR $WORKINGDIR $X11RDP
 
 calc_cpu_cores # find out how many cores we have to play with, and if >1, set a possible make command
 
@@ -362,7 +375,7 @@ then
 	  compile_X11rdp_interactive 
 	  package_X11rdp $VERSION $RELEASE $X11DIR
 	fi
-	compile_xrdp_interactive $VERSION $RELEASE $INSTOPT
+	compile_xrdp_interactive $VERSION $RELEASE $INSTOPT "$CONFIGUREFLAGS"
 else
 	download_xrdp_noninteractive $XRDPGIT
 	if [ "$PARALLELMAKE" == "1" ]
@@ -374,13 +387,15 @@ else
 	  compile_X11rdp_noninteractive 
 	  package_X11rdp $VERSION $RELEASE $X11DIR
 	fi
-	compile_xrdp_noninteractive $VERSION $RELEASE $INSTOPT
+	compile_xrdp_noninteractive $VERSION $RELEASE $INSTOPT "$CONFIGUREFLAGS"
 fi
 
 if [ "$INSTFLAG" == "0" ]; then
   # this is stupid but some Makefiles from X11rdp don't have an uninstall target (ex: Python!)
   # ... so instead of not installing X11rdp we remove it in the end
-  rm -rf $X11DIR
+  if  [ "$X11RDP" == "1" ]; then
+    rm -rf $X11DIR
+  fi
   if [ "$CLEANUP" == "1" ]; then
     cleanup $WORKINGDIR
   fi
