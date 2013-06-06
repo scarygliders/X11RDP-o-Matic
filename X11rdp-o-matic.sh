@@ -45,7 +45,6 @@ XRDPGIT=https://github.com/FreeRDP/xrdp.git
 XRDPVER=v0.7
 README=https://raw.github.com/FreeRDP/xrdp/master/readme.txt
 TMPFILE=/tmp/xrdpver
-#XRDPGIT=https://github.com/ghomem/xrdp.git
 X11DIR=/opt/X11rdp
 WORKINGDIR=`pwd` # Would have used /tmp for this, but some distros I tried mount /tmp as tmpfs, and filled up.
 CONFIGUREFLAGS="--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse"
@@ -366,7 +365,7 @@ install_required_packages # install any packages required for xrdp/Xorg/X11rdp c
 
 if [ "$INTERACTIVE" == "1" ]
 then
-	download_xrdp_interactive $XRDPGIT $XRDPVER
+	download_xrdp_interactive
 	if [[ "$PARALLELMAKE" == "1"  && "$Cores" -gt "1" ]] # Ask about parallel make if requested AND if you have more than 1 CPU core...
 	then
 	  cpu_cores_interactive
@@ -378,7 +377,7 @@ then
 	fi
 	compile_xrdp_interactive $VERSION $RELEASE $INSTOPT "$CONFIGUREFLAGS"
 else
-	download_xrdp_noninteractive $XRDPGIT $XRDPVER
+	download_xrdp_noninteractive
 	if [ "$PARALLELMAKE" == "1" ]
 	then
 	  cpu_cores_noninteractive
