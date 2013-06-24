@@ -43,7 +43,7 @@ RELEASE=1
 
 XRDPGIT=https://github.com/neutrinolabs/xrdp.git
 XRDPBRANCH=v0.7
-README=https://raw.github.com/FreeRDP/xrdp/master/readme.txt
+README=https://raw.github.com/neutrinolabs/xrdp/master/readme.txt
 TMPFILE=/tmp/xrdpver
 X11DIR=/opt/X11rdp
 WORKINGDIR=`pwd` # Would have used /tmp for this, but some distros I tried mount /tmp as tmpfs, and filled up.
