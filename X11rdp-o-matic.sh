@@ -5,7 +5,7 @@
 #
 # Version 3.0-beta2
 #
-# Version release date : 20130401
+# Version release date : 20130624
 ##################(yyyyMMDD)
 #
 # See CHANGELOG for release details
