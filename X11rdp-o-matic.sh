@@ -41,8 +41,8 @@ export LANG="C"
 # this is the release number for the Debian packages
 RELEASE=1
 
-XRDPGIT=https://github.com/FreeRDP/xrdp.git
-XRDPVER=v0.7
+XRDPGIT=https://github.com/neutrinolabs/xrdp.git
+XRDPBRANCH=v0.7
 README=https://raw.github.com/FreeRDP/xrdp/master/readme.txt
 TMPFILE=/tmp/xrdpver
 X11DIR=/opt/X11rdp
