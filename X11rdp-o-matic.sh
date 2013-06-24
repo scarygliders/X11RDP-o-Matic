@@ -1,14 +1,12 @@
 #!/bin/bash
 
-# Automatic X11rdp Compiler/Installer
+# Automatic Xrdp/X11rdp Compiler/Installer
 # a.k.a. ScaryGliders X11rdp-O-Matic installation script
 #
 # Version 3.0-beta2
 #
 # Version release date : 20130624
 ##################(yyyyMMDD)
-#
-# See CHANGELOG for release details
 #
 # Will run on Debian-based systems only at the moment. RPM based distros perhaps some time in the future...
 #
@@ -29,6 +27,17 @@
 # WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
+###########################################################
+# Before doing anything else, check if we're running with #
+# priveleges, because we need to be.                      #
+###########################################################
+id=`id -u`
+if [ $id -ne 0 ]
+	then
+		clear
+		echo "You tried running the Scarygliders X11rdp-O-Matic installation script as a non-priveleged user. Please run as root."
+		exit 1
+fi
 
 
 #################################################################
@@ -41,9 +50,11 @@ export LANG="C"
 # this is the release number for the Debian packages
 RELEASE=1
 
-XRDPGIT=https://github.com/neutrinolabs/xrdp.git
+# Use the canonical git repo by default...
+XRDPGIT=https://github.com/FreeRDP/xrdp.git
 XRDPBRANCH=v0.7
-README=https://raw.github.com/neutrinolabs/xrdp/master/readme.txt
+README=https://raw.github.com/FreeRDP/xrdp/master/readme.txt
+
 TMPFILE=/tmp/xrdpver
 X11DIR=/opt/X11rdp
 WORKINGDIR=`pwd` # Would have used /tmp for this, but some distros I tried mount /tmp as tmpfs, and filled up.
@@ -55,7 +66,7 @@ then
 fi
 
 # Declare a list of packages required to download sources, and compile them...
-RequiredPackages=(build-essential checkinstall automake automake1.9 git git-core libssl-dev libpam0g-dev zlib1g-dev libtool libx11-dev libxfixes-dev pkg-config flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2 g++ xutils libfuse-dev )
+RequiredPackages=(build-essential checkinstall automake automake1.9 git git-core libssl-dev libpam0g-dev zlib1g-dev libtool libx11-dev libxfixes-dev pkg-config flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2 g++ xutils libfuse-dev)
 
 questiontitle="X11rdp Install-O-Matic Question..."
 title="X11rdp Install-O-Matic"
@@ -99,8 +110,9 @@ do
   --nocpuoptimize : do not change X11rdp build script to utilize more than 1 of your CPU cores.
   --reuse         : re-use downloaded X11rdp / xrdp source code if it exists. (Default is to download source)
   --nocleanup     : do not remove X11rdp / xrdp source code after installation. (Default is to clean up).
-  --noinstall     : do no install anything, just build the packages
+  --noinstall     : do not install anything, just build the packages
   --nox11rdp      : only build xrdp, without the x11rdp backend
+  --bleeding-edge : clone from the neutrinolabs github source tree. Beware. Bleeding-edge might hurt :)
   
   "
 	    exit
@@ -130,21 +142,14 @@ do
 			X11RDP=0 		# do not build and package x11rdp
 			echo "Will not build and package x11rdp"
 		;;
+		--bleeding-edge)
+			XRDPGIT=https://github.com/neutrinolabs/xrdp.git
+			README=https://raw.github.com/neutrinolabs/xrdp/master/readme.txt
+			echo "Using neutrinolabs git repo. Blood may spill B)"
+			
   esac
   shift
 done
-
-###########################################################
-# Before doing anything else, check if we're running with #
-# priveleges, because we need to be.                      #
-###########################################################
-id=`id -u`
-if [ $id -ne 0 ]
-	then
-		clear
-		echo "You tried running the Scarygliders X11rdp-O-Matic installation script as a non-priveleged user. Please run as root."
-		exit 1
-fi
 
 # Source the "Front End"
 . TextFrontEndIncludes
@@ -314,7 +319,7 @@ control_c()
   exit
 }
 
-cleanup ()
+cleanup()
 {
 
 BASEDIR=$1
@@ -434,7 +439,7 @@ sudo update-rc.d xrdp defaults
 # Crank the engine ;)
 /etc/init.d/xrdp start
 
-dialogtext="\nCongratulations!\n\nX11rdp and xrdp should now be fully installed, configured, and running on this system.\n\nOne last thing to do now is to configure which desktop will be presented to the user after they log in via RDP. \n\nUse the RDPsesconfig utility to do this."
+dialogtext="Congratulations! X11rdp and xrdp should now be fully installed, configured, and running on this system. One last thing to do now is to configure which desktop will be presented to the user after they log in via RDP.  Use the RDPsesconfig utility to do this."
 if [ $INTERACTIVE == 1 ]
 then
 	info_window
