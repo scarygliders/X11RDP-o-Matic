@@ -5,7 +5,7 @@
 #
 # Version 3.0-beta3
 #
-# Version release date : 20130624
+# Version release date : 20130630
 ########################(yyyyMMDD)
 #
 # Will run on Debian-based systems only at the moment. RPM based distros perhaps some time in the future...
@@ -552,7 +552,7 @@ fi
 
 # Do other necessary stuff that doesn't need user intervention, like handle the rsa keys, create the startwm.sh symbolic link, etc...
 sh -c "mv /etc/xrdp/rsakeys.ini /usr/share/doc/xrdp/; chmod 600 /usr/share/doc/xrdp/rsakeys.ini; chown xrdp:xrdp /usr/share/doc/xrdp/rsakeys.ini; mv /etc/xrdp/startwm.sh /etc/xrdp/startwm.sh.BACKUP; ln -s /etc/X11/Xsession /etc/xrdp/startwm.sh"
-
+sh -c "cp xrdp /etc/init.d/xrdp; chmod u+x /etc/init.d/xrdp"
 clear
 
 # Update rc scripts so xrdp starts upon boot...
