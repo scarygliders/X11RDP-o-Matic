@@ -1,22 +1,6 @@
---- buildx.sh.orig	2013-01-31 14:32:35.245173991 +0000
-+++ buildx.sh	2013-01-31 16:03:11.876826277 +0000
-@@ -27,6 +27,15 @@
- {
-     file=$1
- 
-+    #Scarygliders patch to obtain package version # and the name without version #...
-+    packageVersion=$(echo $file | grep -Eo '[0-9]+\.[0-9].[0-9]+')
-+    if [ "$packageVersion" = "" ]
-+    then
-+        packageVersion=$(echo $file | grep -Eo '[0-9]+\.[0-9]+')
-+    fi
-+    basicName=${file%-*}
-+
-+
-     # if we already have the file, don't download it
-        if [ -r downloads/$file ]; then
-          return 0
-@@ -232,7 +241,7 @@
+--- buildx.sh.ORIG	2013-06-30 16:00:52.588634834 +0100
++++ buildx.sh	2013-06-30 16:02:16.617933277 +0100
+@@ -231,7 +231,7 @@
  
      # make module
      if [ ! -e cookies/$mod_name.made ]; then

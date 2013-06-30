@@ -3,10 +3,10 @@
 # Automatic Xrdp/X11rdp Compiler/Installer
 # a.k.a. ScaryGliders X11rdp-O-Matic installation script
 #
-# Version 3.0-beta2
+# Version 3.0-beta3
 #
 # Version release date : 20130624
-##################(yyyyMMDD)
+########################(yyyyMMDD)
 #
 # Will run on Debian-based systems only at the moment. RPM based distros perhaps some time in the future...
 #
@@ -68,10 +68,6 @@ fi
 # Declare a list of packages required to download sources, and compile them...
 RequiredPackages=(build-essential checkinstall automake automake1.9 git git-core libssl-dev libpam0g-dev zlib1g-dev libtool libx11-dev libxfixes-dev pkg-config flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2 g++ xutils libfuse-dev)
 
-questiontitle="X11rdp Install-O-Matic Question..."
-title="X11rdp Install-O-Matic"
-backtitle="Scarygliders X11rdp Install-O-Matic"
-
 Dist=`lsb_release -d -s`
 
 
@@ -87,12 +83,13 @@ do
 done < SupportedDistros.txt
 
 
-INTERACTIVE=1     	# Interactive by default.
+INTERACTIVE=1cd     	# Interactive by default.
 PARALLELMAKE=1		# Utilise all available CPU's for compilation by default.
 RE_USE_XSOURCE=0  	# Do not reuse existing X11rdp&xrdp source by default unless specified.
-CLEANUP=1		# Cleanup the x11rdp and xrdp sources by default - to keep requires --nocleanup command line switch
-INSTFLAG=1              # Install xrdp and x11rdp on this system
-X11RDP=1		# Build and package x11rdp
+CLEANUP=1		    # Cleanup the x11rdp and xrdp sources by default - to keep requires --nocleanup command line switch
+INSTFLAG=1          # Install xrdp and x11rdp on this system
+X11RDP=1		    # Build and package x11rdp
+BLEED=0             # Not bleeding-edge unless specified
 
 echo ""
 
@@ -145,15 +142,145 @@ do
 		--bleeding-edge)
 			XRDPGIT=https://github.com/neutrinolabs/xrdp.git
 			README=https://raw.github.com/neutrinolabs/xrdp/master/readme.txt
+			BLEED=1
 			echo "Using neutrinolabs git repo. Blood may spill B)"
 			
   esac
   shift
 done
 
-# Source the "Front End"
-. TextFrontEndIncludes
+###############################################
+# Text/dialog front-end function declarations #
+###############################################
 
+let "HEIGHT = $LINES - 3"
+let "WIDTH = $COLUMNS - 8"
+
+# Display a message box
+info_window()
+{
+	dialog --backtitle "$backtitle" --title "$title" --msgbox "$dialogtext" 0 0
+}
+
+ask_question()
+{
+	dialog --backtitle "$backtitle" --title "$questiontitle" --yesno "$dialogtext" 0 0
+	Answer=$?
+}
+
+apt_update_interactive()
+{
+  apt-get update | dialog --progressbox "Updating package databases..." 30 100
+}
+
+# Installs a package
+install_package_interactive()
+{
+	debconf-apt-progress --dlwaypoint 50 -- apt-get -y install $PkgName
+	sleep 1 # Prevent possible dpkg race condition (had that with Xubuntu 12.04 for some reason)
+}
+
+download_xrdp_interactive()
+{
+	git clone $XRDPGIT -b $XRDPBRANCH 2>&1 | dialog  --progressbox "Downloading xrdp source..." 30 100
+}
+
+download_xrdp_noninteractive()
+{
+	echo "Downloading xrdp source from the GIT repository..."
+	git clone $XRDPGIT -b $XRDPBRANCH
+}
+
+compile_X11rdp_interactive()
+{
+  patch -b -d $WORKINGDIR/xrdp/xorg/X11R7.6/rdp Makefile < $WORKINGDIR/x11rdpMakefile.patch
+  cd $WORKINGDIR/xrdp/xorg/X11R7.6/
+  (sh buildx.sh $X11DIR ) 2>&1 | dialog  --progressbox "Compiling and installing X11rdp. This will take a while...." 30 100
+}
+
+compile_X11rdp_noninteractive()
+{
+  patch -b -d $WORKINGDIR/xrdp/xorg/X11R7.6/rdp Makefile < $WORKINGDIR/x11rdpMakefile.patch
+  cd $WORKINGDIR/xrdp/xorg/X11R7.6/
+  sh buildx.sh $X11DIR 
+  RC=$?
+  if [ $RC -ne 0 ]; then
+    echo "error building X11rdp"
+    exit $RC
+ fi
+}
+
+package_X11rdp()
+{
+  PKGDEST=$WORKINGDIR/packages/Xorg
+
+  if [ ! -e $PKGDEST ]; then
+    mkdir -p $PKGDEST
+  fi
+
+
+  if [ $BLEED == 1 ]
+  	then
+  	cd $WORKINGDIR/xrdp/xorg/debuild
+  	./debX11rdp.sh $VERSION $RELEASE $X11DIR $PKGDEST
+  else
+  	mkdir -p $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN
+  	cp $WORKINGDIR/control $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN
+  	cp -a $WORKINGDIR/postinst $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN
+  	cd $WORKINGDIR/xrdp/xorg/debuild
+    PACKDIR=x11rdp-files
+    DESTDIR=$PACKDIR/opt
+    NAME=x11rdp
+    ARCH=$( dpkg --print-architecture )
+    sed -i -e  "s/DUMMYVERINFO/$VERSION-$RELEASE/"  $PACKDIR/DEBIAN/control
+    sed -i -e  "s/DUMMYARCHINFO/$ARCH/"  $PACKDIR/DEBIAN/control
+    # need a different delimiter, since it has a path
+    sed -i -e  "s,DUMMYDIRINFO,$SRCDIR,"  $PACKDIR/DEBIAN/postinst
+    mkdir -p $DESTDIR
+    cp -Rf $SRCDIR $DESTDIR
+    dpkg-deb --build $PACKDIR $PKGDEST/${NAME}_$VERSION-${RELEASE}_${ARCH}.deb
+    # revert to initial state
+    rm -rf $DESTDIR
+    sed -i -e  "s/$VERSION-$RELEASE/DUMMYVERINFO/"  $PACKDIR/DEBIAN/control
+    sed -i -e  "s/$ARCH/DUMMYARCHINFO/"  $PACKDIR/DEBIAN/control
+    # need a different delimiter, since it has a path
+    sed -i -e  "s,$SRCDIR,DUMMYDIRINFO,"  $PACKDIR/DEBIAN/postinst
+   fi
+}
+
+compile_xrdp_interactive()
+{
+ARCH=$( dpkg --print-architecture )
+
+# work around checkinstall problem - http://bugtrack.izto.org/show_bug.cgi?id=33
+WADIR=/usr/lib/xrdp
+
+    cd $WORKINGDIR/xrdp
+    (	./bootstrap && ./configure $CONFIGUREFLAGS )  2>&1 | dialog  --progressbox "Compiling and installing xrdp..." 30 100
+    mkdir $WADIR
+    ( make && checkinstall -D --dpkgflags=--force-overwrite --fstrans=yes --arch $ARCH --pakdir $WORKINGDIR/packages/xrdp/ --pkgname=xrdp --pkgversion=$VERSION --pkgrelease=$RELEASE --install=$INSTOPT --default make install ) 2>&1 | dialog  --progressbox "Compiling and installing xrdp..." 20 90
+}
+   rm -rf $WADIR
+
+compile_xrdp_noninteractive()
+{
+ARCH=$( dpkg --print-architecture )
+
+# work around checkinstall problem - http://bugtrack.izto.org/show_bug.cgi?id=33
+WADIR=/usr/lib/xrdp
+
+  cd $WORKINGDIR/xrdp
+  ./bootstrap && ./configure $CONFIGUREFLAGS
+   mkdir $WADIR
+  make && checkinstall -D --dpkgflags=--force-overwrite --fstrans=yes --arch $ARCH --pakdir $WORKINGDIR/packages/xrdp/ --pkgname=xrdp --pkgversion=$VERSION --pkgrelease=$RELEASE --install=$INSTOPT --default make install 
+  rm -rf $WADIR
+
+}
+
+remove_x11rdp_packages()
+{
+    (apt-get remove --purge x11rdp-*) 2>&1 | dialog --progressbox "Completely removeing previously installed x11rdp packages..." 30 100
+}
 #############################################
 # Common function declarations begin here...#
 #############################################
@@ -279,17 +406,13 @@ welcome_message()
 
 make_X11rdp_env()
 {
-X11DIR=$1
-WDIR=$2
-X11RDP=$3	  
-
 	if [ -e $X11DIR ] && [ $X11RDP -eq 1 ]; then
 	  rm -rf $X11DIR
 	  mkdir -p $X11DIR
         fi
 	
-	if [ -e $WDIR/xrdp ]; then
-   	  rm -rf $WDIR/xrdp
+	if [ -e $WORKINGDIR/xrdp ]; then
+   	  rm -rf $WORKINGDIR/xrdp
        fi
 }
 
@@ -305,8 +428,7 @@ alter_xrdp_source()
   done
   cd $WORKINGDIR
   # Patch Jay's buildx.sh.
-  # This will add checkinstall to create distribution packages
-  # Also, will patch the make command for parallel makes if that was requested,
+  # This will patch the make command for parallel makes if that was requested,
   # which should speed up compilation. It will make a backup copy of the original buildx.sh.
   patch -b -d $WORKINGDIR/xrdp/xorg/X11R7.6 buildx.sh < $WORKINGDIR/buildx_patch.diff
 }
@@ -332,7 +454,7 @@ rm -rf $BASEDIR/xrdp
 # Main stuff starts here #
 ##########################
 
-# checking latest xrdp version in master
+# check latest xrdp version in master
 
 echo
 wget -O $TMPFILE $README >& /dev/null
@@ -359,7 +481,7 @@ else
   INSTOPT="yes"
 fi
 
-make_X11rdp_env $X11DIR $WORKINGDIR $X11RDP
+make_X11rdp_env
 
 calc_cpu_cores # find out how many cores we have to play with, and if >1, set a possible make command
 
@@ -378,9 +500,9 @@ then
 	alter_xrdp_source
 	if  [ "$X11RDP" == "1" ]; then
 	  compile_X11rdp_interactive 
-	  package_X11rdp $VERSION $RELEASE $X11DIR
+	  package_X11rdp
 	fi
-	compile_xrdp_interactive $VERSION $RELEASE $INSTOPT "$CONFIGUREFLAGS"
+	compile_xrdp_interactive
 else
 	download_xrdp_noninteractive
 	if [ "$PARALLELMAKE" == "1" ]
@@ -392,7 +514,7 @@ else
 	  compile_X11rdp_noninteractive 
 	  package_X11rdp $VERSION $RELEASE $X11DIR
 	fi
-	compile_xrdp_noninteractive $VERSION $RELEASE $INSTOPT "$CONFIGUREFLAGS"
+	compile_xrdp_noninteractive
 fi
 
 if [ "$INSTFLAG" == "0" ]; then
