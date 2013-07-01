@@ -8,3 +8,4 @@ Debian GNU/Linux 6.0.5 (squeeze)
 Debian GNU/Linux 7.0 (wheezy)
 Linux Mint 12 Lisa
 Linux Mint 13 Maya
+Ubuntu 13.04 (Lubuntu)
