@@ -235,16 +235,16 @@ package_X11rdp()
     sed -i -e  "s/DUMMYVERINFO/$VERSION-$RELEASE/"  $PACKDIR/DEBIAN/control
     sed -i -e  "s/DUMMYARCHINFO/$ARCH/"  $PACKDIR/DEBIAN/control
     # need a different delimiter, since it has a path
-    sed -i -e  "s,DUMMYDIRINFO,$SRCDIR,"  $PACKDIR/DEBIAN/postinst
+    sed -i -e  "s,DUMMYDIRINFO,$X11DIR,"  $PACKDIR/DEBIAN/postinst
     mkdir -p $DESTDIR
-    cp -Rf $SRCDIR $DESTDIR
+    cp -Rf $X11DIR $DESTDIR
     dpkg-deb --build $PACKDIR $PKGDEST/${NAME}_$VERSION-${RELEASE}_${ARCH}.deb
     # revert to initial state
     rm -rf $DESTDIR
     sed -i -e  "s/$VERSION-$RELEASE/DUMMYVERINFO/"  $PACKDIR/DEBIAN/control
     sed -i -e  "s/$ARCH/DUMMYARCHINFO/"  $PACKDIR/DEBIAN/control
     # need a different delimiter, since it has a path
-    sed -i -e  "s,$SRCDIR,DUMMYDIRINFO,"  $PACKDIR/DEBIAN/postinst
+    sed -i -e  "s,$X11DIR,DUMMYDIRINFO,"  $PACKDIR/DEBIAN/postinst
    fi
 }
 
@@ -552,8 +552,7 @@ fi
 
 # Do other necessary stuff that doesn't need user intervention, like handle the rsa keys, create the startwm.sh symbolic link, etc...
 sh -c "mv /etc/xrdp/rsakeys.ini /usr/share/doc/xrdp/; chmod 600 /usr/share/doc/xrdp/rsakeys.ini; chown xrdp:xrdp /usr/share/doc/xrdp/rsakeys.ini; mv /etc/xrdp/startwm.sh /etc/xrdp/startwm.sh.BACKUP; ln -s /etc/X11/Xsession /etc/xrdp/startwm.sh"
-sh -c "cp xrdp /etc/init.d/xrdp; chmod u+x /etc/init.d/xrdp"
-clear
+sh -c "cp xrdp_initscript /etc/init.d/xrdp; chmod u+x /etc/init.d/xrdp"
 
 # Update rc scripts so xrdp starts upon boot...
 sudo update-rc.d xrdp defaults
