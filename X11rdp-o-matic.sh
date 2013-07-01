@@ -132,7 +132,7 @@ do
 			echo "Will keep the xrdp and x11rdp sources in the working directory after compilation/installation..."
 		;;
 		--noinstall)
-			INSTFLAG=0 		# do no install anything, just build the packages
+			INSTFLAG=0 		# do not install anything, just build the packages
 			echo "Will not install anything on the system but will build the packages"
 		;;
 		--nox11rdp)
@@ -239,6 +239,7 @@ package_X11rdp()
     mkdir -p $DESTDIR
     cp -Rf $X11DIR $DESTDIR
     dpkg-deb --build $PACKDIR $PKGDEST/${NAME}_$VERSION-${RELEASE}_${ARCH}.deb
+    XORGPKGNAME = ${NAME}_$VERSION-${RELEASE}_${ARCH}.deb
     # revert to initial state
     rm -rf $DESTDIR
     sed -i -e  "s/$VERSION-$RELEASE/DUMMYVERINFO/"  $PACKDIR/DEBIAN/control
@@ -550,9 +551,14 @@ if [ ! -e /usr/share/doc/xrdp ]
 		mkdir /usr/share/doc/xrdp
 fi
 
+dpkg -i $WORKINGDIR/packages/Xorg/*.deb
+dpkg -i $WORKINGDIR/packages/xrdp/*.deb
+
 # Do other necessary stuff that doesn't need user intervention, like handle the rsa keys, create the startwm.sh symbolic link, etc...
-sh -c "mv /etc/xrdp/rsakeys.ini /usr/share/doc/xrdp/; chmod 600 /usr/share/doc/xrdp/rsakeys.ini; chown xrdp:xrdp /usr/share/doc/xrdp/rsakeys.ini; mv /etc/xrdp/startwm.sh /etc/xrdp/startwm.sh.BACKUP; ln -s /etc/X11/Xsession /etc/xrdp/startwm.sh"
+sh -c "mv /etc/xrdp/rsakeys.ini /usr/share/doc/xrdp/; chmod 600 /usr/share/doc/xrdp/rsakeys.ini; chown xrdp:xrdp /usr/share/doc/xrdp/rsakeys.ini; mv -f /etc/xrdp/startwm.sh /etc/xrdp/startwm.sh.BACKUP; ln -s /etc/X11/Xsession /etc/xrdp/startwm.sh"
+cd $WORKINGDIR
 sh -c "cp xrdp_initscript /etc/init.d/xrdp; chmod u+x /etc/init.d/xrdp"
+
 
 # Update rc scripts so xrdp starts upon boot...
 sudo update-rc.d xrdp defaults
