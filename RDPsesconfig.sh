@@ -56,6 +56,11 @@ then
 	Dist="$Dist (Xubuntu)" # need to distinguish Xubuntu from Ubuntu
 fi
 
+if [ -e /usr/share/lubuntu ]
+then
+	Dist="$Dist (Lubuntu)" # need to distinguish Lubuntu from Ubuntu
+fi
+
 backtitle="Scarygliders RDPsesconfig"
 questiontitle="RDPsesconfig Question..."
 title="RDPsesconfig"
@@ -182,7 +187,7 @@ select_local_user_accounts_to_config()
 			if [[ $username != *$ && $username != *smbguest* ]]
 			then
 				realname=`echo $line | cut -d":" -f5 | cut -d"," -f1`
-        hit="\nAdded username $username to list."
+        		hit="\nAdded username $username to list."
 				let "usercount += 1"
 			  echo "$username.$realname">> ./usernames.tmp
 			fi
@@ -246,6 +251,8 @@ create_desktop_dialog_list()
 	*Mint*)
 		desktoplist=( "Gnome Classic" "Classic Gnome Desktop" on  "Xfce" "Xfce Desktop" off "LXDE" "LXDE Desktop" off "MATE" "MATE Desktop" off )
 		;;
+	*Lubuntu*)
+		desktoplist=( "Lubuntu" "Lubuntu Session" on )
 	esac
 }
 
@@ -341,6 +348,14 @@ config_for_lxde()
 #	questiontitle="LXDE RDP session configuration"
 }
 
+# configure an lxde environment
+config_for_lubuntu()
+{
+	session="startlubuntu"
+	RequiredPackages=(lubuntu-desktop lubuntu-default-session)
+	selecttext="Select which user(s) to configure a Lubuntu RDP session for..."
+}
+
 # configure a MATE environment on Ubuntu 12.10 (experimental - could break)
 config_for_mate_on_ubuntu()
 {
@@ -414,6 +429,9 @@ case "$desktop" in
 		;;
 	"LXDE")
 		config_for_lxde
+		;;
+	"Lubuntu")
+		config_for_lubuntu
 		;;
 	"MATE")
 	    case "$Dist" in
