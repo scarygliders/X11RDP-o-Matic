@@ -52,7 +52,7 @@ RELEASE=1
 
 # Use the canonical git repo by default...
 XRDPGIT=https://github.com/FreeRDP/xrdp.git
-XRDPBRANCH=v0.7
+XRDPBRANCH=master
 README=https://raw.github.com/FreeRDP/xrdp/master/readme.txt
 
 TMPFILE=/tmp/xrdpver
