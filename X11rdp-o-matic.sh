@@ -555,13 +555,13 @@ dpkg -i $WORKINGDIR/packages/Xorg/*.deb
 dpkg -i $WORKINGDIR/packages/xrdp/*.deb
 
 # Do other necessary stuff that doesn't need user intervention, like handle the rsa keys, create the startwm.sh symbolic link, etc...
-sh -c "mv /etc/xrdp/rsakeys.ini /usr/share/doc/xrdp/; chmod 600 /usr/share/doc/xrdp/rsakeys.ini; chown xrdp:xrdp /usr/share/doc/xrdp/rsakeys.ini; mv -f /etc/xrdp/startwm.sh /etc/xrdp/startwm.sh.BACKUP; ln -s /etc/X11/Xsession /etc/xrdp/startwm.sh"
-cd $WORKINGDIR
-sh -c "cp xrdp_initscript /etc/init.d/xrdp; chmod u+x /etc/init.d/xrdp"
+#sh -c "mv /etc/xrdp/rsakeys.ini /usr/share/doc/xrdp/; chmod 600 /usr/share/doc/xrdp/rsakeys.ini; chown xrdp:xrdp /usr/share/doc/xrdp/rsakeys.ini; mv -f /etc/xrdp/startwm.sh /etc/xrdp/startwm.sh.BACKUP; ln -s /etc/X11/Xsession /etc/xrdp/startwm.sh"
+#cd $WORKINGDIR
+#sh -c "cp xrdp_initscript /etc/init.d/xrdp; chmod u+x /etc/init.d/xrdp"
 
 
 # Update rc scripts so xrdp starts upon boot...
-sudo update-rc.d xrdp defaults
+#sudo update-rc.d xrdp defaults
 
 # Crank the engine ;)
 /etc/init.d/xrdp start
