@@ -232,7 +232,7 @@ create_desktop_dialog_list()
 		desktoplist=( "Gnome Classic" "Classic Gnome Desktop" on  "Xfce" "Xfce Desktop" off "LXDE" "LXDE Desktop" off "KDE" "KDE Desktop" off )
 		;;
 	*Mint*)
-		desktoplist=( "MATE" "MATE Desktop (recommended)" on "Cinnamon" "Cinnamon Desktop (NOT recommended for RDP) " off "Gnome Classic" "Classic Gnome Desktop" off  "Xfce" "Xfce Desktop" off "LXDE" "LXDE Desktop" off )
+		desktoplist=( "MATE" "MATE Desktop" on "Gnome Classic" "Classic Gnome Desktop" off  "Xfce" "Xfce Desktop" off "LXDE" "LXDE Desktop" off )
 		;;
 	*Lubuntu*)
 		desktoplist=( "Lubuntu" "Lubuntu Session" on )
@@ -349,13 +349,6 @@ config_for_mate_on_mint()
     selecttext="Select which user(s) to configure a MATE session for..."
     RequiredPackages=(mate-core mate-desktop-environment)
     
-}
-
-config_for_cinnamon()
-{
-	session="gnome-session --session cinnamon"
-	selecttext="Select which user(s) to configure a Cinnamon session for..."
-	RequiredPackages=(cinnamon cinnamon-common cinnamon-themes)
 }
 
 add_mate_repo_ubuntu()
