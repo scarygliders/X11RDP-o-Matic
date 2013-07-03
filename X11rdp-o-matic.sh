@@ -83,7 +83,7 @@ do
 done < SupportedDistros.txt
 
 
-INTERACTIVE=1cd     	# Interactive by default.
+INTERACTIVE=1     	# Interactive by default.
 PARALLELMAKE=1		# Utilise all available CPU's for compilation by default.
 RE_USE_XSOURCE=0  	# Do not reuse existing X11rdp&xrdp source by default unless specified.
 CLEANUP=1		    # Cleanup the x11rdp and xrdp sources by default - to keep requires --nocleanup command line switch
@@ -445,9 +445,7 @@ control_c()
 cleanup()
 {
 
-BASEDIR=$1
-
-rm -rf $BASEDIR/xrdp
+rm -rf $WORKINGDIR/xrdp
 
 }
 
@@ -525,7 +523,7 @@ if [ "$INSTFLAG" == "0" ]; then
     rm -rf $X11DIR
   fi
   if [ "$CLEANUP" == "1" ]; then
-    cleanup $WORKINGDIR
+    cleanup 
   fi
   echo "Will exit now, since we are not installing on this system..."
   exit
