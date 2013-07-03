@@ -3,10 +3,10 @@
 # Automatic RDP session configurator
 # a.k.a. ScaryGliders RDPsesconfig
 #
-# Version 3.0-beta2
+# Version 3.0-beta3
 #
-# Version release date : 20130401
-##################(yyyyMMDD)
+# Version release date : 20130623
+########################(yyyyMMDD)
 #
 # See CHANGELOG for release detials
 #
@@ -78,18 +78,6 @@ do
 done < SupportedDistros.txt
 
 
-
-# Parse the command line for any arguments
-while [ $# -gt 0 ];
-do
-	case "$1" in
-		--zenityfrontend)
-			TEXT=0				# Go to Text Mode
-		;;
-  esac
-  shift
-done
-
 ###############################################
 # Text/dialog front-end function declarations #
 ###############################################
@@ -143,12 +131,7 @@ check_package()
 
   if [ "$PkgStatus" = "0" ] || [ $PkgStatus = "1" ] # Install or re-install package and give a relatively nice-ish message whilst doing so - Zenity is kind of limited...
 	then
-		if [ "$INTERACTIVE" == "1" ]
-		then
-			install_package_interactive
-		else
-			apt-get -y install $PkgName
-		fi
+		install_package_interactive
 	fi
 }
 
@@ -249,7 +232,7 @@ create_desktop_dialog_list()
 		desktoplist=( "Gnome Classic" "Classic Gnome Desktop" on  "Xfce" "Xfce Desktop" off "LXDE" "LXDE Desktop" off "KDE" "KDE Desktop" off )
 		;;
 	*Mint*)
-		desktoplist=( "Gnome Classic" "Classic Gnome Desktop" on  "Xfce" "Xfce Desktop" off "LXDE" "LXDE Desktop" off "MATE" "MATE Desktop" off )
+		desktoplist=( "MATE" "MATE Desktop (recommended)" on "Cinnamon" "Cinnamon Desktop (NOT recommended for RDP) " off "Gnome Classic" "Classic Gnome Desktop" off  "Xfce" "Xfce Desktop" off "LXDE" "LXDE Desktop" off )
 		;;
 	*Lubuntu*)
 		desktoplist=( "Lubuntu" "Lubuntu Session" on )
@@ -309,7 +292,6 @@ config_for_unity2d()
 	session="gnome-session --session=ubuntu-2d"
 	RequiredPackages=(gnome-session gnome-session-fallback unity-2d gnome-tweak-tool)
 	selecttext="Select which user(s) to configure a Unity 2D RDP session for..."
-#	questiontitle="Unity 2D RDP session configuration"
 }
 
 #configure an xfce environment
@@ -318,7 +300,6 @@ config_for_xfce()
 	session="startxfce4"
 	RequiredPackages=(xfdesktop4)
 	selecttext="Select which user(s) to configure an Xfce RDP session for..."
-#	questiontitle="Xfce RDP session configuration"
 }
 
 #configure a KDE environment
@@ -327,7 +308,6 @@ config_for_kde()
 	session="startkde"
 	RequiredPackages=(kde-plasma-desktop)
 	selecttext="Select which user(s) to configure a KDE RDP session for..."
-#	questiontitle="KDE RDP session configuration"
 }
 
 # configure a MATE environment on Linux Mint
@@ -336,7 +316,6 @@ config_for_mate_on_mint()
 	session="mate-session"
 	RequiredPackages=(mint-meta-mate)
 	selecttext="Select which user(s) to configure a MATE RDP session for..."
-#	questiontitle="MATE RDP session configuration"
 }
 
 # configure an lxde environment
@@ -345,7 +324,6 @@ config_for_lxde()
 	session="startlxde"
 	RequiredPackages=(lxde-core lxterminal)
 	selecttext="Select which user(s) to configure an LXDE RDP session for..."
-#	questiontitle="LXDE RDP session configuration"
 }
 
 # configure an lxde environment
@@ -373,6 +351,13 @@ config_for_mate_on_mint()
     
 }
 
+config_for_cinnamon()
+{
+	session="gnome-session --session cinnamon"
+	selecttext="Select which user(s) to configure a Cinnamon session for..."
+	RequiredPackages=(cinnamon cinnamon-common cinnamon-themes)
+}
+
 add_mate_repo_ubuntu()
 {
     case $Dist in
@@ -398,7 +383,6 @@ add_mate_repo_ubuntu()
 
 # Source the common functions...
 DIALOG="dialog"
-# . ./TextFrontEndIncludes
 
 case "$supported" in
 	"1")
@@ -443,6 +427,9 @@ case "$desktop" in
 		        config_for_mate_on_mint
 		        ;;
         esac
+    "Cinnamon")
+		config_for_cinnamon
+		;;
 esac
 
 install_required_packages # Check if packages for selected desktop are installed and install if not.	
