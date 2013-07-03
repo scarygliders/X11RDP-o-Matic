@@ -420,9 +420,6 @@ case "$desktop" in
 		        config_for_mate_on_mint
 		        ;;
         esac
-    "Cinnamon")
-		config_for_cinnamon
-		;;
 esac
 
 install_required_packages # Check if packages for selected desktop are installed and install if not.	
