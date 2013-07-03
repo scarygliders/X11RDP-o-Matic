@@ -106,7 +106,7 @@ apt_update_interactive()
 
 
 #############################################
-# Common function declarations begin here...                  #
+# Common function declarations begin here...#
 #############################################
 
 install_package_interactive()

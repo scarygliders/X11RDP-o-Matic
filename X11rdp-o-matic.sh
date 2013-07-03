@@ -210,7 +210,7 @@ compile_X11rdp_noninteractive()
  fi
 }
 
-package_X11rdp()
+package_X11rdp_noninteractive()
 {
   PKGDEST=$WORKINGDIR/packages/Xorg
 
@@ -246,6 +246,45 @@ package_X11rdp()
     sed -i -e  "s/$ARCH/DUMMYARCHINFO/"  $PACKDIR/DEBIAN/control
     # need a different delimiter, since it has a path
     sed -i -e  "s,$X11DIR,DUMMYDIRINFO,"  $PACKDIR/DEBIAN/postinst
+   fi
+}
+
+package_X11rdp_interactive()
+{
+  PKGDEST=$WORKINGDIR/packages/Xorg
+
+  if [ ! -e $PKGDEST ]; then
+    mkdir -p $PKGDEST
+  fi
+
+
+  if [ $BLEED == 1 ]
+  	then
+  	cd $WORKINGDIR/xrdp/xorg/debuild
+  	./debX11rdp.sh $VERSION $RELEASE $X11DIR $PKGDEST
+  else
+  	( mkdir -p $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN
+  	cp $WORKINGDIR/control $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN
+  	cp -a $WORKINGDIR/postinst $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN
+  	cd $WORKINGDIR/xrdp/xorg/debuild
+    PACKDIR=x11rdp-files
+    DESTDIR=$PACKDIR/opt
+    NAME=x11rdp
+    ARCH=$( dpkg --print-architecture )
+    sed -i -e  "s/DUMMYVERINFO/$VERSION-$RELEASE/"  $PACKDIR/DEBIAN/control
+    sed -i -e  "s/DUMMYARCHINFO/$ARCH/"  $PACKDIR/DEBIAN/control
+    # need a different delimiter, since it has a path
+    sed -i -e  "s,DUMMYDIRINFO,$X11DIR,"  $PACKDIR/DEBIAN/postinst
+    mkdir -p $DESTDIR
+    cp -Rf $X11DIR $DESTDIR
+    dpkg-deb --build $PACKDIR $PKGDEST/${NAME}_$VERSION-${RELEASE}_${ARCH}.deb
+    XORGPKGNAME = ${NAME}_$VERSION-${RELEASE}_${ARCH}.deb
+    # revert to initial state
+    rm -rf $DESTDIR
+    sed -i -e  "s/$VERSION-$RELEASE/DUMMYVERINFO/"  $PACKDIR/DEBIAN/control
+    sed -i -e  "s/$ARCH/DUMMYARCHINFO/"  $PACKDIR/DEBIAN/control
+    # need a different delimiter, since it has a path
+    sed -i -e  "s,$X11DIR,DUMMYDIRINFO,"  $PACKDIR/DEBIAN/postinst ) 2>&1 | dialog  --progressbox "Making X11rdp Debian Package..." 30 100
    fi
 }
 
@@ -499,7 +538,7 @@ then
 	alter_xrdp_source
 	if  [ "$X11RDP" == "1" ]; then
 	  compile_X11rdp_interactive 
-	  package_X11rdp
+	  package_X11rdp_interactive
 	fi
 	compile_xrdp_interactive
 else
@@ -511,7 +550,7 @@ else
 	alter_xrdp_source
 	if  [ "$X11RDP" == "1" ]; then
 	  compile_X11rdp_noninteractive 
-	  package_X11rdp $VERSION $RELEASE $X11DIR
+	  package_X11rdp_noninteractive
 	fi
 	compile_xrdp_noninteractive
 fi
