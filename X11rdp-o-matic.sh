@@ -193,14 +193,12 @@ download_xrdp_noninteractive()
 
 compile_X11rdp_interactive()
 {
-  patch -b -d $WORKINGDIR/xrdp/xorg/X11R7.6/rdp Makefile < $WORKINGDIR/x11rdpMakefile.patch
   cd $WORKINGDIR/xrdp/xorg/X11R7.6/
   (sh buildx.sh $X11DIR ) 2>&1 | dialog  --progressbox "Compiling and installing X11rdp. This will take a while...." 30 100
 }
 
 compile_X11rdp_noninteractive()
 {
-  patch -b -d $WORKINGDIR/xrdp/xorg/X11R7.6/rdp Makefile < $WORKINGDIR/x11rdpMakefile.patch
   cd $WORKINGDIR/xrdp/xorg/X11R7.6/
   sh buildx.sh $X11DIR 
   RC=$?
@@ -263,26 +261,26 @@ package_X11rdp_interactive()
   	cd $WORKINGDIR/xrdp/xorg/debuild
   	./debX11rdp.sh $VERSION $RELEASE $X11DIR $PKGDEST
   else
-  	( mkdir -p $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN
-  	cp $WORKINGDIR/control $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN
-  	cp -a $WORKINGDIR/postinst $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN
-  	cd $WORKINGDIR/xrdp/xorg/debuild
-    PACKDIR=x11rdp-files
-    DESTDIR=$PACKDIR/opt
-    NAME=x11rdp
-    ARCH=$( dpkg --print-architecture )
-    sed -i -e  "s/DUMMYVERINFO/$VERSION-$RELEASE/"  $PACKDIR/DEBIAN/control
-    sed -i -e  "s/DUMMYARCHINFO/$ARCH/"  $PACKDIR/DEBIAN/control
+  	( mkdir -p $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN;
+  	cp $WORKINGDIR/control $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN;
+  	cp -a $WORKINGDIR/postinst $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN;
+  	cd $WORKINGDIR/xrdp/xorg/debuild;
+    PACKDIR=x11rdp-files;
+    DESTDIR=$PACKDIR/opt;
+    NAME=x11rdp;
+    ARCH=$( dpkg --print-architecture );
+    sed -i -e  "s/DUMMYVERINFO/$VERSION-$RELEASE/"  $PACKDIR/DEBIAN/control;
+    sed -i -e  "s/DUMMYARCHINFO/$ARCH/"  $PACKDIR/DEBIAN/control;
     # need a different delimiter, since it has a path
-    sed -i -e  "s,DUMMYDIRINFO,$X11DIR,"  $PACKDIR/DEBIAN/postinst
-    mkdir -p $DESTDIR
-    cp -Rf $X11DIR $DESTDIR
-    dpkg-deb --build $PACKDIR $PKGDEST/${NAME}_$VERSION-${RELEASE}_${ARCH}.deb
-    XORGPKGNAME = ${NAME}_$VERSION-${RELEASE}_${ARCH}.deb
+    sed -i -e  "s,DUMMYDIRINFO,$X11DIR,"  $PACKDIR/DEBIAN/postinst;
+    mkdir -p $DESTDIR;
+    cp -Rf $X11DIR $DESTDIR;
+    dpkg-deb --build $PACKDIR $PKGDEST/${NAME}_$VERSION-${RELEASE}_${ARCH}.deb;
+    XORGPKGNAME = ${NAME}_$VERSION-${RELEASE}_${ARCH}.deb;
     # revert to initial state
-    rm -rf $DESTDIR
-    sed -i -e  "s/$VERSION-$RELEASE/DUMMYVERINFO/"  $PACKDIR/DEBIAN/control
-    sed -i -e  "s/$ARCH/DUMMYARCHINFO/"  $PACKDIR/DEBIAN/control
+    rm -rf $DESTDIR;
+    sed -i -e  "s/$VERSION-$RELEASE/DUMMYVERINFO/"  $PACKDIR/DEBIAN/control;
+    sed -i -e  "s/$ARCH/DUMMYARCHINFO/"  $PACKDIR/DEBIAN/control;
     # need a different delimiter, since it has a path
     sed -i -e  "s,$X11DIR,DUMMYDIRINFO,"  $PACKDIR/DEBIAN/postinst ) 2>&1 | dialog  --progressbox "Making X11rdp Debian Package..." 30 100
    fi
