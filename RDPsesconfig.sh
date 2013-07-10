@@ -242,6 +242,10 @@ create_desktop_dialog_list()
 		;;
 	*Lubuntu*)
 		desktoplist=( "Lubuntu" "Lubuntu Session" on )
+		;;
+	*)
+		desktoplist=( "Gnome Classic" "Classic Gnome Desktop" on  "Xfce" "Xfce Desktop" off "LXDE" "LXDE Desktop" off "KDE" "KDE Desktop" off )
+		;;
 	esac
 }
 
