@@ -3,9 +3,9 @@
 # Automatic Xrdp/X11rdp Compiler/Installer
 # a.k.a. ScaryGliders X11rdp-O-Matic installation script
 #
-# Version 3.0-beta3
+# Version 3.0
 #
-# Version release date : 20130630
+# Version release date : 20130725
 ########################(yyyyMMDD)
 #
 # Will run on Debian-based systems only at the moment. RPM based distros perhaps some time in the future...
@@ -85,7 +85,6 @@ done < SupportedDistros.txt
 
 INTERACTIVE=1     	# Interactive by default.
 PARALLELMAKE=1		# Utilise all available CPU's for compilation by default.
-RE_USE_XSOURCE=0  	# Do not reuse existing X11rdp&xrdp source by default unless specified.
 CLEANUP=1		    # Cleanup the x11rdp and xrdp sources by default - to keep requires --nocleanup command line switch
 INSTFLAG=1          # Install xrdp and x11rdp on this system
 X11RDP=1		    # Build and package x11rdp
@@ -105,7 +104,6 @@ do
   --help          : show this help.
   --justdoit      : perform a complete compile and install with sane defaults and no user interaction.
   --nocpuoptimize : do not change X11rdp build script to utilize more than 1 of your CPU cores.
-  --reuse         : re-use downloaded X11rdp / xrdp source code if it exists. (Default is to download source)
   --nocleanup     : do not remove X11rdp / xrdp source code after installation. (Default is to clean up).
   --noinstall     : do not install anything, just build the packages
   --nox11rdp      : only build xrdp, without the x11rdp backend
@@ -122,10 +120,6 @@ do
 		--nocpuoptimize)
 			PARALLELMAKE=0		# Don't utilize additional CPU cores for compilation.
 			echo "Will not utilize additional CPU's for compilation..."
-		;;
-		--reuse)
-			RE_USE_XSOURCE=1
-			echo "Will re-use the existing X11rdp and xrdp source trees if they exist..."
 		;;
 		--nocleanup)
 			CLEANUP=0 		# Don't remove the xrdp and x11rdp sources from the working directory after compilation/installation

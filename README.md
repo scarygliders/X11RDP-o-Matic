@@ -22,8 +22,6 @@ Options
   
   --nocpuoptimize : do not change X11rdp build script to utilize more than 1 of your CPU cores.
   
-  --reuse         : re-use downloaded X11rdp / xrdp source code if it exists. (Default is to download source)
-  
   --nocleanup     : do not remove X11rdp / xrdp source code after installation. (Default is to clean up).
   
   --noinstall     : do not install anything, just build the packages
@@ -57,4 +55,4 @@ Both utilities need to be run as root, so use su to get to your root prompt, or 
 
 Please consider a donation if you found this useful :)
 
-More details at http://scarygliders.net/?p=1398
+Full details at http://scarygliders.net/?p=1858
