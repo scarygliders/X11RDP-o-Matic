@@ -1,8 +1,11 @@
 # Distributions these utilities have been tested and known to work on...
+Ubuntu 12.10
 Ubuntu 12.04 LTS
 Ubuntu 12.04 LTS (Xubuntu)
 Ubuntu 10.04.4 LTS
 Debian GNU/Linux testing (wheezy)
 Debian GNU/Linux 6.0.5 (squeeze)
+Debian GNU/Linux 7.0 (wheezy)
 Linux Mint 12 Lisa
 Linux Mint 13 Maya
+Ubuntu 13.04 (Lubuntu)

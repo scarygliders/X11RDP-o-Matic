@@ -3,16 +3,16 @@
 # Automatic RDP session configurator
 # a.k.a. ScaryGliders RDPsesconfig
 #
-# Version 2.5
+# Version 3.0
 #
-# Version release date : 20120825
-##################(yyyyMMDD)
+# Version release date : 20130725
+########################(yyyyMMDD)
 #
 # See CHANGELOG for release detials
 #
 # Will run on Debian-based systems only at the moment. RPM based distros perhaps some time in the future...
 #
-# Copyright (C) 2012, Kevin Cave <kevin@scarygliders.net>
+# Copyright (C) 2013, Kevin Cave <kevin@scarygliders.net>
 #
 # ISC License (ISC)
 #
@@ -47,29 +47,18 @@ fi
 # Initialise variables and parse any command line switches here #
 #################################################################
 
-TEXT=1				# Use text front-end dialogs by default, unless Zenity requested below
-INTERACTIVE=1	
-# Parse the command line for any arguments
-while [ $# -gt 0 ];
-do
-	case "$1" in
-		--zenityfrontend)
-			TEXT=0				# Use Zenity
-		;;
-  esac
-  shift
-done
-
-if [ "$DISPLAY" == '' ] # If we're running on a non-X terminal/console, switch to Text Mode anyway.
-then
-	TEXT=1
-fi
+INTERACTIVE=1
 
 Dist=`lsb_release -d -s` # What are we running on
 
 if [ -e /usr/share/xubuntu ]
 then
 	Dist="$Dist (Xubuntu)" # need to distinguish Xubuntu from Ubuntu
+fi
+
+if [ -e /usr/share/lubuntu ]
+then
+	Dist="$Dist (Lubuntu)" # need to distinguish Lubuntu from Ubuntu
 fi
 
 backtitle="Scarygliders RDPsesconfig"
@@ -89,25 +78,42 @@ do
 done < SupportedDistros.txt
 
 
+###############################################
+# Text/dialog front-end function declarations #
+###############################################
 
-# Parse the command line for any arguments
-while [ $# -gt 0 ];
-do
-	case "$1" in
-		--zenityfrontend)
-			TEXT=0				# Go to Text Mode
-		;;
-  esac
-  shift
-done
+let "HEIGHT = $LINES - 3"
+let "WIDTH = $COLUMNS - 8"
 
+# Display a message box
+info_window()
+{
+	dialog --backtitle "$backtitle" --title "$title" --msgbox "$dialogtext" 0 0
+}
+
+ask_question()
+{
+	dialog --backtitle "$backtitle" --title "$questiontitle" --yesno "$dialogtext" 0 0
+	Answer=$?
+}
+
+apt_update_interactive()
+{
+  apt-get update | dialog --progressbox "Updating package databases..." 30 100
+}
 
 
 
 
 #############################################
-# Common function declarations begin here...                  #
+# Common function declarations begin here...#
 #############################################
+
+install_package_interactive()
+{
+	debconf-apt-progress --dlwaypoint 50 -- apt-get -y install $PkgName
+	sleep 1 # Prevent possible dpkg race condition (had that with Xubuntu 12.04 for some reason)
+}
 
 # Interrogates dpkg to find out the status of a given package name, and installs if needed...
 check_package()
@@ -131,12 +137,7 @@ check_package()
 
   if [ "$PkgStatus" = "0" ] || [ $PkgStatus = "1" ] # Install or re-install package and give a relatively nice-ish message whilst doing so - Zenity is kind of limited...
 	then
-		if [ "$INTERACTIVE" == "1" ]
-		then
-			install_package_interactive
-		else
-			apt-get -y install $PkgName
-		fi
+		install_package_interactive
 	fi
 }
 
@@ -148,6 +149,131 @@ install_required_packages()
   	check_package
   done
 }
+
+# Reads all normal (non-system) accounts in from /etc/passwd, and presents them as a list
+# If your system also has "machine accounts" (i.e. accounts for PC's to be added under a
+# SAMBA domain controller - marked with a "$" at the end) these will be ignored.
+# smbguest is also ignored.
+select_local_user_accounts_to_config()
+{
+	if [ -e ./usernames.tmp ]
+	then
+	  rm ./usernames.tmp
+	fi
+	userlist=""
+	usercount=0
+	linecount=`cat /etc/passwd | wc -l`
+	processed=0
+	percent=0
+	title="Processing local users in /etc/passwd..."
+	hit=""
+(	while read line
+	do 
+    userno=`echo $line | cut -d":" -f3`
+		if [ $userno -gt 999 ] && [ $userno -lt 65534 ]
+		then
+			username=`echo $line | cut -d":" -f1`
+			if [[ $username != *$ && $username != *smbguest* ]]
+			then
+				realname=`echo $line | cut -d":" -f5 | cut -d"," -f1`
+        		hit="\nAdded username $username to list."
+				let "usercount += 1"
+			  echo "$username.$realname">> ./usernames.tmp
+			fi
+		fi
+			let "processed += 1"
+			percent=$((${processed}*100/${linecount}))
+			echo "Processed $processed of $linecount entries in /etc/passwd ...$hit"
+			echo XXX
+			echo $percent
+	done </etc/passwd ) | dialog --backtitle "$backtitle" --title "$title" "$@" --gauge "Processing..." 15 75 0
+  
+  allusers=""
+  usercount=0
+  while read line
+  do
+    username=$(echo $line | cut -d"." -f1)
+    allusers="$allusers $username"
+    realname=$(echo $line | cut -d"." -f2)
+		if [ $usercount == 0 ]
+		then
+			userlist=("ALL USERS" "Select all users on this list" off "${username[@]}" "${realname[@]}" off )
+		else
+			userlist=("${userlist[@]}" "${username[@]}" "${realname[@]}" off )
+		fi
+		let "usercount += 1"
+	done < ./usernames.tmp
+   
+	windowsize=(0 0 0)
+	dialog_param=("--separate-output" "--backtitle" "$backtitle" "--checklist" "Select the user accounts you wish to configure..." "${windowsize[@]}" "${userlist[@]}")
+	selectedusers=$(dialog "${dialog_param[@]}" 2>&1 >/dev/tty)
+  echo allusers = $allusers
+
+  if [ "$selectedusers" == "" ]
+  then
+    dialog --backtitle "$backtitle" --title "No Users Were Selected" --msgbox "\nYou did not select any users!\n\nQuitting the utility now.\n\nClick OK to exit.\n\n" 0 0
+    exit
+  fi
+  
+  if [ "$selectedusers" == "ALL USERS" ]
+  then
+    selectedusers=$allusers
+  fi
+  rm ./usernames.tmp
+}
+
+create_desktop_dialog_list()
+{
+	case $Dist in
+	*Xubuntu*)
+		desktoplist=( "Xfce" "Xfce Desktop" on ) # Offering anything other than Xfce on Xubuntu (even though we can) misses the whole point of Xubuntu.
+		;;
+	"Ubuntu 12.10"*)
+	    desktoplist=( "Unity" "Default Ubuntu Unity (not recommended for RDP" on "Xfce" "Xfce Desktop" off "LXDE" "LXDE Desktop" off "KDE" "KDE Desktop" off "MATE" "Install MATE (experimental)" off )
+	    ;;
+	"Ubuntu 12.04"* | "Ubuntu 11.10"*)
+		desktoplist=( "Gnome Classic" "Classic Gnome Desktop" on  "Xfce" "Xfce Desktop" off "LXDE" "LXDE Desktop" off "KDE" "KDE Desktop" off "Unity-2D" "Unity 2D Desktop" off "MATE" "Install MATE (experimental)" off )
+		;;
+	Debian*)
+		desktoplist=( "Gnome Classic" "Classic Gnome Desktop" on  "Xfce" "Xfce Desktop" off "LXDE" "LXDE Desktop" off "KDE" "KDE Desktop" off )
+		;;
+	*Mint*)
+		desktoplist=( "MATE" "MATE Desktop" on "Gnome Classic" "Classic Gnome Desktop" off  "Xfce" "Xfce Desktop" off "LXDE" "LXDE Desktop" off )
+		;;
+	*Lubuntu*)
+		desktoplist=( "Lubuntu" "Lubuntu Session" on )
+		;;
+	*)
+		desktoplist=( "Gnome Classic" "Classic Gnome Desktop" on  "Xfce" "Xfce Desktop" off "LXDE" "LXDE Desktop" off "KDE" "KDE Desktop" off )
+		;;
+	esac
+}
+
+# creates a .xsession file for each selected local user account
+# based on the selected desktop environment
+create_xsession()
+{
+(		for username in $selectedusers
+		do
+			homedir=`grep "^$username:" /etc/passwd | cut -d":" -f6`
+			echo "Creating .xsession file for $username in $homedir with entry \"$session\".." 2>&1
+			echo $session > $homedir/.xsession
+			chown $username:$username $homedir/.xsession
+			chmod u+x $homedir/.xsession
+		done) | dialog --backtitle "$backtitle" --title "creating .xsession files..." --progressbox "Processing..." 12 80
+		sleep 3
+}
+
+select_desktop()
+{
+	title="RDPsesconfig"
+	backtitle="Scarygliders RDPsesconfig"
+	windowsize=(0 0 0)
+	dialog_param=("--backtitle" "$backtitle" "--radiolist" "$title" "${windowsize[@]}" "${desktoplist[@]}")
+	desktop=$($DIALOG "${dialog_param[@]}" 2>&1 >/dev/tty)
+}
+
+
 
 # Configure a gnome environment
 config_for_gnome_classic()
@@ -163,7 +289,7 @@ config_for_gnome_classic()
 			;;
 		*)
 			session="gnome-session --session=gnome-fallback"
-		  RequiredPackages=(gnome-session-fallback gnome-tweak-tool)
+		    RequiredPackages=(gnome-session-fallback gnome-tweak-tool)
 			;;
 	esac
 	selecttext="Select which user(s) to configure a Gnome Classic RDP session for..."
@@ -176,7 +302,6 @@ config_for_unity2d()
 	session="gnome-session --session=ubuntu-2d"
 	RequiredPackages=(gnome-session gnome-session-fallback unity-2d gnome-tweak-tool)
 	selecttext="Select which user(s) to configure a Unity 2D RDP session for..."
-#	questiontitle="Unity 2D RDP session configuration"
 }
 
 #configure an xfce environment
@@ -185,7 +310,6 @@ config_for_xfce()
 	session="startxfce4"
 	RequiredPackages=(xfdesktop4)
 	selecttext="Select which user(s) to configure an Xfce RDP session for..."
-#	questiontitle="Xfce RDP session configuration"
 }
 
 #configure a KDE environment
@@ -194,16 +318,14 @@ config_for_kde()
 	session="startkde"
 	RequiredPackages=(kde-plasma-desktop)
 	selecttext="Select which user(s) to configure a KDE RDP session for..."
-#	questiontitle="KDE RDP session configuration"
 }
 
-# configure a MATE environment
-config_for_mate()
+# configure a MATE environment on Linux Mint
+config_for_mate_on_mint()
 {
 	session="mate-session"
 	RequiredPackages=(mint-meta-mate)
 	selecttext="Select which user(s) to configure a MATE RDP session for..."
-#	questiontitle="MATE RDP session configuration"
 }
 
 # configure an lxde environment
@@ -212,7 +334,46 @@ config_for_lxde()
 	session="startlxde"
 	RequiredPackages=(lxde-core lxterminal)
 	selecttext="Select which user(s) to configure an LXDE RDP session for..."
-#	questiontitle="LXDE RDP session configuration"
+}
+
+# configure an lxde environment
+config_for_lubuntu()
+{
+	session="startlubuntu"
+	RequiredPackages=(lubuntu-desktop lubuntu-default-session)
+	selecttext="Select which user(s) to configure a Lubuntu RDP session for..."
+}
+
+# configure a MATE environment on Ubuntu 12.10 (experimental - could break)
+config_for_mate_on_ubuntu()
+{
+    session="mate-session"
+    selecttext="Select which user(s) to configure a MATE session for..."
+    RequiredPackages=(mate-core mate-desktop-environment)
+    
+}
+
+config_for_mate_on_mint()
+{
+    session="mate-session"
+    selecttext="Select which user(s) to configure a MATE session for..."
+    RequiredPackages=(mate-core mate-desktop-environment)
+    
+}
+
+add_mate_repo_ubuntu()
+{
+    case $Dist in
+        "Ubuntu 12.10"* )
+            ( add-apt-repository -y "deb http://packages.mate-desktop.org/repo/ubuntu quantal main" && apt-get update && apt-get install -y --force-yes mate-archive-keyring && apt-get update ) 2>&1 | dialog --progressbox "Adding MATE repository for Ubuntu 12.10..." 90 70
+            ;;
+        "Ubuntu 12.04"* )
+            ( add-apt-repository -y "deb http://packages.mate-desktop.org/repo/ubuntu precise main" && apt-get update && apt-get install -y --force-yes mate-archive-keyring && apt-get update ) 2>&1 | dialog --progressbox "Adding MATE repository for Ubuntu 12.04..." 90 70
+            ;;
+        "Ubuntu 11.10"* )
+            ( add-apt-repository -y "deb http://packages.mate-desktop.org/repo/ubuntu oneiric main" && apt-get update && apt-get install -y --force-yes mate-archive-keyring && apt-get update ) 2>&1 | dialog --progressbox "Adding MATE repository for Ubuntu 11.10..." 90 70
+            ;;
+    esac
 }
 
 ##########################################################
@@ -223,17 +384,8 @@ config_for_lxde()
 ######## Main routine starts here ############
 ##############################################
 
-# Source the "Front End"
-case $TEXT in
-	0)
-		. ./ZenityFrontEndIncludes
-		;;
-	1)
-		DIALOG="dialog"
-		. ./TextFrontEndIncludes
-		;;
-esac
-
+# Source the common functions...
+DIALOG="dialog"
 
 case "$supported" in
 	"1")
@@ -265,10 +417,21 @@ case "$desktop" in
 	"LXDE")
 		config_for_lxde
 		;;
-	"MATE")
-		config_for_mate
+	"Lubuntu")
+		config_for_lubuntu
 		;;
+	"MATE")
+	    case "$Dist" in
+	        "Ubuntu 12.10"* | "Ubuntu 12.04"* | "Ubuntu 11.10"*)
+	            add_mate_repo_ubuntu
+	            config_for_mate_on_ubuntu
+	            ;;
+	        "Linux Mint"*)
+		        config_for_mate_on_mint
+		        ;;
+        esac
 esac
+
 install_required_packages # Check if packages for selected desktop are installed and install if not.	
 select_local_user_accounts_to_config
 create_xsession
