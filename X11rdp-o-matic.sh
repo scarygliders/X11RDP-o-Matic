@@ -381,6 +381,8 @@ calc_cpu_cores()
 	then
 			let "MakesystemWorkHarder = $Cores + 1"
 			makeCommand="make -j $MakesystemWorkHarder"
+	else
+		PARALLELMAKE = 0
 	fi
 }
 
