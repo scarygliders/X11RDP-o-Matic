@@ -599,10 +599,14 @@ fi
 dpkg -i $WORKINGDIR/packages/Xorg/*.deb
 dpkg -i $WORKINGDIR/packages/xrdp/*.deb
 
+# create the rc.d calls for startup/shutdown...
+update-rc.d xrdp defaults
+
 # Crank the engine ;)
 /etc/init.d/xrdp start
 
-dialogtext="Congratulations! X11rdp and xrdp should now be fully installed, configured, and running on this system. One last thing to do now is to configure which desktop will be presented to the user after they log in via RDP.  Use the RDPsesconfig utility to do this."
+dialogtext="X11rdp and xrdp should now be fully installed, configured, and running on this system. One last thing to do now is to configure which desktop will be presented to the user after they log in via RDP.  Use the RDPsesconfig utility to do this."
+
 if [ $INTERACTIVE == 1 ]
 then
 	info_window
