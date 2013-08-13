@@ -177,12 +177,14 @@ install_package_interactive()
 download_xrdp_interactive()
 {
 	git clone $XRDPGIT -b $XRDPBRANCH 2>&1 | dialog  --progressbox "Downloading xrdp source..." 30 100
+	cp $WORKINGDIR/buildx.sh $WORKINGDIR/xrdp/xorg/X11R7.6/
 }
 
 download_xrdp_noninteractive()
 {
 	echo "Downloading xrdp source from the GIT repository..."
 	git clone $XRDPGIT -b $XRDPBRANCH
+	cp $WORKINGDIR/buildx.sh $WORKINGDIR/xrdp/xorg/X11R7.6/
 }
 
 compile_X11rdp_interactive()
