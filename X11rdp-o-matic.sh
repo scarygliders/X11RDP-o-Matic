@@ -367,7 +367,7 @@ install_required_packages()
   for PkgName in ${RequiredPackages[@]}
   do
   	check_package
-  	if [[ "$PkgStatus" = "0"  ||  $PkgStatus = "1" ]]
+  	if [[ "$PkgStatus" == "0"  ||  $PkgStatus == "1" ]]
 	then
   	    install_package
 	fi
@@ -381,32 +381,37 @@ calc_cpu_cores()
 	then
 			let "MakesystemWorkHarder = $Cores + 1"
 			makeCommand="make -j $MakesystemWorkHarder"
+	else
+		PARALLELMAKE=0
 	fi
 }
 
 cpu_cores_interactive()
 {
 	# See how many cpu cores we have to play with - we can speed up compilation if we have more cores ;)
-	if [ ! -e $WORKINGDIR/PARALLELMAKE ] # No need to perform this if for some reason we've been here before...
+	if [[ ! -e $WORKINGDIR/PARALLELMAKE && PARALLELMAKE = 1 ]] # No need to perform this if for some reason we've been here before...
 	then
-		dialogtext="Good news!\n\nYou can speed up the compilation because there are $Cores CPU cores available to this system.\n\nI can patch the X11rdp build script for you, to utilize the additional CPU cores.\nWould you like me to do this for you?\n\n(Answering Yes will add the \"-j [#cores+1]\" switch to the make command in the build script.\n\nIn this case it will be changed to \"$makeCommand\")."
-		ask_question
-		Question=$?
+		if [ "$PARALLELMAKE" == "1" ]
+		then
+			dialogtext="Good news!\n\nYou can speed up the compilation because there are $Cores CPU cores available to this system.\n\nI can patch the X11rdp build script for you, to utilize the additional CPU cores.\nWould you like me to do this for you?\n\n(Answering Yes will add the \"-j [#cores+1]\" switch to the make command in the build script.\n\nIn this case it will be changed to \"$makeCommand\")."
+			ask_question
+			Question=$?
 	
-		case "$Question" in
-			"0") # Yes please warm up my computer even more! ;)
-				# edit the buildx.sh patch file ;)
-				sed -i -e "s/make -j 1/$makeCommand/g" $WORKINGDIR/buildx_patch.diff
-				# create a file flag to say we've already done this
-				touch $WORKINGDIR/PARALLELMAKE
-				dialogtext="Ok, the optimization has been made.\n\nLooks like your system is going to be working hard soon ;)\n\nClick OK to proceed with the compilation."
-				info_window
-				;;
-			"1") # No thanks, I like waiting ;)
-				dialogtext="Ok, I will not change the build script as suggested.\n\nIt will take longer to compile though :)\n\nPress OK to proceed with the compilation..."
-				info_window
-				;;
-		esac
+			case "$Question" in
+				"0") # Yes please warm up my computer even more! ;)
+					# edit the buildx.sh patch file ;)
+					sed -i -e "s/make -j 1/$makeCommand/g" $WORKINGDIR/buildx_patch.diff
+					# create a file flag to say we've already done this
+					touch $WORKINGDIR/PARALLELMAKE
+					dialogtext="Ok, the optimization has been made.\n\nLooks like your system is going to be working hard soon ;)\n\nClick OK to proceed with the compilation."
+					info_window
+					;;
+				"1") # No thanks, I like waiting ;)
+					dialogtext="Ok, I will not change the build script as suggested.\n\nIt will take longer to compile though :)\n\nPress OK to proceed with the compilation..."
+					info_window
+					;;
+			esac
+		fi
 	fi
 }
 
@@ -414,8 +419,11 @@ cpu_cores_noninteractive()
 {
 	if [ ! -e $WORKINGDIR/PARALLELMAKE ] # No need to perform this if for some reason we've been here before...
 	then
-		sed -i -e "s/make -j 1/$makeCommand/g" $WORKINGDIR/buildx_patch.diff
-		touch $WORKINGDIR/PARALLELMAKE
+		if [ "$PARALLELMAKE" == "1" ]
+		then
+			sed -i -e "s/make -j 1/$makeCommand/g" $WORKINGDIR/buildx_patch.diff
+			touch $WORKINGDIR/PARALLELMAKE
+		fi
 	fi
 }
 
@@ -462,7 +470,10 @@ alter_xrdp_source()
   # Patch Jay's buildx.sh.
   # This will patch the make command for parallel makes if that was requested,
   # which should speed up compilation. It will make a backup copy of the original buildx.sh.
-  patch -b -d $WORKINGDIR/xrdp/xorg/X11R7.6 buildx.sh < $WORKINGDIR/buildx_patch.diff
+  if [ "$PARALLELMAKE" == "1" ]
+  then
+  	patch -b -d $WORKINGDIR/xrdp/xorg/X11R7.6 buildx.sh < $WORKINGDIR/buildx_patch.diff
+  fi
 }
 
 control_c()
@@ -501,8 +512,13 @@ if  [ "$X11RDP" == "1" ]; then
     echo " *** Will remove the contents of $X11DIR and $WORKINGDIR/xrdp ***"
     echo
 fi
-echo "Press ENTER to continue or CTRL+C to abort"
-read DUMMY
+if [ "$INTERACTIVE" == "1" ]
+then
+	echo "Waiting 5 seconds. Press CTRL+C to abort"
+else
+	echo "Press ENTER to continue or CTRL-C to abort"
+	read DUMMY
+fi
 clear
 
 if [ "$INSTFLAG" == "0" ]; then
@@ -583,10 +599,14 @@ fi
 dpkg -i $WORKINGDIR/packages/Xorg/*.deb
 dpkg -i $WORKINGDIR/packages/xrdp/*.deb
 
+# create the rc.d calls for startup/shutdown...
+update-rc.d xrdp defaults
+
 # Crank the engine ;)
 /etc/init.d/xrdp start
 
-dialogtext="Congratulations! X11rdp and xrdp should now be fully installed, configured, and running on this system. One last thing to do now is to configure which desktop will be presented to the user after they log in via RDP.  Use the RDPsesconfig utility to do this."
+dialogtext="X11rdp and xrdp should now be fully installed, configured, and running on this system. One last thing to do now is to configure which desktop will be presented to the user after they log in via RDP.  Use the RDPsesconfig utility to do this."
+
 if [ $INTERACTIVE == 1 ]
 then
 	info_window
