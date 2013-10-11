@@ -3,9 +3,9 @@
 # Automatic Xrdp/X11rdp Compiler/Installer
 # a.k.a. ScaryGliders X11rdp-O-Matic installation script
 #
-# Version 3.0
+# Version 3.01
 #
-# Version release date : 20130725
+# Version release date : 20131011
 ########################(yyyyMMDD)
 #
 # Will run on Debian-based systems only at the moment. RPM based distros perhaps some time in the future...
@@ -456,7 +456,8 @@ make_X11rdp_env()
        fi
 }
 
-#Alter xrdp source code Makefile.am so the PID file is now in /var/run/xrdp/
+# Alter xrdp source code Makefile.am so the PID file is now in /var/run/xrdp/
+# Also patch rdp Makefile to tell Ubuntu linker to include GL symbols - pesky Ubuntu...
 alter_xrdp_source()
 {
   cd $WORKINGDIR/xrdp
@@ -474,6 +475,9 @@ alter_xrdp_source()
   then
   	patch -b -d $WORKINGDIR/xrdp/xorg/X11R7.6 buildx.sh < $WORKINGDIR/buildx_patch.diff
   fi
+  
+  # Patch rdp Makefile
+  patch -b -d $WORKINGDIR/xrdp/xorg/X11R7.6/rdp Makefile < $WORKINGDIR/rdp_Makefile.patch
 }
 
 control_c()
@@ -515,6 +519,7 @@ fi
 if [ "$INTERACTIVE" == "1" ]
 then
 	echo "Waiting 5 seconds. Press CTRL+C to abort"
+    sleep 5
 else
 	echo "Press ENTER to continue or CTRL-C to abort"
 	read DUMMY
