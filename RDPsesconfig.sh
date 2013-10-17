@@ -160,9 +160,10 @@ select_local_user_accounts_to_config()
 	then
 	  rm ./usernames.tmp
 	fi
+	getent passwd>/tmp/passwd
 	userlist=""
 	usercount=0
-	linecount=`cat /etc/passwd | wc -l`
+	linecount=`cat /tmp/passwd | wc -l`
 	processed=0
 	percent=0
 	title="Processing local users in /etc/passwd..."
@@ -186,7 +187,7 @@ select_local_user_accounts_to_config()
 			echo "Processed $processed of $linecount entries in /etc/passwd ...$hit"
 			echo XXX
 			echo $percent
-	done </etc/passwd ) | dialog --backtitle "$backtitle" --title "$title" "$@" --gauge "Processing..." 15 75 0
+	done </tmp/passwd ) | dialog --backtitle "$backtitle" --title "$title" "$@" --gauge "Processing..." 15 75 0
   
   allusers=""
   usercount=0
@@ -255,7 +256,7 @@ create_xsession()
 {
 (		for username in $selectedusers
 		do
-			homedir=`grep "^$username:" /etc/passwd | cut -d":" -f6`
+			homedir=`grep "^$username:" /tmp/passwd | cut -d":" -f6`
 			echo "Creating .xsession file for $username in $homedir with entry \"$session\".." 2>&1
 			echo $session > $homedir/.xsession
 			chown $username:$username $homedir/.xsession
@@ -435,6 +436,7 @@ esac
 install_required_packages # Check if packages for selected desktop are installed and install if not.	
 select_local_user_accounts_to_config
 create_xsession
+rm /tmp/passwd
 
 dialogtext="\nAll selected operations are complete!\n\nThe users you configured will be able to log in via RDP now and be presented with the desktop you configured for them.\n\nIf you wish for RDP users to be able to perform certain tasks like \"local\" users, please see the configuration files located at /usr/share/polkit-1/actions/ .\n\nSee http://scarygliders.net for details on PolicyKit.\n\nClick OK to exit the utility.\n\n\nThank you for using the Scarygliders RDPsesconfig!\n"
 info_window
