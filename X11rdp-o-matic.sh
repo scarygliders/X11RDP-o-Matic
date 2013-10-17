@@ -3,9 +3,9 @@
 # Automatic Xrdp/X11rdp Compiler/Installer
 # a.k.a. ScaryGliders X11rdp-O-Matic installation script
 #
-# Version 3.01
+# Version 3.02
 #
-# Version release date : 20131011
+# Version release date : 20131017
 ########################(yyyyMMDD)
 #
 # Will run on Debian-based systems only at the moment. RPM based distros perhaps some time in the future...
@@ -231,7 +231,7 @@ package_X11rdp_noninteractive()
     mkdir -p $DESTDIR
     cp -Rf $X11DIR $DESTDIR
     dpkg-deb --build $PACKDIR $PKGDEST/${NAME}_$VERSION-${RELEASE}_${ARCH}.deb
-    XORGPKGNAME = ${NAME}_$VERSION-${RELEASE}_${ARCH}.deb
+    XORGPKGNAME=${NAME}_$VERSION-${RELEASE}_${ARCH}.deb
     # revert to initial state
     rm -rf $DESTDIR
     sed -i -e  "s/$VERSION-$RELEASE/DUMMYVERINFO/"  $PACKDIR/DEBIAN/control
@@ -270,7 +270,7 @@ package_X11rdp_interactive()
     mkdir -p $DESTDIR;
     cp -Rf $X11DIR $DESTDIR;
     dpkg-deb --build $PACKDIR $PKGDEST/${NAME}_$VERSION-${RELEASE}_${ARCH}.deb;
-    XORGPKGNAME = ${NAME}_$VERSION-${RELEASE}_${ARCH}.deb;
+    XORGPKGNAME=${NAME}_$VERSION-${RELEASE}_${ARCH}.deb;
     # revert to initial state
     rm -rf $DESTDIR;
     sed -i -e  "s/$VERSION-$RELEASE/DUMMYVERINFO/"  $PACKDIR/DEBIAN/control;
