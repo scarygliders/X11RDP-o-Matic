@@ -3,9 +3,9 @@
 # Automatic RDP session configurator
 # a.k.a. ScaryGliders RDPsesconfig
 #
-# Version 3.0
+# Version 3.02
 #
-# Version release date : 20130725
+# Version release date : 20131017
 ########################(yyyyMMDD)
 #
 # See CHANGELOG for release detials
