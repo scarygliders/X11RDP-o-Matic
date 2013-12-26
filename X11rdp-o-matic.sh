@@ -53,7 +53,7 @@ RELEASE=1
 # Use the canonical git repo by default...
 XRDPGIT=https://github.com/FreeRDP/xrdp.git
 XRDPBRANCH=master
-README=https://raw.github.com/FreeRDP/xrdp/master/readme.txt
+README=https://raw.github.com/FreeRDP/xrdp/${XRDPBRANCH}/readme.txt
 
 TMPFILE=/tmp/xrdpver
 X11DIR=/opt/X11rdp
@@ -135,7 +135,7 @@ do
 		;;
 		--bleeding-edge)
 			XRDPGIT=https://github.com/neutrinolabs/xrdp.git
-			README=https://raw.github.com/neutrinolabs/xrdp/master/readme.txt
+			README=https://raw.github.com/neutrinolabs/xrdp/${XRDPBRANCH}/readme.txt
 			BLEED=1
 			echo "Using neutrinolabs git repo. Blood may spill B)"
 			
