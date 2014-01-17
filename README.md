@@ -28,7 +28,25 @@ Options
   
   --nox11rdp      : only build xrdp, without the x11rdp backend
   
-  --bleeding-edge : clone from the neutrinolabs github source tree. Beware. Bleeding-edge might hurt :)
+  --bleeding-edge : clone from the neutrinolabs Development branch. Beware. Bleeding-edge might hurt :)
+
+  --withjpeg         : include jpeg module
+
+  --withsound        : include building of the simple pulseaudio interface
+
+  --withdebug        : build with debug enabled
+
+  --withneutrino     : build the neutrinordp module
+
+  --withkerberos     : build support for kerberos
+
+  --withxrdpvr       : build the xrdpvr module
+
+  --withnopam        : don't include PAM support
+
+  --withpamuserpass  : build with pam userpass support
+
+  --withfreerdp      : build the freerdp1 module
 
 X11rdp-o-matic.sh has two modes of operation; interactive, and non-interactive...
 
@@ -40,9 +58,9 @@ script will choose sensible defaults and will require no user interaction. It wi
 if you have more than 1 CPU core available and will utilze those extra cores in order to speed up
 compilation of X11rdp. If you specify the --nocpuoptimze switch, then it will not utilize more than 1 core.
 
-The --bleeding-edge switch will tell the tool to download the xrdp/x11rdp source from a different git repository,
-and this is for highly experimental source code. You are advised to not use this switch unless you are a xrdp
-developer. By default, the tool will use the normal FreeRDP git repository.
+The --bleeding-edge switch will tell the tool to download the xrdp/x11rdp source from the DEVEL git repository,
+and this is for source code in the development branch. You are advised to not use this switch unless you are a xrdp
+developer. By default, the tool will use the normal Neutrinolabs master repository.
 
 RDPsesconfig.sh
 ===============
@@ -55,4 +73,4 @@ Both utilities need to be run as root, so use su to get to your root prompt, or 
 
 Please consider a donation if you found this useful :)
 
-Full details at http://scarygliders.net/?p=1858
+Full details at http://scarygliders.net/x11rdp-o-matic-information/
