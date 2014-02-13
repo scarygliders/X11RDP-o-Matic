@@ -259,7 +259,8 @@ create_xsession()
 			homedir=`grep "^$username:" /tmp/passwd | cut -d":" -f6`
 			echo "Creating .xsession file for $username in $homedir with entry \"$session\".." 2>&1
 			echo $session > $homedir/.xsession
-			chown $username:$username $homedir/.xsession
+			usergroup=`id -gn $username`
+			chown $username:$usergroup $homedir/.xsession
 			chmod u+x $homedir/.xsession
 		done) | dialog --backtitle "$backtitle" --title "creating .xsession files..." --progressbox "Processing..." 12 80
 		sleep 3
