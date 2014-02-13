@@ -179,7 +179,7 @@ select_local_user_accounts_to_config()
 				realname=`echo $line | cut -d":" -f5 | cut -d"," -f1`
         		hit="\nAdded username $username to list."
 				let "usercount += 1"
-			  echo "$username.$realname">> ./usernames.tmp
+			  echo "$username:$realname">> ./usernames.tmp
 			fi
 		fi
 			let "processed += 1"
@@ -193,9 +193,9 @@ select_local_user_accounts_to_config()
   usercount=0
   while read line
   do
-    username=$(echo $line | cut -d"." -f1)
+    username=$(echo $line | cut -d":" -f1)
     allusers="$allusers $username"
-    realname=$(echo $line | cut -d"." -f2)
+    realname=$(echo $line | cut -d":" -f2)
 		if [ $usercount == 0 ]
 		then
 			userlist=("ALL USERS" "Select all users on this list" off "${username[@]}" "${realname[@]}" off )
