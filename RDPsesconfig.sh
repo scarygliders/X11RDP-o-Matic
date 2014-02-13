@@ -168,10 +168,12 @@ select_local_user_accounts_to_config()
 	percent=0
 	title="Processing local users in /etc/passwd..."
 	hit=""
+	uidmin=`grep '^UID_MIN' /etc/login.defs`
+	uidmin=${uidmin/#UID_MIN/}
 (	while read line
 	do 
     userno=`echo $line | cut -d":" -f3`
-		if [ $userno -gt 999 ] && [ $userno -lt 65534 ]
+		if [ $userno -ge $uidmin ] && [ $userno -lt 65534 ]
 		then
 			username=`echo $line | cut -d":" -f1`
 			if [[ $username != *$ && $username != *smbguest* ]]
