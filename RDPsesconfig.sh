@@ -168,10 +168,12 @@ select_local_user_accounts_to_config()
 	percent=0
 	title="Processing local users in /etc/passwd..."
 	hit=""
+	uidmin=`grep '^UID_MIN' /etc/login.defs`
+	uidmin=${uidmin/#UID_MIN/}
 (	while read line
 	do 
     userno=`echo $line | cut -d":" -f3`
-		if [ $userno -gt 999 ] && [ $userno -lt 65534 ]
+		if [ $userno -ge $uidmin ] && [ $userno -lt 65534 ]
 		then
 			username=`echo $line | cut -d":" -f1`
 			if [[ $username != *$ && $username != *smbguest* ]]
@@ -179,7 +181,7 @@ select_local_user_accounts_to_config()
 				realname=`echo $line | cut -d":" -f5 | cut -d"," -f1`
         		hit="\nAdded username $username to list."
 				let "usercount += 1"
-			  echo "$username.$realname">> ./usernames.tmp
+			  echo "$username:$realname">> ./usernames.tmp
 			fi
 		fi
 			let "processed += 1"
@@ -193,9 +195,9 @@ select_local_user_accounts_to_config()
   usercount=0
   while read line
   do
-    username=$(echo $line | cut -d"." -f1)
+    username=$(echo $line | cut -d":" -f1)
     allusers="$allusers $username"
-    realname=$(echo $line | cut -d"." -f2)
+    realname=$(echo $line | cut -d":" -f2)
 		if [ $usercount == 0 ]
 		then
 			userlist=("ALL USERS" "Select all users on this list" off "${username[@]}" "${realname[@]}" off )
@@ -259,7 +261,8 @@ create_xsession()
 			homedir=`grep "^$username:" /tmp/passwd | cut -d":" -f6`
 			echo "Creating .xsession file for $username in $homedir with entry \"$session\".." 2>&1
 			echo $session > $homedir/.xsession
-			chown $username:$username $homedir/.xsession
+			usergroup=`id -gn $username`
+			chown $username:$usergroup $homedir/.xsession
 			chmod u+x $homedir/.xsession
 		done) | dialog --backtitle "$backtitle" --title "creating .xsession files..." --progressbox "Processing..." 12 80
 		sleep 3
