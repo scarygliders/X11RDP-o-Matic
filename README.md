@@ -16,19 +16,25 @@ command line switches...
 Options
 -------
 
-  --help          : show this help.
+  --help             : show this help.
 
-  --justdoit      : perform a complete compile and install with sane defaults and no user interaction.
-  
-  --nocpuoptimize : do not change X11rdp build script to utilize more than 1 of your CPU cores.
-  
-  --nocleanup     : do not remove X11rdp / xrdp source code after installation. (Default is to clean up).
-  
-  --noinstall     : do not install anything, just build the packages
-  
-  --nox11rdp      : only build xrdp, without the x11rdp backend
-  
-  --bleeding-edge : clone from the neutrinolabs Development branch. Beware. Bleeding-edge might hurt :)
+  --justdoit         : perform a complete compile and install with sane defaults and no user interaction.
+
+  --branch <branch>  : use one of the available xrdp branches
+		       Examples:
+                       --branch v0.8    - use the 0.8 branch.
+                       --branch master  - use the master branch. <-- Default if no --branch switch used.
+                       --branch devel   - use the devel branch (Bleeding Edge - may not work properly!)
+                       Branches beginning with "v" are stable releases.
+                       The master branch changes when xrdp authors merge changes from the devel branch.
+
+  --nocpuoptimize    : do not change X11rdp build script to utilize more than 1 of your CPU cores.
+
+  --nocleanup        : do not remove X11rdp / xrdp source code after installation. (Default is to clean up).
+
+  --noinstall        : do not install anything, just build the packages
+
+  --nox11rdp         : only build xrdp, without the x11rdp backend
 
   --withjpeg         : include jpeg module
 
