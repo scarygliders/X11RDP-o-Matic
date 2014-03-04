@@ -1,16 +1,16 @@
 #!/bin/bash
 
 # Automatic Xrdp/X11rdp Compiler/Installer
-# a.k.a. ScaryGliders X11rdp-O-Matic installation script
+# a.k.a. ScaryGliders X11rdp-O-Matic
 #
-# Version 3.0
+# Version 3.03
 #
-# Version release date : 20130725
+# Version release date : 20140117
 ########################(yyyyMMDD)
 #
 # Will run on Debian-based systems only at the moment. RPM based distros perhaps some time in the future...
 #
-# Copyright (C) 2013, Kevin Cave <kevin@scarygliders.net>
+# Copyright (C) 2014, Kevin Cave <kevin@scarygliders.net>
 # With contributions from Gustavo Homem
 #
 # ISC License (ISC)
@@ -51,9 +51,9 @@ export LANG="C"
 RELEASE=1
 
 # Use the canonical git repo by default...
-XRDPGIT=https://github.com/FreeRDP/xrdp.git
+XRDPGIT=https://github.com/neutrinolabs/xrdp.git
 XRDPBRANCH=master
-README=https://raw.github.com/FreeRDP/xrdp/master/readme.txt
+README=https://raw.github.com/neutrinolabs/xrdp/master/readme.txt
 
 TMPFILE=/tmp/xrdpver
 X11DIR=/opt/X11rdp
@@ -65,8 +65,8 @@ then
     apt-get -y install dialog
 fi
 
-# Declare a list of packages required to download sources, and compile them...
-RequiredPackages=(build-essential checkinstall automake automake1.9 git git-core libssl-dev libpam0g-dev zlib1g-dev libtool libx11-dev libxfixes-dev pkg-config flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2 g++ xutils libfuse-dev)
+# Declare a list of packages required to download sources/compile them...
+RequiredPackages=(build-essential checkinstall automake automake1.9 git git-core libssl-dev libpam0g-dev zlib1g-dev libtool libx11-dev libxfixes-dev pkg-config flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2 g++ xutils libfuse-dev wget)
 
 Dist=`lsb_release -d -s`
 
@@ -101,47 +101,84 @@ do
    
   usage: 
   $0 --<option>
-  --help          : show this help.
-  --justdoit      : perform a complete compile and install with sane defaults and no user interaction.
-  --nocpuoptimize : do not change X11rdp build script to utilize more than 1 of your CPU cores.
-  --nocleanup     : do not remove X11rdp / xrdp source code after installation. (Default is to clean up).
-  --noinstall     : do not install anything, just build the packages
-  --nox11rdp      : only build xrdp, without the x11rdp backend
-  --bleeding-edge : clone from the neutrinolabs github source tree. Beware. Bleeding-edge might hurt :)
-  
+  --help             : show this help.
+  --justdoit         : perform a complete compile and install with sane defaults and no user interaction.
+  --nocpuoptimize    : do not change X11rdp build script to utilize more than 1 of your CPU cores.
+  --nocleanup        : do not remove X11rdp / xrdp source code after installation. (Default is to clean up).
+  --noinstall        : do not install anything, just build the packages
+  --nox11rdp         : only build xrdp, without the x11rdp backend
+  --bleeding-edge    : use the neutrinolabs github Development (devel) source tree. Beware. Bleeding-edge might hurt :)
+  --withjpeg         : include jpeg module
+  --withsound        : include building of the simple pulseaudio interface
+  --withdebug        : build with debug enabled
+  --withneutrino     : build the neutrinordp module
+  --withkerberos     : build support for kerberos
+  --withxrdpvr       : build the xrdpvr module
+  --withnopam        : don't include PAM support
+  --withpamuserpass  : build with pam userpass support
+  --withfreerdp      : build the freerdp1 module
   "
-	    exit
-	  ;;
-		--justdoit)
-			INTERACTIVE=0 # Don't bother with fancy schmancy dialogs, just go through and do everything!
-			TEXT=1				# Note this will override even interactive Text Mode
-			echo "Okay, will just do the install from start to finish with no user interaction..."
-		;;
-		--nocpuoptimize)
-			PARALLELMAKE=0		# Don't utilize additional CPU cores for compilation.
-			echo "Will not utilize additional CPU's for compilation..."
-		;;
-		--nocleanup)
-			CLEANUP=0 		# Don't remove the xrdp and x11rdp sources from the working directory after compilation/installation
-			echo "Will keep the xrdp and x11rdp sources in the working directory after compilation/installation..."
-		;;
-		--noinstall)
-			INSTFLAG=0 		# do not install anything, just build the packages
-			echo "Will not install anything on the system but will build the packages"
-		;;
-		--nox11rdp)
-			X11RDP=0 		# do not build and package x11rdp
-			echo "Will not build and package x11rdp"
-		;;
-		--bleeding-edge)
-			XRDPGIT=https://github.com/neutrinolabs/xrdp.git
-			README=https://raw.github.com/neutrinolabs/xrdp/master/readme.txt
-			BLEED=1
-			echo "Using neutrinolabs git repo. Blood may spill B)"
-			
+	exit
+	;;
+	--justdoit)
+		INTERACTIVE=0	# Don't bother with fancy schmancy dialogs, just go through and do everything!
+				# Note this will override even interactive Text Mode
+		echo "Okay, will just do the install from start to finish with no user interaction..."
+	;;
+	--nocpuoptimize)
+		PARALLELMAKE=0	# Don't utilize additional CPU cores for compilation.
+		echo "Will not utilize additional CPU's for compilation..."
+	;;
+	--nocleanup)
+		CLEANUP=0 	# Don't remove the xrdp and x11rdp sources from the working directory after compilation/installation
+		echo "Will keep the xrdp and x11rdp sources in the working directory after compilation/installation..."
+	;;
+	--noinstall)
+		INSTFLAG=0 	# do not install anything, just build the packages
+		echo "Will not install anything on the system but will build the packages"
+	;;
+	--nox11rdp)
+		X11RDP=0 	# do not build and package x11rdp
+		echo "Will not build and package x11rdp"
+	;;
+	--bleeding-edge)
+		XRDPGIT=https://github.com/neutrinolabs/xrdp.git
+		README=https://raw.github.com/neutrinolabs/xrdp/master/readme.txt
+		BLEED=1
+		XRDPBRANCH=devel
+		echo "Using the neutrinolabs DEVELOPMENT git repo. Blood may spill B)"
+	;;
+	--withjpeg)
+		CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-jpeg"
+	;;
+	--withsound)
+		CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-simplesound"
+	;;
+	--withdebug)
+		CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-xrdpdebug"
+	;;
+	--withneutrino)
+		CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-neutrinordp"
+	;;
+	--withkerberos)
+		CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-kerberos"
+	;;
+	--withxrdpvr)
+		CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-xrdpvr"
+	;;
+	--withnopam)
+		CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-nopam"
+	;;
+	--withpamuserpass)
+		CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-pamuserpass"
+	;;
+	--withfreerdp)
+		CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-freerdp1"
+	;;
   esac
   shift
 done
+echo "Using the following xrdp configuration : "$CONFIGUREFLAGS
 
 ###############################################
 # Text/dialog front-end function declarations #
@@ -231,7 +268,7 @@ package_X11rdp_noninteractive()
     mkdir -p $DESTDIR
     cp -Rf $X11DIR $DESTDIR
     dpkg-deb --build $PACKDIR $PKGDEST/${NAME}_$VERSION-${RELEASE}_${ARCH}.deb
-    XORGPKGNAME = ${NAME}_$VERSION-${RELEASE}_${ARCH}.deb
+    XORGPKGNAME=${NAME}_$VERSION-${RELEASE}_${ARCH}.deb
     # revert to initial state
     rm -rf $DESTDIR
     sed -i -e  "s/$VERSION-$RELEASE/DUMMYVERINFO/"  $PACKDIR/DEBIAN/control
@@ -270,7 +307,7 @@ package_X11rdp_interactive()
     mkdir -p $DESTDIR;
     cp -Rf $X11DIR $DESTDIR;
     dpkg-deb --build $PACKDIR $PKGDEST/${NAME}_$VERSION-${RELEASE}_${ARCH}.deb;
-    XORGPKGNAME = ${NAME}_$VERSION-${RELEASE}_${ARCH}.deb;
+    XORGPKGNAME=${NAME}_$VERSION-${RELEASE}_${ARCH}.deb;
     # revert to initial state
     rm -rf $DESTDIR;
     sed -i -e  "s/$VERSION-$RELEASE/DUMMYVERINFO/"  $PACKDIR/DEBIAN/control;
@@ -456,7 +493,8 @@ make_X11rdp_env()
        fi
 }
 
-#Alter xrdp source code Makefile.am so the PID file is now in /var/run/xrdp/
+# Alter xrdp source code Makefile.am so the PID file is now in /var/run/xrdp/
+# Also patch rdp Makefile to tell Ubuntu linker to include GL symbols - pesky Ubuntu...
 alter_xrdp_source()
 {
   cd $WORKINGDIR/xrdp
@@ -474,6 +512,9 @@ alter_xrdp_source()
   then
   	patch -b -d $WORKINGDIR/xrdp/xorg/X11R7.6 buildx.sh < $WORKINGDIR/buildx_patch.diff
   fi
+  
+  # Patch rdp Makefile
+  patch -b -d $WORKINGDIR/xrdp/xorg/X11R7.6/rdp Makefile < $WORKINGDIR/rdp_Makefile.patch
 }
 
 control_c()
@@ -515,6 +556,7 @@ fi
 if [ "$INTERACTIVE" == "1" ]
 then
 	echo "Waiting 5 seconds. Press CTRL+C to abort"
+    sleep 5
 else
 	echo "Press ENTER to continue or CTRL-C to abort"
 	read DUMMY

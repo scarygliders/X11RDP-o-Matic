@@ -3,9 +3,9 @@
 # Automatic RDP session configurator
 # a.k.a. ScaryGliders RDPsesconfig
 #
-# Version 3.0
+# Version 3.02
 #
-# Version release date : 20130725
+# Version release date : 20131017
 ########################(yyyyMMDD)
 #
 # See CHANGELOG for release detials
@@ -160,17 +160,20 @@ select_local_user_accounts_to_config()
 	then
 	  rm ./usernames.tmp
 	fi
+	getent passwd>/tmp/passwd
 	userlist=""
 	usercount=0
-	linecount=`cat /etc/passwd | wc -l`
+	linecount=`cat /tmp/passwd | wc -l`
 	processed=0
 	percent=0
 	title="Processing local users in /etc/passwd..."
 	hit=""
+	uidmin=`grep '^UID_MIN' /etc/login.defs`
+	uidmin=${uidmin/#UID_MIN/}
 (	while read line
 	do 
     userno=`echo $line | cut -d":" -f3`
-		if [ $userno -gt 999 ] && [ $userno -lt 65534 ]
+		if [ $userno -ge $uidmin ] && [ $userno -lt 65534 ]
 		then
 			username=`echo $line | cut -d":" -f1`
 			if [[ $username != *$ && $username != *smbguest* ]]
@@ -178,7 +181,7 @@ select_local_user_accounts_to_config()
 				realname=`echo $line | cut -d":" -f5 | cut -d"," -f1`
         		hit="\nAdded username $username to list."
 				let "usercount += 1"
-			  echo "$username.$realname">> ./usernames.tmp
+			  echo "$username:$realname">> ./usernames.tmp
 			fi
 		fi
 			let "processed += 1"
@@ -186,15 +189,15 @@ select_local_user_accounts_to_config()
 			echo "Processed $processed of $linecount entries in /etc/passwd ...$hit"
 			echo XXX
 			echo $percent
-	done </etc/passwd ) | dialog --backtitle "$backtitle" --title "$title" "$@" --gauge "Processing..." 15 75 0
+	done </tmp/passwd ) | dialog --backtitle "$backtitle" --title "$title" "$@" --gauge "Processing..." 15 75 0
   
   allusers=""
   usercount=0
   while read line
   do
-    username=$(echo $line | cut -d"." -f1)
+    username=$(echo $line | cut -d":" -f1)
     allusers="$allusers $username"
-    realname=$(echo $line | cut -d"." -f2)
+    realname=$(echo $line | cut -d":" -f2)
 		if [ $usercount == 0 ]
 		then
 			userlist=("ALL USERS" "Select all users on this list" off "${username[@]}" "${realname[@]}" off )
@@ -255,10 +258,11 @@ create_xsession()
 {
 (		for username in $selectedusers
 		do
-			homedir=`grep "^$username:" /etc/passwd | cut -d":" -f6`
+			homedir=`grep "^$username:" /tmp/passwd | cut -d":" -f6`
 			echo "Creating .xsession file for $username in $homedir with entry \"$session\".." 2>&1
 			echo $session > $homedir/.xsession
-			chown $username:$username $homedir/.xsession
+			usergroup=`id -gn $username`
+			chown $username:$usergroup $homedir/.xsession
 			chmod u+x $homedir/.xsession
 		done) | dialog --backtitle "$backtitle" --title "creating .xsession files..." --progressbox "Processing..." 12 80
 		sleep 3
@@ -435,6 +439,7 @@ esac
 install_required_packages # Check if packages for selected desktop are installed and install if not.	
 select_local_user_accounts_to_config
 create_xsession
+rm /tmp/passwd
 
 dialogtext="\nAll selected operations are complete!\n\nThe users you configured will be able to log in via RDP now and be presented with the desktop you configured for them.\n\nIf you wish for RDP users to be able to perform certain tasks like \"local\" users, please see the configuration files located at /usr/share/polkit-1/actions/ .\n\nSee http://scarygliders.net for details on PolicyKit.\n\nClick OK to exit the utility.\n\n\nThank you for using the Scarygliders RDPsesconfig!\n"
 info_window
