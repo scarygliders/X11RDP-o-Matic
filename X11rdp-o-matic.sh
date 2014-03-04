@@ -3,15 +3,15 @@
 # Automatic Xrdp/X11rdp Compiler/Installer
 # a.k.a. ScaryGliders X11rdp-O-Matic
 #
-# Version 3.03
+# Version 3.04
 #
-# Version release date : 20140117
+# Version release date : 20140304
 ########################(yyyyMMDD)
 #
 # Will run on Debian-based systems only at the moment. RPM based distros perhaps some time in the future...
 #
-# Copyright (C) 2014, Kevin Cave <kevin@scarygliders.net>
-# With contributions from Gustavo Homem
+# Copyright (C) 2012-2014, Kevin Cave <kevin@scarygliders.net>
+# With contributions from other kind people.
 #
 # ISC License (ISC)
 #
@@ -31,6 +31,7 @@
 # Before doing anything else, check if we're running with #
 # priveleges, because we need to be.                      #
 ###########################################################
+clear
 id=`id -u`
 if [ $id -ne 0 ]
 	then
@@ -39,7 +40,12 @@ if [ $id -ne 0 ]
 		exit 1
 fi
 
-
+# Install dialog if it's not already installed...
+if [ ! -e /usr/bin/dialog ]
+then
+    echo "Installing the dialog package..."
+    apt-get -y install dialog
+fi
 #################################################################
 # Initialise variables and parse any command line switches here #
 #################################################################
@@ -54,16 +60,19 @@ RELEASE=1
 XRDPGIT=https://github.com/neutrinolabs/xrdp.git
 XRDPBRANCH=master
 README=https://raw.github.com/neutrinolabs/xrdp/master/readme.txt
+LINE="----------------------------------------------------------------------"
+
+# Get list of available branches from remote git repository
+echo "Obtaining list of available branches..."
+echo $LINE
+BRANCHES=`git ls-remote --heads $XRDPGIT | cut -f2 | cut -d "/" -f 3`
+echo "$BRANCHES"
+echo $LINE
 
 TMPFILE=/tmp/xrdpver
 X11DIR=/opt/X11rdp
 WORKINGDIR=`pwd` # Would have used /tmp for this, but some distros I tried mount /tmp as tmpfs, and filled up.
 CONFIGUREFLAGS="--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse"
-
-if [ ! -e /usr/bin/dialog ]
-then
-    apt-get -y install dialog
-fi
 
 # Declare a list of packages required to download sources/compile them...
 RequiredPackages=(build-essential checkinstall automake automake1.9 git git-core libssl-dev libpam0g-dev zlib1g-dev libtool libx11-dev libxfixes-dev pkg-config flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2 g++ xutils libfuse-dev wget)
@@ -90,19 +99,20 @@ INSTFLAG=1          # Install xrdp and x11rdp on this system
 X11RDP=1		    # Build and package x11rdp
 BLEED=0             # Not bleeding-edge unless specified
 
-echo ""
-
 # Parse the command line for any arguments
-while [ $# -gt 0 ];
+while [[ $# -gt 0 ]]
 do
-	case "$1" in
-	  --help)
-   echo "
-   
-  usage: 
+case "$1" in
+  --help)
+  echo "usage: 
   $0 --<option>
   --help             : show this help.
   --justdoit         : perform a complete compile and install with sane defaults and no user interaction.
+  --branch <branch>  : use one of the available xrdp branches listed above...
+                 Examples:
+                 --branch v0.8    - use the 0.8 branch.
+                 --branch master  - use the master branch.
+                 --branch devel   - use the devel branch (Bleeding Edge - may not work properly!)
   --nocpuoptimize    : do not change X11rdp build script to utilize more than 1 of your CPU cores.
   --nocleanup        : do not remove X11rdp / xrdp source code after installation. (Default is to clean up).
   --noinstall        : do not install anything, just build the packages
@@ -118,67 +128,94 @@ do
   --withpamuserpass  : build with pam userpass support
   --withfreerdp      : build the freerdp1 module
   "
-	exit
-	;;
-	--justdoit)
-		INTERACTIVE=0	# Don't bother with fancy schmancy dialogs, just go through and do everything!
-				# Note this will override even interactive Text Mode
-		echo "Okay, will just do the install from start to finish with no user interaction..."
-	;;
-	--nocpuoptimize)
-		PARALLELMAKE=0	# Don't utilize additional CPU cores for compilation.
-		echo "Will not utilize additional CPU's for compilation..."
-	;;
-	--nocleanup)
-		CLEANUP=0 	# Don't remove the xrdp and x11rdp sources from the working directory after compilation/installation
-		echo "Will keep the xrdp and x11rdp sources in the working directory after compilation/installation..."
-	;;
-	--noinstall)
-		INSTFLAG=0 	# do not install anything, just build the packages
-		echo "Will not install anything on the system but will build the packages"
-	;;
-	--nox11rdp)
-		X11RDP=0 	# do not build and package x11rdp
-		echo "Will not build and package x11rdp"
-	;;
-	--bleeding-edge)
-		XRDPGIT=https://github.com/neutrinolabs/xrdp.git
-		README=https://raw.github.com/neutrinolabs/xrdp/master/readme.txt
-		BLEED=1
-		XRDPBRANCH=devel
-		echo "Using the neutrinolabs DEVELOPMENT git repo. Blood may spill B)"
-	;;
-	--withjpeg)
-		CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-jpeg"
-	;;
-	--withsound)
-		CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-simplesound"
-	;;
-	--withdebug)
-		CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-xrdpdebug"
-	;;
-	--withneutrino)
-		CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-neutrinordp"
-	;;
-	--withkerberos)
-		CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-kerberos"
-	;;
-	--withxrdpvr)
-		CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-xrdpvr"
-	;;
-	--withnopam)
-		CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-nopam"
-	;;
-	--withpamuserpass)
-		CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-pamuserpass"
-	;;
-	--withfreerdp)
-		CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-freerdp1"
-	;;
-  esac
-  shift
+  exit
+  ;;
+  --justdoit)
+    INTERACTIVE=0	# Don't bother with fancy schmancy dialogs, just go through and do everything!
+			# Note this will override even interactive Text Mode
+    echo "Okay, will just do the install from start to finish with no user interaction..."
+    echo $LINE
+    ;;
+    --branch)
+    ok=0
+    for check in ${BRANCHES[@]}
+    do
+      if [[ $check = $2 ]]
+      then
+	ok=1
+      fi
+    done
+    if [[ $ok == 0 ]]
+    then
+      echo "**** Error detected in branch selection. Argument after --branch was : $2 ."
+      echo "**** Available branches : "$BRANCHES
+      exit 1
+    fi
+    XRDPBRANCH="$2"
+    echo "Using branch ==>> $2 <<=="
+    if [[ $XRDPBRANCH = "devel" ]]
+    then
+      echo "Note : using the bleeding-edge version may result in problems :)"
+      BLEED=1
+    fi
+    echo $LINE
+    shift
+    ;;
+    --nocpuoptimize)
+    PARALLELMAKE=0	# Don't utilize additional CPU cores for compilation.
+    echo "Will not utilize additional CPU's for compilation..."
+    echo $LINE
+    ;;
+    --nocleanup)
+    CLEANUP=0 	# Don't remove the xrdp and x11rdp sources from the working directory after compilation/installation
+    echo "Will keep the xrdp and x11rdp sources in the working directory after compilation/installation..."
+    echo $LINE
+    ;;
+    --noinstall)
+    INSTFLAG=0 	# do not install anything, just build the packages
+    echo "Will not install anything on the system but will build the packages"
+    echo $LINE
+    ;;
+    --nox11rdp)
+    X11RDP=0 	# do not build and package x11rdp
+    echo "Will not build and package x11rdp"
+    echo $LINE
+    ;;
+    --withjpeg)
+      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-jpeg"
+    ;;
+    --withsound)
+      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-simplesound"
+    ;;
+    --withdebug)
+      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-xrdpdebug"
+    ;;
+    --withneutrino)
+      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-neutrinordp"
+    ;;
+    --withkerberos)
+      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-kerberos"
+    ;;
+    --withxrdpvr)
+      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-xrdpvr"
+    ;;
+    --withnopam)
+      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-nopam"
+    ;;
+    --withpamuserpass)
+      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-pamuserpass"
+    ;;
+    --withfreerdp)
+      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-freerdp1"
+    ;;
+esac
+shift
 done
+
+README=https://raw.github.com/neutrinolabs/xrdp/$XRDPBRANCH/readme.txt
+
 echo "Using the following xrdp configuration : "$CONFIGUREFLAGS
+echo $LINE
 
 ###############################################
 # Text/dialog front-end function declarations #
@@ -536,30 +573,29 @@ rm -rf $WORKINGDIR/xrdp
 # Main stuff starts here #
 ##########################
 
-# check latest xrdp version in master
-
-echo
-wget -O $TMPFILE $README >& /dev/null
-VERSION=$(grep xrdp $TMPFILE | head -1 | cut -d " " -f2)
-rm -f $TMPFILE
-
-echo " *** xrdp version is $VERSION ***"
+# Work out the version from the chosen branch
+if [[ $( echo $XRDPBRANCH | cut -c 1 ) = "v" ]]
+then
+  VERSION=$(echo $XRDPBRANCH | cut -c 2-)
+else
+  VERSION=$XRDPBRANCH
+fi
 
 # trap keyboard interrupt (control-c)
 trap control_c SIGINT
 
-echo
-if  [ "$X11RDP" == "1" ]; then
-    echo " *** Will remove the contents of $X11DIR and $WORKINGDIR/xrdp ***"
-    echo
+
+if [ "$X11RDP" == "1" ]; then
+  echo " *** Will remove the contents of $X11DIR and $WORKINGDIR/xrdp ***"
+  echo
 fi
 if [ "$INTERACTIVE" == "1" ]
 then
-	echo "Waiting 5 seconds. Press CTRL+C to abort"
-    sleep 5
+  echo "Waiting 5 seconds. Press CTRL+C to abort"
+  sleep 5
 else
-	echo "Press ENTER to continue or CTRL-C to abort"
-	read DUMMY
+  echo "Press ENTER to continue or CTRL-C to abort"
+  read DUMMY
 fi
 clear
 
