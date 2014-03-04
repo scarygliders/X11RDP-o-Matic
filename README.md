@@ -21,12 +21,18 @@ Options
   --justdoit         : perform a complete compile and install with sane defaults and no user interaction.
 
   --branch <branch>  : use one of the available xrdp branches
-		       Examples:
-                       --branch v0.8    - use the 0.8 branch.
-                       --branch master  - use the master branch. <-- Default if no --branch switch used.
-                       --branch devel   - use the devel branch (Bleeding Edge - may not work properly!)
-                       Branches beginning with "v" are stable releases.
-                       The master branch changes when xrdp authors merge changes from the devel branch.
+
+  Examples:
+
+   --branch v0.8    - use the 0.8 branch.
+
+   --branch master  - use the master branch. <-- Default if no --branch switch used.
+
+   --branch devel   - use the devel branch (Bleeding Edge - may not work properly!)
+
+   Branches beginning with "v" are stable releases.
+
+   The master branch changes when xrdp authors merge changes from the devel branch.
 
   --nocpuoptimize    : do not change X11rdp build script to utilize more than 1 of your CPU cores.
 
