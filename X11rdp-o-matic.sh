@@ -27,6 +27,56 @@
 # WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
+LINE="----------------------------------------------------------------------"
+# Use the canonical git repo by default
+XRDPGIT=https://github.com/neutrinolabs/xrdp.git
+# Use the master branch by default
+XRDPBRANCH=master
+
+# Get list of available branches from remote git repository
+get_branches()
+{
+  echo $LINE
+  echo "Obtaining list of available branches..."
+  echo $LINE
+  BRANCHES=`git ls-remote --heads $XRDPGIT | cut -f2 | cut -d "/" -f 3`
+  echo $BRANCHES
+  echo $LINE
+}
+
+# If first switch = --help, display the help/usage message then exit.
+if [[ $1 = "--help" ]]
+then
+  clear
+  echo "usage: $0 OPTIONS
+
+OPTIONS
+-------
+  --help             : show this help.
+  --justdoit         : perform a complete compile and install with sane defaults and no user interaction.
+  --branch <branch>  : use one of the available xrdp branches listed above...
+                 Examples:
+                 --branch v0.8    - use the 0.8 branch.
+                 --branch master  - use the master branch. <-- Default if no branch given.
+                 --branch devel   - use the devel branch (Bleeding Edge - may not work properly!)
+  --nocpuoptimize    : do not change X11rdp build script to utilize more than 1 of your CPU cores.
+  --nocleanup        : do not remove X11rdp / xrdp source code after installation. (Default is to clean up).
+  --noinstall        : do not install anything, just build the packages
+  --nox11rdp         : only build xrdp, without the x11rdp backend
+  --withjpeg         : include jpeg module
+  --withsound        : include building of the simple pulseaudio interface
+  --withdebug        : build with debug enabled
+  --withneutrino     : build the neutrinordp module
+  --withkerberos     : build support for kerberos
+  --withxrdpvr       : build the xrdpvr module
+  --withnopam        : don't include PAM support
+  --withpamuserpass  : build with pam userpass support
+  --withfreerdp      : build the freerdp1 module
+  "
+  get_branches
+  exit
+fi
+
 ###########################################################
 # Before doing anything else, check if we're running with #
 # priveleges, because we need to be.                      #
@@ -56,18 +106,9 @@ export LANG="C"
 # this is the release number for the Debian packages
 RELEASE=1
 
-# Use the canonical git repo by default...
-XRDPGIT=https://github.com/neutrinolabs/xrdp.git
-XRDPBRANCH=master
-README=https://raw.github.com/neutrinolabs/xrdp/master/readme.txt
-LINE="----------------------------------------------------------------------"
 
-# Get list of available branches from remote git repository
-echo "Obtaining list of available branches..."
-echo $LINE
-BRANCHES=`git ls-remote --heads $XRDPGIT | cut -f2 | cut -d "/" -f 3`
-echo "$BRANCHES"
-echo $LINE
+
+
 
 TMPFILE=/tmp/xrdpver
 X11DIR=/opt/X11rdp
@@ -92,44 +133,17 @@ do
 done < SupportedDistros.txt
 
 
-INTERACTIVE=1     	# Interactive by default.
-PARALLELMAKE=1		# Utilise all available CPU's for compilation by default.
-CLEANUP=1		    # Cleanup the x11rdp and xrdp sources by default - to keep requires --nocleanup command line switch
-INSTFLAG=1          # Install xrdp and x11rdp on this system
-X11RDP=1		    # Build and package x11rdp
-BLEED=0             # Not bleeding-edge unless specified
+INTERACTIVE=1	# Interactive by default.
+PARALLELMAKE=1	# Utilise all available CPU's for compilation by default.
+CLEANUP=1	# Cleanup the x11rdp and xrdp sources by default - to keep requires --nocleanup command line switch
+INSTFLAG=1	# Install xrdp and x11rdp on this system
+X11RDP=1	# Build and package x11rdp
+BLEED=0		# Not bleeding-edge unless specified
 
 # Parse the command line for any arguments
 while [[ $# -gt 0 ]]
 do
 case "$1" in
-  --help)
-  echo "usage: 
-  $0 --<option>
-  --help             : show this help.
-  --justdoit         : perform a complete compile and install with sane defaults and no user interaction.
-  --branch <branch>  : use one of the available xrdp branches listed above...
-                 Examples:
-                 --branch v0.8    - use the 0.8 branch.
-                 --branch master  - use the master branch.
-                 --branch devel   - use the devel branch (Bleeding Edge - may not work properly!)
-  --nocpuoptimize    : do not change X11rdp build script to utilize more than 1 of your CPU cores.
-  --nocleanup        : do not remove X11rdp / xrdp source code after installation. (Default is to clean up).
-  --noinstall        : do not install anything, just build the packages
-  --nox11rdp         : only build xrdp, without the x11rdp backend
-  --bleeding-edge    : use the neutrinolabs github Development (devel) source tree. Beware. Bleeding-edge might hurt :)
-  --withjpeg         : include jpeg module
-  --withsound        : include building of the simple pulseaudio interface
-  --withdebug        : build with debug enabled
-  --withneutrino     : build the neutrinordp module
-  --withkerberos     : build support for kerberos
-  --withxrdpvr       : build the xrdpvr module
-  --withnopam        : don't include PAM support
-  --withpamuserpass  : build with pam userpass support
-  --withfreerdp      : build the freerdp1 module
-  "
-  exit
-  ;;
   --justdoit)
     INTERACTIVE=0	# Don't bother with fancy schmancy dialogs, just go through and do everything!
 			# Note this will override even interactive Text Mode
