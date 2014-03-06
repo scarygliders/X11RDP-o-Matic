@@ -668,6 +668,21 @@ download_compile_noninteractively()
   compile_xrdp_noninteractive
 }
 
+check_for_and_remove_existing_generated_packages()
+{
+  if [ -e $WORKINGDIR/Xorg/*.deb ]
+  then
+    echo "Removing previously generated Debian X11rdp package file."
+    echo $LINE
+    rm $WORKINGDIR/Xorg/*.deb
+  fi
+
+  if [ -e $WORKINGDIR/xrdp/*.deb ]
+  then
+    echo "Removing previously generated Debian xrdp package file."
+    echo $LINE
+    rm $WORKINGDIR/xrdp/*.deb
+
 cleanup()
 {
   rm -rf $WORKINGDIR/xrdp
@@ -711,6 +726,8 @@ calc_cpu_cores # find out how many cores we have to play with, and if >1, set a 
 update_repositories # perform an apt update to make sure we have a current list of available packages 
 
 install_required_packages # install any packages required for xrdp/Xorg/X11rdp compilation
+
+check_for_and_remove_existing_generated_packages # Yes my function names become ever more ridiculously long :D
 
 if [ "$INTERACTIVE" == "1" ]
 then
