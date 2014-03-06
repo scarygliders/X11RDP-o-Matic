@@ -690,7 +690,7 @@ check_for_and_remove_existing_generated_packages()
 
 remove_currently_installed_xrdp()
 {
-  PkgName = "xrdp"
+  PkgName="xrdp"
   check_package
   if [ $PkgStatus == "2" ]
   then
@@ -701,7 +701,7 @@ remove_currently_installed_xrdp()
 
 remove_currently_installed_X11rdp()
 {
-  PkgName = "X11rdp"
+  PkgName="X11rdp"
   check_package
   if [ $PkgStatus == "2" ]
   then
