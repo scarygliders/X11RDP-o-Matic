@@ -597,13 +597,14 @@ if [ "$X11RDP" == "1" ]; then
   echo " *** Will remove the contents of $X11DIR and $WORKINGDIR/xrdp ***"
   echo
 fi
+
 if [ "$INTERACTIVE" == "1" ]
 then
-  echo "Waiting 5 seconds. Press CTRL+C to abort"
-  sleep 5
-else
   echo "Press ENTER to continue or CTRL-C to abort"
   read DUMMY
+else
+  echo "Waiting 5 seconds. Press CTRL+C to abort"
+  sleep 5
 fi
 
 
