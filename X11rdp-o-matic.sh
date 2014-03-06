@@ -673,10 +673,10 @@ download_compile_noninteractively()
   compile_xrdp_noninteractive
 }
 
-check_for_and_remove_existing_generated_packages()
+remove_existing_generated_packages()
 {
   FILES=($WORKINGDIR/packages/xrdp/X11rdp*.deb)
-  if [ ${#FILES[@]} -gt 0 ]
+  if [ ${#FILES[@]} -gt 1 ]
   then
     echo "Removing previously generated Debian X11rdp package file."
     echo $LINE
@@ -684,7 +684,7 @@ check_for_and_remove_existing_generated_packages()
   fi
 
   FILES=($WORKINGDIR/packages/xrdp/xrdp*.deb)
-  if [ ${#FILES[@]} -gt 0 ]
+  if [ ${#FILES[@]} -gt 1 ]
   then
     echo "Removing previously generated Debian xrdp package file."
     echo $LINE
@@ -760,7 +760,7 @@ update_repositories # perform an apt update to make sure we have a current list 
 
 install_required_packages # install any packages required for xrdp/Xorg/X11rdp compilation
 
-check_for_and_remove_existing_generated_packages # Yes my function names become ever more ridiculously long :D
+remove_existing_generated_packages # Yes my function names become ever more ridiculously long :D
 
 if [ "$INTERACTIVE" == "1" ]
 then
