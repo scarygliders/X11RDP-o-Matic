@@ -660,7 +660,8 @@ download_compile_noninteractively()
     cpu_cores_noninteractive
   fi
     alter_xrdp_source
-  if  [ "$X11RDP" == "1" ]; then
+  if  [ "$X11RDP" == "1" ]
+  then
     compile_X11rdp_noninteractive 
     package_X11rdp_noninteractive
     make_X11rdp_symbolic_link
@@ -683,6 +684,7 @@ check_for_and_remove_existing_generated_packages()
     echo $LINE
     rm $WORKINGDIR/xrdp/*.deb
   fi
+}
 
 cleanup()
 {
