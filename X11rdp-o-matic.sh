@@ -695,7 +695,8 @@ remove_currently_installed_xrdp()
   if [ $PkgStatus == "2" ]
   then
     echo "Removing the currently installed xrdp package."
-    apt-get remove xrdp
+    echo $LINE
+    apt-get -y remove xrdp
   fi
 }
 
@@ -706,7 +707,8 @@ remove_currently_installed_X11rdp()
   if [ $PkgStatus == "2" ]
   then
     echo "Removing the currently installed X11rdp package."
-    apt-get remove X11rdp
+    echo $LINE
+    apt-get -y remove X11rdp
   fi
 }
 
