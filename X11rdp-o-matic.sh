@@ -525,6 +525,9 @@ calculate_version_num()
   wget -O $TMPFILE $README >& /dev/null
   VERSION=$(grep xrdp $TMPFILE | head -1 | cut -d " " -f2)
   rm -f $TMPFILE
+  if [[ $( echo $XRDPBRANCH | cut -c 1 ) != "v" ]]
+  then
+    VERSION=$VERSION"+"$XRDPBRANCH
   echo "Debian package version number will be : "$VERSION
   echo $LINE
 }
