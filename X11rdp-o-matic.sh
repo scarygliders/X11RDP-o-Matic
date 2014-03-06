@@ -675,15 +675,16 @@ download_compile_noninteractively()
 
 check_for_and_remove_existing_generated_packages()
 {
-  if [ -e $WORKINGDIR/Xorg/*.deb ]
+  FILES=($WORKINGDIR/packages/xrdp/X11rdp*.deb)
+  if [ ${#FILES[@]} -gt 0 ]
   then
     echo "Removing previously generated Debian X11rdp package file."
     echo $LINE
     rm $WORKINGDIR/Xorg/*.deb
   fi
 
-  if [ -e $WORKINGDIR/xrdp/*.deb ]
-  then
+  FILES=($WORKINGDIR/packages/xrdp/xrdp*.deb)
+  if [ ${#FILES[@]} -gt 0 ]
     echo "Removing previously generated Debian xrdp package file."
     echo $LINE
     rm $WORKINGDIR/xrdp/*.deb
