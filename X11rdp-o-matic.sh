@@ -528,6 +528,7 @@ calculate_version_num()
   if [[ $( echo $XRDPBRANCH | cut -c 1 ) != "v" ]]
   then
     VERSION=$VERSION"+"$XRDPBRANCH
+  fi
   echo "Debian package version number will be : "$VERSION
   echo $LINE
 }
