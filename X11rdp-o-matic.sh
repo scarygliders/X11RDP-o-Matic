@@ -783,9 +783,14 @@ then
 
  else # Install the packages on the system
   make_doc_directory
+  # stop xrdp if running
+  /etc/init.d/xrdp stop
+
   install_generated_packages
+
   # create the rc.d calls for startup/shutdown...
   update-rc.d xrdp defaults
+
   # Crank the engine ;)
   /etc/init.d/xrdp start
   dialogtext="X11rdp and xrdp should now be fully installed, configured, and running on this system. One last thing to do now is to configure which desktop will be presented to the user after they log in via RDP.  Use the RDPsesconfig utility to do this."
