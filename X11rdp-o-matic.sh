@@ -602,9 +602,11 @@ make_doc_directory()
 install_generated_packages()
 {
   ERRORFOUND=0
+
   if [ $X11RDP == "1" ]
   then
-    if [ -e $WORKINGDIR/packages/Xorg/X11rdp*.deb ]
+    FILES=($WORKINGDIR/packages/Xorg/X11rdp*.deb)
+    if [ ${#FILES[@]} -gt 0 ]
     then
       remove_currently_installed_X11rdp
       dpkg -i $WORKINGDIR/packages/Xorg/*.deb
@@ -614,8 +616,8 @@ install_generated_packages()
       echo "Please check that X11rdp built correctly. It probably didn't."
     fi
   fi
-  
-  if [ -e $WORKINGDIR/packages/xrdp/xrdp*.deb ]
+  FILES=($WORKINGDIR/packages/xrdp/xrdp*.deb)
+  if [ ${#FILES[@]} -gt 0 ]
   then
     remove_currently_installed_xrdp
     dpkg -i $WORKINGDIR/packages/xrdp/xrdp*.deb
