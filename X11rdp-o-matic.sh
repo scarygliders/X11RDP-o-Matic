@@ -606,6 +606,7 @@ install_generated_packages()
   then
     if [ -e $WORKINGDIR/packages/Xorg/X11rdp*.deb ]
     then
+      remove_currently_installed_X11rdp
       dpkg -i $WORKINGDIR/packages/Xorg/*.deb
     else
       ERRORFOUND=1
@@ -616,6 +617,7 @@ install_generated_packages()
   
   if [ -e $WORKINGDIR/packages/xrdp/xrdp*.deb ]
   then
+    remove_currently_installed_xrdp
     dpkg -i $WORKINGDIR/packages/xrdp/xrdp*.deb
   else
     echo "I couldn't find an xrdp Debian package to install."
@@ -683,6 +685,28 @@ check_for_and_remove_existing_generated_packages()
     echo "Removing previously generated Debian xrdp package file."
     echo $LINE
     rm $WORKINGDIR/xrdp/*.deb
+  fi
+}
+
+remove_currently_installed_xrdp()
+{
+  PkgName = "xrdp"
+  check_package
+  if [ $PkgStatus == "2" ]
+  then
+    echo "Removing the currently installed xrdp package."
+    apt-get remove xrdp
+  fi
+}
+
+remove_currently_installed_X11rdp()
+{
+  PkgName = "X11rdp"
+  check_package
+  if [ $PkgStatus == "2" ]
+  then
+    echo "Removing the currently installed X11rdp package."
+    apt-get remove X11rdp
   fi
 }
 
