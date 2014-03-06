@@ -685,6 +685,7 @@ check_for_and_remove_existing_generated_packages()
 
   FILES=($WORKINGDIR/packages/xrdp/xrdp*.deb)
   if [ ${#FILES[@]} -gt 0 ]
+  then
     echo "Removing previously generated Debian xrdp package file."
     echo $LINE
     rm $WORKINGDIR/xrdp/*.deb
