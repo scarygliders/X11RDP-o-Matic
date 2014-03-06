@@ -62,9 +62,9 @@ OPTIONS
                        Branches beginning with "v" are stable releases.
                        The master branch changes when xrdp authors merge changes from the devel branch.
   --nocpuoptimize    : do not change X11rdp build script to utilize more than 1 of your CPU cores.
-  --nocleanup        : do not remove X11rdp / xrdp source code after installation. (Default is to clean up).
+  --cleanup          : remove X11rdp / xrdp source code after installation. (Default is to keep it).
   --noinstall        : do not install anything, just build the packages
-  --nox11rdp         : only build xrdp, without the x11rdp backend
+  --nox11rdp         : only build xrdp, do not build the x11rdp backend
   --withjpeg         : include jpeg module
   --withsound        : include building of the simple pulseaudio interface
   --withdebug        : build with debug enabled
@@ -131,7 +131,7 @@ done < SupportedDistros.txt
 
 INTERACTIVE=1	# Interactive by default.
 PARALLELMAKE=1	# Utilise all available CPU's for compilation by default.
-CLEANUP=1	# Cleanup the x11rdp and xrdp sources by default - to keep requires --nocleanup command line switch
+CLEANUP=0	# Keep the x11rdp and xrdp sources by default - to remove requires --cleanup command line switch
 INSTFLAG=1	# Install xrdp and x11rdp on this system
 X11RDP=1	# Build and package x11rdp
 BLEED=0		# Not bleeding-edge unless specified
@@ -177,9 +177,9 @@ case "$1" in
     echo "Will not utilize additional CPU's for compilation..."
     echo $LINE
     ;;
-    --nocleanup)
-    CLEANUP=0 	# Don't remove the xrdp and x11rdp sources from the working directory after compilation/installation
-    echo "Will keep the xrdp and x11rdp sources in the working directory after compilation/installation..."
+    --cleanup)
+    CLEANUP=1 	# Remove the xrdp and x11rdp sources from the working directory after compilation/installation
+    echo "Will remove the xrdp and x11rdp sources in the working directory after compilation/installation..."
     echo $LINE
     ;;
     --noinstall)
@@ -573,12 +573,99 @@ alter_xrdp_source()
   patch -b -d $WORKINGDIR/xrdp/xorg/X11R7.6/rdp Makefile < $WORKINGDIR/rdp_Makefile.patch
 }
 
+# make the /usr/bin/X11rdp symbolic link if it doesn't exist...
+make_X11rdp_symbolic_link()
+{
+  if [ ! -e /usr/bin/X11rdp ]
+  then
+    if [ -e $X11DIR/bin/X11rdp ]
+    then
+      ln -s $X11DIR/bin/X11rdp /usr/bin/X11rdp
+    else
+      clear
+      echo "There was a problem... the /opt/X11rdp/bin/X11rdp binary could not be found. Did the compilation complete?"
+      echo "Stopped. Please investigate what went wrong."
+      exit
+    fi
+  fi
+}
+
+# make the doc directory if it doesn't exist...
+make_doc_directory()
+{
+  if [ ! -e /usr/share/doc/xrdp ]
+  then
+    mkdir /usr/share/doc/xrdp
+  fi
+}
+
+install_generated_packages()
+{
+  ERRORFOUND=0
+  if [ $X11RDP == "1" ]
+  then
+    if [ -e $WORKINGDIR/packages/Xorg/X11rdp*.deb ]
+    then
+      dpkg -i $WORKINGDIR/packages/Xorg/*.deb
+    else
+      ERRORFOUND=1
+      echo "We were supposed to have built X11rdp but I couldn't find a package file."
+      echo "Please check that X11rdp built correctly. It probably didn't."
+    fi
+  fi
+  
+  if [ -e $WORKINGDIR/packages/xrdp/xrdp*.deb ]
+  then
+    dpkg -i $WORKINGDIR/packages/xrdp/xrdp*.deb
+  else
+    echo "I couldn't find an xrdp Debian package to install."
+    echo "Please check that xrdp compiled correctly. It probably didn't."
+    ERRORFOUND=1
+  fi
+  if [ $ERRORFOUND == "1" ]
+  then
+    exit
+  fi
+}
+
 control_c()
 {
   clear
   cd $WORKINGDIR
   echo "*** CTRL-C was pressed - aborted ***"
   exit
+}
+
+download_compile_interactively()
+{
+  download_xrdp_interactive
+  if [[ "$PARALLELMAKE" == "1"  && "$Cores" -gt "1" ]] # Ask about parallel make if requested AND if you have more than 1 CPU core...
+  then
+    cpu_cores_interactive
+  fi
+  alter_xrdp_source
+  if  [ "$X11RDP" == "1" ]; then
+    compile_X11rdp_interactive 
+    package_X11rdp_interactive
+    make_X11rdp_symbolic_link
+  fi
+  compile_xrdp_interactive
+}
+
+download_compile_noninteractively()
+{
+  download_xrdp_noninteractive
+  if [ "$PARALLELMAKE" == "1" ]
+  then
+    cpu_cores_noninteractive
+  fi
+    alter_xrdp_source
+  if  [ "$X11RDP" == "1" ]; then
+    compile_X11rdp_noninteractive 
+    package_X11rdp_noninteractive
+    make_X11rdp_symbolic_link
+  fi
+  compile_xrdp_noninteractive
 }
 
 cleanup()
@@ -611,7 +698,6 @@ else
   sleep 5
 fi
 
-
 if [ "$INSTFLAG" == "0" ]; then
   INSTOPT="no"
 else
@@ -626,82 +712,42 @@ update_repositories # perform an apt update to make sure we have a current list 
 
 install_required_packages # install any packages required for xrdp/Xorg/X11rdp compilation
 
-
 if [ "$INTERACTIVE" == "1" ]
 then
-	download_xrdp_interactive
-	if [[ "$PARALLELMAKE" == "1"  && "$Cores" -gt "1" ]] # Ask about parallel make if requested AND if you have more than 1 CPU core...
-	then
-	  cpu_cores_interactive
-	fi
-	alter_xrdp_source
-	if  [ "$X11RDP" == "1" ]; then
-	  compile_X11rdp_interactive 
-	  package_X11rdp_interactive
-	fi
-	compile_xrdp_interactive
+  download_compile_interactively
 else
-	download_xrdp_noninteractive
-	if [ "$PARALLELMAKE" == "1" ]
-	then
-	  cpu_cores_noninteractive
-	fi
-	alter_xrdp_source
-	if  [ "$X11RDP" == "1" ]; then
-	  compile_X11rdp_noninteractive 
-	  package_X11rdp_noninteractive
-	fi
-	compile_xrdp_noninteractive
+  download_compile_noninteractively
 fi
 
-if [ "$INSTFLAG" == "0" ]; then
+if [ "$INSTFLAG" == "0" ] # If not installing on this system...
+then
   # this is stupid but some Makefiles from X11rdp don't have an uninstall target (ex: Python!)
   # ... so instead of not installing X11rdp we remove it in the end
-  if  [ "$X11RDP" == "1" ]; then
+  if  [ "$X11RDP" == "1" ] # If we compiled X11rdp then remove the generated X11rdp files (from /opt)
+  then
     rm -rf $X11DIR
   fi
-  if [ "$CLEANUP" == "1" ]; then
+  
+  if [ "$CLEANUP" == "1" ] # Also remove the xrdp source tree if asked to.
+  then
     cleanup 
   fi
   echo "Will exit now, since we are not installing on this system..."
   exit
+
+ else # Install the packages on the system
+  make_doc_directory
+  install_generated_packages
+  # create the rc.d calls for startup/shutdown...
+  update-rc.d xrdp defaults
+  # Crank the engine ;)
+  /etc/init.d/xrdp start
+  dialogtext="X11rdp and xrdp should now be fully installed, configured, and running on this system. One last thing to do now is to configure which desktop will be presented to the user after they log in via RDP.  Use the RDPsesconfig utility to do this."
+
+  if [ $INTERACTIVE == 1 ]
+  then
+    info_window
+  else
+  echo $dialogtext
+  fi
 fi
-
-# make the /usr/bin/X11rdp symbolic link if it doesn't exist...
-if [ ! -e /usr/bin/X11rdp ]
-then
-    if [ -e $X11DIR/bin/X11rdp ]
-    then
-        ln -s $X11DIR/bin/X11rdp /usr/bin/X11rdp
-    else
-        clear
-        echo "There was a problem... the /opt/X11rdp/bin/X11rdp binary could not be found. Did the compilation complete?"
-        echo "Stopped. Please investigate what went wrong."
-        exit
-    fi
-fi
-
-# make the doc directory if it doesn't exist...
-if [ ! -e /usr/share/doc/xrdp ]
-	then
-		mkdir /usr/share/doc/xrdp
-fi
-
-dpkg -i $WORKINGDIR/packages/Xorg/*.deb
-dpkg -i $WORKINGDIR/packages/xrdp/*.deb
-
-# create the rc.d calls for startup/shutdown...
-update-rc.d xrdp defaults
-
-# Crank the engine ;)
-/etc/init.d/xrdp start
-
-dialogtext="X11rdp and xrdp should now be fully installed, configured, and running on this system. One last thing to do now is to configure which desktop will be presented to the user after they log in via RDP.  Use the RDPsesconfig utility to do this."
-
-if [ $INTERACTIVE == 1 ]
-then
-	info_window
-else
-	echo $dialogtext
-fi
-
