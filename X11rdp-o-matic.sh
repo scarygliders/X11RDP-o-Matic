@@ -605,7 +605,7 @@ else
   echo "Press ENTER to continue or CTRL-C to abort"
   read DUMMY
 fi
-clear
+
 
 if [ "$INSTFLAG" == "0" ]; then
   INSTOPT="no"
