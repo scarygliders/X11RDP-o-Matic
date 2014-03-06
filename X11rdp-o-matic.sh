@@ -808,7 +808,7 @@ then
     echo $LINE
     echo "X11rdp and xrdp should now be fully installed, configured, and running on this system."
     echo "One last thing to do now is to configure which desktop will be presented to the user after they log in via RDP."
-    echo "You may not have to do this - test by loggin into xrdp now."
+    echo "You may not have to do this - test by logging into xrdp now."
     echo "Or use the RDPsesconfig.sh utility to configure a session's desktop."
     echo $LINE
   fi
