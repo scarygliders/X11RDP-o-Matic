@@ -680,7 +680,7 @@ check_for_and_remove_existing_generated_packages()
   then
     echo "Removing previously generated Debian X11rdp package file."
     echo $LINE
-    rm $WORKINGDIR/Xorg/*.deb
+    rm $WORKINGDIR/packages/Xorg/*.deb
   fi
 
   FILES=($WORKINGDIR/packages/xrdp/xrdp*.deb)
@@ -688,7 +688,7 @@ check_for_and_remove_existing_generated_packages()
   then
     echo "Removing previously generated Debian xrdp package file."
     echo $LINE
-    rm $WORKINGDIR/xrdp/*.deb
+    rm $WORKINGDIR/packages/xrdp/*.deb
   fi
 }
 
