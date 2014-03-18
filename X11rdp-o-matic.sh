@@ -194,9 +194,11 @@ case "$1" in
     ;;
     --withjpeg)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-jpeg"
+      RequiredPackages=("${RequiredPackages[@]}" "libjpeg-dev")
     ;;
     --withsound)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-simplesound"
+      RequiredPackages=("${RequiredPackages[@]}" "libpulse-dev")
     ;;
     --withdebug)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-xrdpdebug"
@@ -259,13 +261,13 @@ install_package_interactive()
 
 download_xrdp_interactive()
 {
-  git clone $XRDPGIT -b $XRDPBRANCH 2>&1 | dialog  --progressbox "Downloading xrdp source..." 30 100
+  git clone --depth 1 $XRDPGIT -b $XRDPBRANCH 2>&1 | dialog  --progressbox "Downloading xrdp source..." 30 100
 }
 
 download_xrdp_noninteractive()
 {
   echo "Downloading xrdp source from the GIT repository..."
-  git clone $XRDPGIT -b $XRDPBRANCH
+  git clone --depth 1 $XRDPGIT -b $XRDPBRANCH
 }
 
 compile_X11rdp_interactive()
@@ -391,7 +393,7 @@ compile_xrdp_noninteractive()
 
 remove_x11rdp_packages()
 {
-  (apt-get remove --purge x11rdp-*) 2>&1 | dialog --progressbox "Completely removeing previously installed x11rdp packages..." 30 100
+  (apt-get remove --purge x11rdp-*) 2>&1 | dialog --progressbox "Completely removing previously installed x11rdp packages..." 30 100
 }
 
 update_repositories()
