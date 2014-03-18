@@ -150,9 +150,11 @@ do
 	;;
 	--withjpeg)
 		CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-jpeg"
+		RequiredPackages=("${RequiredPackages[@]}" "libjpeg-dev")
 	;;
 	--withsound)
 		CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-simplesound"
+		RequiredPackages=("${RequiredPackages[@]}" "libpulse-dev")
 	;;
 	--withdebug)
 		CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-xrdpdebug"
