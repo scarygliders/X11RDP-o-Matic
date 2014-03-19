@@ -677,18 +677,21 @@ download_compile_noninteractively()
 
 remove_existing_generated_packages()
 {
-  FILES=($WORKINGDIR/packages/xrdp/X11rdp*.deb)
-  if [ ${#FILES[@]} -gt 1 ]
+  echo "Checking for previously generated packages..."
+  echo $LINE
+  FILES=`ls $WORKINGDIR/packages/xrdp/X11rdp*.deb`
+  if [ ${#FILES[@]} -gt 0 ]
   then
-    echo "Removing previously generated Debian X11rdp package file."
+    echo "Removing previously generated Debian X11rdp package file(s)."
     echo $LINE
     rm $WORKINGDIR/packages/Xorg/*.deb
   fi
 
-  FILES=($WORKINGDIR/packages/xrdp/xrdp*.deb)
-  if [ ${#FILES[@]} -gt 1 ]
+#   FILES=($WORKINGDIR/packages/xrdp/xrdp*.deb)
+  FILES=`ls $WORKINGDIR/packages/xrdp/xrdp*.deb`
+  if [ ${#FILES[@]} -gt 0 ]
   then
-    echo "Removing previously generated Debian xrdp package file."
+    echo "Removing previously generated Debian xrdp package file(s)."
     echo $LINE
     rm $WORKINGDIR/packages/xrdp/*.deb
   fi
@@ -801,7 +804,7 @@ then
 
   # Crank the engine ;)
   /etc/init.d/xrdp start
-  dialogtext="X11rdp and xrdp should now be fully installed, configured, and running on this system. One last thing to do now is to configure which desktop will be presented to the user after they log in via RDP.  Use the RDPsesconfig utility to do this."
+  dialogtext="X11rdp and xrdp should now be fully installed, configured, and running on this system. One last thing to do now is to configure which desktop will be presented to the user after they log in via RDP. You may not have to do this - test by logging into xrdp now. Or use the RDPsesconfig.sh utility to configure a session's desktop."
 
   if [ $INTERACTIVE == 1 ]
   then
