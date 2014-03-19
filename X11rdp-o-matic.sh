@@ -3,9 +3,9 @@
 # Automatic Xrdp/X11rdp Compiler/Installer
 # a.k.a. ScaryGliders X11rdp-O-Matic
 #
-# Version 3.04
+# Version 3.10
 #
-# Version release date : 20140304
+# Version release date : 20140319
 ########################(yyyyMMDD)
 #
 # Will run on Debian-based systems only at the moment. RPM based distros perhaps some time in the future...
