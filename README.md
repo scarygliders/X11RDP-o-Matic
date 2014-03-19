@@ -16,37 +16,49 @@ command line switches...
 Options
 -------
 
-  --help          : show this help.
+  **--help**             : show this help.
 
-  --justdoit      : perform a complete compile and install with sane defaults and no user interaction.
-  
-  --nocpuoptimize : do not change X11rdp build script to utilize more than 1 of your CPU cores.
-  
-  --nocleanup     : do not remove X11rdp / xrdp source code after installation. (Default is to clean up).
-  
-  --noinstall     : do not install anything, just build the packages
-  
-  --nox11rdp      : only build xrdp, without the x11rdp backend
-  
-  --bleeding-edge : clone from the neutrinolabs Development branch. Beware. Bleeding-edge might hurt :)
+  **--justdoit**         : perform a complete compile and install with sane defaults and no user interaction.
 
-  --withjpeg         : include jpeg module
+  **--branch <branch>**  : use one of the available xrdp branches
 
-  --withsound        : include building of the simple pulseaudio interface
+  Examples:
 
-  --withdebug        : build with debug enabled
+   --branch v0.8    - use the 0.8 branch.
 
-  --withneutrino     : build the neutrinordp module
+   --branch master  - use the master branch. <-- Default if no --branch switch used.
 
-  --withkerberos     : build support for kerberos
+   --branch devel   - use the devel branch (Bleeding Edge - may not work properly!)
 
-  --withxrdpvr       : build the xrdpvr module
+   Branches beginning with "v" are stable releases.
 
-  --withnopam        : don't include PAM support
+   The master branch changes when xrdp authors merge changes from the devel branch.
 
-  --withpamuserpass  : build with pam userpass support
+  **--nocpuoptimize**    : do not change X11rdp build script to utilize more than 1 of your CPU cores.
 
-  --withfreerdp      : build the freerdp1 module
+  **--nocleanup**        : do not remove X11rdp / xrdp source code after installation. (Default is to clean up).
+
+  **--noinstall**        : do not install anything, just build the packages
+
+  **--nox11rdp**         : only build xrdp, without the x11rdp backend
+
+  **--withjpeg**         : include jpeg module
+
+  **--withsound**        : include building of the simple pulseaudio interface
+
+  **--withdebug**        : build with debug enabled
+
+  **--withneutrino**     : build the neutrinordp module
+
+  **--withkerberos**     : build support for kerberos
+
+  **--withxrdpvr**       : build the xrdpvr module
+
+  **--withnopam**        : don't include PAM support
+
+  **--withpamuserpass**  : build with pam userpass support
+
+  **--withfreerdp**      : build the freerdp1 module
 
 X11rdp-o-matic.sh has two modes of operation; interactive, and non-interactive...
 
