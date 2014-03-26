@@ -209,7 +209,7 @@ case "$1" in
       RequiredPackages=("${RequiredPackages[@]}" "libpulse-dev")
     ;;
     --withpulse)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-loadpulsemodules")
+      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-loadpulsemodules"
       RequiredPackages=("${RequiredPackages[@]}" "libpulse-dev")
     ;;
     --withdebug)
