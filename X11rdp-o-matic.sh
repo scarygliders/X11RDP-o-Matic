@@ -741,6 +741,7 @@ check_for_opt_directory()
     echo "Did not find a /opt directory... creating it."
     echo $LINE
     mkdir /opt
+  fi
 }
 
 cleanup()
