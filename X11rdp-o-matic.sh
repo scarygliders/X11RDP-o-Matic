@@ -3,9 +3,9 @@
 # Automatic Xrdp/X11rdp Compiler/Installer
 # a.k.a. ScaryGliders X11rdp-O-Matic
 #
-# Version 3.11
+# Version 3.10
 #
-# Version release date : 20140327
+# Version release date : 20140319
 ########################(yyyyMMDD)
 #
 # Will run on Debian-based systems only at the moment. RPM based distros perhaps some time in the future...
@@ -65,12 +65,8 @@ OPTIONS
   --cleanup          : remove X11rdp / xrdp source code after installation. (Default is to keep it).
   --noinstall        : do not install anything, just build the packages
   --nox11rdp         : only build xrdp, do not build the x11rdp backend
-  --withjpeg         : build jpeg module
-                       (uses Independent JPEG Group's JPEG runtime library)
-  --withturbojpeg    : build turbo jpeg module
-                       (As used by TigerVNC and other users of the past TurboJPEG library)
-  --withsimplesound  : build the simple pulseaudio interface
-  --withpulse        : build code to load pulse audio modules
+  --withjpeg         : include jpeg module
+  --withsound        : include building of the simple pulseaudio interface
   --withdebug        : build with debug enabled
   --withneutrino     : build the neutrinordp module
   --withkerberos     : build support for kerberos
@@ -139,7 +135,6 @@ CLEANUP=0	# Keep the x11rdp and xrdp sources by default - to remove requires --c
 INSTFLAG=1	# Install xrdp and x11rdp on this system
 X11RDP=1	# Build and package x11rdp
 BLEED=0		# Not bleeding-edge unless specified
-TURBOJPEG=0     # Turbo JPEG not selected by default
 
 # Parse the command line for any arguments
 while [[ $# -gt 0 ]]
@@ -178,40 +173,31 @@ case "$1" in
     shift
     ;;
     --nocpuoptimize)
-      PARALLELMAKE=0
-      echo "Will not utilize additional CPU's for compilation..."
-      echo $LINE
+    PARALLELMAKE=0	# Don't utilize additional CPU cores for compilation.
+    echo "Will not utilize additional CPU's for compilation..."
+    echo $LINE
     ;;
     --cleanup)
-      CLEANUP=1
-      echo "Will remove the xrdp and x11rdp sources in the working directory after compilation/installation..."
-      echo $LINE
+    CLEANUP=1 	# Remove the xrdp and x11rdp sources from the working directory after compilation/installation
+    echo "Will remove the xrdp and x11rdp sources in the working directory after compilation/installation..."
+    echo $LINE
     ;;
     --noinstall)
-      INSTFLAG=0
-      echo "Will not install anything on the system but will build the packages"
-      echo $LINE
+    INSTFLAG=0 	# do not install anything, just build the packages
+    echo "Will not install anything on the system but will build the packages"
+    echo $LINE
     ;;
     --nox11rdp)
-      X11RDP=0
-      echo "Will not build and package x11rdp"
-      echo $LINE
+    X11RDP=0 	# do not build and package x11rdp
+    echo "Will not build and package x11rdp"
+    echo $LINE
     ;;
     --withjpeg)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-jpeg"
       RequiredPackages=("${RequiredPackages[@]}" "libjpeg-dev")
     ;;
-    --withturbojpeg)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-tjpeg"
-      RequiredPackages=("${RequiredPackages[@]}" "libturbojpeg1 libturbojpeg1-dev")
-      TURBOJPEG=1
-    ;;
-    --withsimplesound)
+    --withsound)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-simplesound"
-      RequiredPackages=("${RequiredPackages[@]}" "libpulse-dev")
-    ;;
-    --withpulse)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-loadpulsemodules"
       RequiredPackages=("${RequiredPackages[@]}" "libpulse-dev")
     ;;
     --withdebug)
@@ -222,7 +208,6 @@ case "$1" in
     ;;
     --withkerberos)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-kerberos"
-      RequiredPackages=("${RequiredPackages[@]}" "libpam0g-dev")
     ;;
     --withxrdpvr)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-xrdpvr"
@@ -694,16 +679,17 @@ remove_existing_generated_packages()
 {
   echo "Checking for previously generated packages..."
   echo $LINE
-  ls $WORKINGDIR/packages/xrdp/X11rdp*.deb >/dev/null 2>&1
-  if [ $? == 0 ]
+  FILES=`ls $WORKINGDIR/packages/xrdp/X11rdp*.deb`
+  if [ ${#FILES[@]} -gt 0 ]
   then
     echo "Removing previously generated Debian X11rdp package file(s)."
     echo $LINE
     rm $WORKINGDIR/packages/Xorg/*.deb
   fi
 
-  ls $WORKINGDIR/packages/xrdp/xrdp*.deb >/dev/null 2>&1
-  if [ $? == 0 ]
+#   FILES=($WORKINGDIR/packages/xrdp/xrdp*.deb)
+  FILES=`ls $WORKINGDIR/packages/xrdp/xrdp*.deb`
+  if [ ${#FILES[@]} -gt 0 ]
   then
     echo "Removing previously generated Debian xrdp package file(s)."
     echo $LINE
@@ -735,73 +721,6 @@ remove_currently_installed_X11rdp()
   fi
 }
 
-check_for_opt_directory()
-{
-  if [[ ! -e /opt ]]
-  then
-    echo "Did not find a /opt directory... creating it."
-    echo $LINE
-    mkdir /opt
-  fi
-}
-
-
-download_and_extract_libturbojpeg()
-{
-  cd $WORKINGDIR
-  echo "TurboJPEG library needs to be built and installed to /opt... downloading and extracting source..."
-  sleep 2
-  curl -O -J -L http://sourceforge.net/projects/libjpeg-turbo/files/1.3.1/libjpeg-turbo-1.3.1.tar.gz/download#
-  tar xf libjpeg-turbo-1.3.1.tar.gz
-}
-
-build_turbojpeg()
-{
-  cd $WORKINGDIR/libjpeg-turbo-1.3.1
-  PkgName="nasm"
-  check_package
-  if [ $PkgStatus != "2" ]
-  then
-    echo "Need to install nasm..."
-    echo $LINE
-    apt-get -y install nasm
-  fi
-  echo "Configuring Turbo JPEG..."
-  ./configure
-  echo "Building TurboJPEG..."
-  make
-  echo $LINE
-  echo "Installing TurboJPEG to default /opt directory..."
-  make install
-  echo $LINE
-  echo "Continuing with building xrdp..."
-  echo $LINE
-  sleep 2
-  cd $WORKINGDIR
-}
-
-check_v08_and_turbojpeg()
-{
-  if [[ $XRDPBRANCH = "v0.8" ]] # if v0.8 selected and --withturbojpeg also selected, we need to build turbojpeg
-  then
-    if [ "$TURBOJPEG" == "1" ]
-    then
-      echo $LINE
-      echo "v0.8 branch selected and --withturbojpeg. Checking for existing lib in /opt ..."
-      echo $LINE
-      if [[ ! -e /opt/libjpeg-turbo ]] # If the library hasn't already been downloaded & built, then do so
-      then                             # Otherwise, assume it has already been built and do nothing more.
-	download_and_extract_libturbojpeg
-	build_turbojpeg
-      else
-	echo "The necessary turbojpeg lib already exists in /opt so no need to build it again. Waiting 5 seconds..."
-	echo $LINE
-	sleep 5
-      fi
-    fi
-  fi
-}
-
 cleanup()
 {
   rm -rf $WORKINGDIR/xrdp
@@ -810,9 +729,6 @@ cleanup()
 ##########################
 # Main stuff starts here #
 ##########################
-
-# Check for existence of a /opt directory, and create it if it doesn't exist.
-check_for_opt_directory
 
 # Figure out what version number to use for the debian packages
 calculate_version_num
@@ -850,8 +766,6 @@ update_repositories # perform an apt update to make sure we have a current list 
 install_required_packages # install any packages required for xrdp/Xorg/X11rdp compilation
 
 remove_existing_generated_packages # Yes my function names become ever more ridiculously long :D
-
-check_v08_and_turbojpeg # v0.8 branch needs libturbojpeg to be in /opt
 
 if [ "$INTERACTIVE" == "1" ]
 then
