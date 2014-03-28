@@ -5,7 +5,7 @@
 #
 # Version 3.11
 #
-# Version release date : 20140327
+# Version release date : 20140328
 ########################(yyyyMMDD)
 #
 # Will run on Debian-based systems only at the moment. RPM based distros perhaps some time in the future...
@@ -54,7 +54,7 @@ OPTIONS
 -------
   --help             : show this help.
   --justdoit         : perform a complete compile and install with sane defaults and no user interaction.
-  --branch <branch>  : use one of the available xrdp branches listed above...
+  --branch <branch>  : use one of the available xrdp branches listed below...
                        Examples:
                        --branch v0.8    - use the 0.8 branch.
                        --branch master  - use the master branch. <-- Default if no --branch switch used.
@@ -126,11 +126,11 @@ Dist=`lsb_release -d -s`
 supported=0
 while read i
 do
-	if [ "$Dist" = "$i" ]
-	then
-		supported=1
-		break
-	fi
+  if [ "$Dist" = "$i" ]
+  then
+    supported=1
+    break
+  fi
 done < SupportedDistros.txt
 
 INTERACTIVE=1	# Interactive by default.
@@ -203,7 +203,12 @@ case "$1" in
     ;;
     --withturbojpeg)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-tjpeg"
-      RequiredPackages=("${RequiredPackages[@]}" "libturbojpeg1 libturbojpeg1-dev")
+      if [[ $XRDPBRANCH = "v0.8" ]] # branch v0.8 has a hard-coded requirement for libjpeg-turbo to be in /opt
+      then
+	RequiredPackages=("${RequiredPackages[@]}" "nasm curl") # Need these for downloading and compiling libjpeg-turbo, later.
+      else
+	RequiredPackages=("${RequiredPackages[@]}" "libturbojpeg1 libturbojpeg1-dev") # The distro packages suffice for 0.9 onwards.
+      fi
       TURBOJPEG=1
     ;;
     --withsimplesound)
@@ -758,14 +763,6 @@ download_and_extract_libturbojpeg()
 build_turbojpeg()
 {
   cd $WORKINGDIR/libjpeg-turbo-1.3.1
-  PkgName="nasm"
-  check_package
-  if [ $PkgStatus != "2" ]
-  then
-    echo "Need to install nasm..."
-    echo $LINE
-    apt-get -y install nasm
-  fi
   echo "Configuring Turbo JPEG..."
   ./configure
   echo "Building TurboJPEG..."
@@ -774,6 +771,23 @@ build_turbojpeg()
   echo "Installing TurboJPEG to default /opt directory..."
   make install
   echo $LINE
+  if [[ -e /opt/libjpeg-turbo/lib64 ]] # Make symbolic link to libjpeg-turbo's lib64 if it doesn't already exist
+  then
+    if [[ ! -e /opt/libjpeg-turbo/lib ]]
+    then
+      echo "Making symbolic link to /opt/libjpeg-turbo/lib64..."
+      ln -s /opt/libjpeg-turbo/lib64 /opt/libjpeg-turbo/lib
+    fi
+  fi
+
+  if [[ -e /opt/libjpeg-turbo/lib32 ]] # Make symbolic link to libjpeg-turbo's lib32 if it doesn't already exist
+  then
+    if [[ ! -e /opt/libjpeg-turbo/lib ]]
+    then
+      echo "Making symbolic link to /opt/libjpeg-turbo/lib32..."
+      ln -s /opt/libjpeg-turbo/lib32 /opt/libjpeg-turbo/lib
+    fi
+  fi
   echo "Continuing with building xrdp..."
   echo $LINE
   sleep 2
@@ -847,7 +861,7 @@ calc_cpu_cores # find out how many cores we have to play with, and if >1, set a 
 
 update_repositories # perform an apt update to make sure we have a current list of available packages 
 
-install_required_packages # install any packages required for xrdp/Xorg/X11rdp compilation
+install_required_packages # install any packages required for xrdp/X11rdp (and libjpeg-turbo if needed) compilation
 
 remove_existing_generated_packages # Yes my function names become ever more ridiculously long :D
 
