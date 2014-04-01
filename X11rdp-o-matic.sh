@@ -118,17 +118,17 @@ WORKINGDIR=`pwd` # Would have used /tmp for this, but some distros I tried mount
 CONFIGUREFLAGS="--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse"
 
 # Declare a list of packages required to download sources/compile them...
-RequiredPackages=(build-essential checkinstall automake automake1.9 git git-core libssl-dev libpam0g-dev zlib1g-dev libtool libx11-dev libxfixes-dev pkg-config flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2 g++ xutils libfuse-dev wget libxrandr-dev)
+REQUIREDPACKAGES=(build-essential checkinstall automake automake1.9 git git-core libssl-dev libpam0g-dev zlib1g-dev libtool libx11-dev libxfixes-dev pkg-config flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2 g++ xutils libfuse-dev wget libxrandr-dev)
 
-Dist=`lsb_release -d -s`
+DIST=`lsb_release -d -s`
 
 # Check for running on supported/tested Distros...
-supported=0
+SUPPORTED=0
 while read i
 do
-  if [ "$Dist" = "$i" ]
+  if [ "$DIST" = "$i" ]
   then
-    supported=1
+    SUPPORTED=1
     break
   fi
 done < SupportedDistros.txt
@@ -199,25 +199,25 @@ case "$1" in
     ;;
     --withjpeg)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-jpeg"
-      RequiredPackages=("${RequiredPackages[@]}" "libjpeg-dev")
+      REQUIREDPACKAGES=("${REQUIREDPACKAGES[@]}" "libjpeg-dev")
     ;;
     --withturbojpeg)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-tjpeg"
       if [[ $XRDPBRANCH = "v0.8" ]] # branch v0.8 has a hard-coded requirement for libjpeg-turbo to be in /opt
       then
-	RequiredPackages=("${RequiredPackages[@]}" "nasm curl") # Need these for downloading and compiling libjpeg-turbo, later.
+	REQUIREDPACKAGES=("${REQUIREDPACKAGES[@]}" "nasm curl") # Need these for downloading and compiling libjpeg-turbo, later.
       else
-	RequiredPackages=("${RequiredPackages[@]}" "libturbojpeg1 libturbojpeg1-dev") # The distro packages suffice for 0.9 onwards.
+	REQUIREDPACKAGES=("${REQUIREDPACKAGES[@]}" "libturbojpeg1 libturbojpeg1-dev") # The distro packages suffice for 0.9 onwards.
       fi
       TURBOJPEG=1
     ;;
     --withsimplesound)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-simplesound"
-      RequiredPackages=("${RequiredPackages[@]}" "libpulse-dev")
+      REQUIREDPACKAGES=("${REQUIREDPACKAGES[@]}" "libpulse-dev")
     ;;
     --withpulse)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-loadpulsemodules"
-      RequiredPackages=("${RequiredPackages[@]}" "libpulse-dev")
+      REQUIREDPACKAGES=("${REQUIREDPACKAGES[@]}" "libpulse-dev")
     ;;
     --withdebug)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-xrdpdebug"
@@ -227,7 +227,7 @@ case "$1" in
     ;;
     --withkerberos)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-kerberos"
-      RequiredPackages=("${RequiredPackages[@]}" "libpam0g-dev")
+      REQUIREDPACKAGES=("${REQUIREDPACKAGES[@]}" "libpam0g-dev")
     ;;
     --withxrdpvr)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-xrdpvr"
@@ -462,7 +462,7 @@ install_package()
 # Check for necessary packages and install if necessary...
 install_required_packages()
 {
-  for PkgName in ${RequiredPackages[@]}
+  for PkgName in ${REQUIREDPACKAGES[@]}
   do
     check_package
     if [[ "$PkgStatus" == "0"  ||  $PkgStatus == "1" ]]
@@ -526,13 +526,13 @@ cpu_cores_noninteractive()
 
 welcome_message()
 {
-  case "$supported" in
+  case "$SUPPORTED" in
     "1")
-      dialogtext="Welcome to the ScaryGliders X11rdp-O-Matic installation script.\n\nThe detected distribution is : $Dist.\n\nThis utility has been tested on this distribution.\n\nClick OK to continue..."
+      dialogtext="Welcome to the ScaryGliders X11rdp-O-Matic installation script.\n\nThe detected distribution is : $DIST.\n\nThis utility has been tested on this distribution.\n\nClick OK to continue..."
       info_window
     ;;
     "0")
-      dialogtext=" Welcome to the ScaryGliders X11rdp-O-Matic installation script.\n\nThe detected distribution is : $Dist .\n\nUnfortunately, no testing has been done for running this utility on this distribution.\n\nIf this is a Debian-based distro, you can try running it. It might work, it might not.\n\nIf the utility does work on this distribution, please let the author know!\n\nClick OK to continue..."
+      dialogtext=" Welcome to the ScaryGliders X11rdp-O-Matic installation script.\n\nThe detected distribution is : $DIST .\n\nUnfortunately, no testing has been done for running this utility on this distribution.\n\nIf this is a Debian-based distro, you can try running it. It might work, it might not.\n\nIf the utility does work on this distribution, please let the author know!\n\nClick OK to continue..."
       info_window
       ;;
   esac
@@ -830,6 +830,7 @@ check_for_opt_directory
 
 # Figure out what version number to use for the debian packages
 calculate_version_num
+
 
 # trap keyboard interrupt (control-c)
 trap control_c SIGINT
