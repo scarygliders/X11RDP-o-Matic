@@ -5,13 +5,13 @@
 #
 # Version 3.11
 #
-# Version release date : 20140328
+# Version release date : 20140610
 ########################(yyyyMMDD)
 #
 # Will run on Debian-based systems only at the moment. RPM based distros perhaps some time in the future...
 #
 # Copyright (C) 2012-2014, Kevin Cave <kevin@scarygliders.net>
-# With contributions from other kind people.
+# With contributions and suggestions from other kind people - thank you!
 #
 # ISC License (ISC)
 #
@@ -102,11 +102,20 @@ then
     echo "Installing the dialog package..."
     apt-get -y install dialog
 fi
+
+# Install lsb_release if it's not already installed...
+if [ ! -e /usr/bin/lsb_release ]
+then
+  echo "Installing the lsb_release package..."
+  apt-get -y install lsb_release
+fi
+
 #################################################################
 # Initialise variables and parse any command line switches here #
 #################################################################
 
-# set LANG so that dpkg etc. return the expected responses so the script is guaranteed to work under different locales
+# set LANG so that dpkg etc. return the expected responses so the script is
+# guaranteed to work under different locales
 export LANG="C"
 
 # this is the release number for the Debian packages
@@ -114,11 +123,20 @@ RELEASE=1
 
 TMPFILE=/tmp/xrdpver
 X11DIR=/opt/X11rdp
-WORKINGDIR=`pwd` # Would have used /tmp for this, but some distros I tried mount /tmp as tmpfs, and filled up.
+
+ARCH=$( dpkg --print-architecture )
+
+# Would have used /tmp for this, but some distros I tried mount /tmp as tmpfs
+# and filled up.
+WORKINGDIR=`pwd` 
 CONFIGUREFLAGS="--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse"
 
 # Declare a list of packages required to download sources/compile them...
-REQUIREDPACKAGES=(build-essential checkinstall automake automake1.9 git git-core libssl-dev libpam0g-dev zlib1g-dev libtool libx11-dev libxfixes-dev pkg-config flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2 g++ xutils libfuse-dev wget libxrandr-dev)
+REQUIREDPACKAGES=(build-essential checkinstall automake automake1.9 git 
+git-core libssl-dev libpam0g-dev zlib1g-dev libtool libx11-dev libxfixes-dev 
+pkg-config flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2 
+g++ xutils libfuse-dev wget libxrandr-dev x11proto-* libdrm-dev libpixman-1-dev 
+libgl1-mesa-dev libxkbfile-dev libxfont-dev libpciaccess-dev)
 
 DIST=`lsb_release -d -s`
 
@@ -135,7 +153,8 @@ done < SupportedDistros.txt
 
 INTERACTIVE=1	# Interactive by default.
 PARALLELMAKE=1	# Utilise all available CPU's for compilation by default.
-CLEANUP=0	# Keep the x11rdp and xrdp sources by default - to remove requires --cleanup command line switch
+CLEANUP=0	# Keep the x11rdp and xrdp sources by default - to remove 
+		# requires --cleanup command line switch
 INSTFLAG=1	# Install xrdp and x11rdp on this system
 X11RDP=1	# Build and package x11rdp
 BLEED=0		# Not bleeding-edge unless specified
@@ -146,7 +165,8 @@ while [[ $# -gt 0 ]]
 do
 case "$1" in
   --justdoit)
-    INTERACTIVE=0	# Don't bother with fancy schmancy dialogs, just go through and do everything!
+    INTERACTIVE=0	# Don't bother with fancy schmancy dialogs, just go 
+			# through and do everything!
 			# Note this will override even interactive Text Mode
     echo "Okay, will just do the install from start to finish with no user interaction..."
     echo $LINE
@@ -309,7 +329,7 @@ compile_X11rdp_noninteractive()
 
 package_X11rdp_noninteractive()
 {
-  PKGDEST=$WORKINGDIR/packages/Xorg
+  PKGDEST=$WORKINGDIR/packages/x11rdp
 
   if [ ! -e $PKGDEST ]; then
     mkdir -p $PKGDEST
@@ -323,12 +343,11 @@ package_X11rdp_noninteractive()
   else
     mkdir -p $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN
     cp $WORKINGDIR/control $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN
-    cp -a $WORKINGDIR/postinst $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN
+    cp -a $WORKINGDIR/x11rdp_postinst $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/postinst
     cd $WORKINGDIR/xrdp/xorg/debuild
     PACKDIR=x11rdp-files
     DESTDIR=$PACKDIR/opt
     NAME=x11rdp
-    ARCH=$( dpkg --print-architecture )
     sed -i -e  "s/DUMMYVERINFO/$VERSION-$RELEASE/"  $PACKDIR/DEBIAN/control
     sed -i -e  "s/DUMMYARCHINFO/$ARCH/"  $PACKDIR/DEBIAN/control
     # need a different delimiter, since it has a path
@@ -348,7 +367,7 @@ package_X11rdp_noninteractive()
 
 package_X11rdp_interactive()
 {
-  PKGDEST=$WORKINGDIR/packages/Xorg
+  PKGDEST=$WORKINGDIR/packages/x11rdp
 
   if [ ! -e $PKGDEST ]
   then
@@ -363,12 +382,11 @@ package_X11rdp_interactive()
   else
     ( mkdir -p $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN;
     cp $WORKINGDIR/control $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN;
-    cp -a $WORKINGDIR/postinst $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN;
+    cp -a $WORKINGDIR/x11rdp_postinst $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN;
     cd $WORKINGDIR/xrdp/xorg/debuild;
     PACKDIR=x11rdp-files;
     DESTDIR=$PACKDIR/opt;
     NAME=x11rdp;
-    ARCH=$( dpkg --print-architecture );
     sed -i -e  "s/DUMMYVERINFO/$VERSION-$RELEASE/"  $PACKDIR/DEBIAN/control;
     sed -i -e  "s/DUMMYARCHINFO/$ARCH/"  $PACKDIR/DEBIAN/control;
     # need a different delimiter, since it has a path
@@ -386,29 +404,89 @@ package_X11rdp_interactive()
    fi
 }
 
+# Interactively compile & package xrdp using dh-make...
 compile_xrdp_interactive()
 {
-  ARCH=$( dpkg --print-architecture )
-  # work around checkinstall problem - http://bugtrack.izto.org/show_bug.cgi?id=33
-  WADIR=/usr/lib/xrdp
+  if [ ! -e $WORKINGDIR/packages/xrdp ]
+  then
+    mkdir -p $WORKINGDIR/packages/xrdp
+  fi
+
+  # Step 1: Run the bootstrap and configure scripts
   cd $WORKINGDIR/xrdp
-  ( ./bootstrap && ./configure $CONFIGUREFLAGS )  2>&1 | dialog  --progressbox "Compiling and installing xrdp..." 30 100
-  mkdir $WADIR
-  ( make && checkinstall -D --dpkgflags=--force-overwrite --fstrans=yes --arch $ARCH --pakdir $WORKINGDIR/packages/xrdp/ --pkgname=xrdp --pkgversion=$VERSION --pkgrelease=$RELEASE --install=$INSTOPT --default make install ) 2>&1 | dialog  --progressbox "Compiling and installing xrdp..." 20 90
-  rm -rf $WADIR
+  ( ./bootstrap && ./configure $CONFIGUREFLAGS ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
+  
+  #Step 2 : Rename xrdp dir to xrdp-$VERSION for dh-make to work on...
+  cd ..;
+  mv xrdp xrdp-$VERSION;
+  cd xrdp-$VERSION;
+  
+  #Step 3 : Use dh-make to create the debian directory package template...
+  ( dh_make --single --native --yes ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
+  
+  #Step 4 : edit/configure the debian directory...
+  cd debian
+  rm *.ex *.EX # remove the example templates
+  rm README.Debian
+  rm README.source
+  cp ../COPYING copyright # use the xrdp copyright file
+  cp ../readme.txt README # use the xrdp readme.txt as the README file
+  cp $WORKINGDIR/xrdp_postinst postinst # postinst to create xrdp init.d defaults
+  cp $WORKINGDIR/xrdp_control control # use a generic control file
+  cp $WORKINGDIR/xrdp_prerm prerm # pre-removal script
+  cp $WORKINGDIR/xrdp_docs docs # use xrdp docs list
+  
+  #Step 5 : run dpkg-buildpackage to compile xrdp and build a package...
+  cd ..
+  ( dpkg-buildpackage -uc -us -tc -rfakeroot ) 2>&1 | dialog  --progressbox "Building xrdp source and packaging..." 50 100
+  cd $WORKINGDIR
+  mv xrdp*.deb $WORKINGDIR/packages/xrdp/
 }
 
+# Package xrdp using dh-make...
 compile_xrdp_noninteractive()
 {
-  ARCH=$( dpkg --print-architecture )
-  # work around checkinstall problem - http://bugtrack.izto.org/show_bug.cgi?id=33
-  WADIR=/usr/lib/xrdp
+  echo $LINE
+  echo "Preparing xrdp source to make a Debian package..."
+  echo $LINE
+
+  if [ ! -e $WORKINGDIR/packages/xrdp ]
+  then
+    mkdir -p $WORKINGDIR/packages/xrdp
+  fi  
+
+  # Step 1: Run the bootstrap and configure scripts
   cd $WORKINGDIR/xrdp
   ./bootstrap && ./configure $CONFIGUREFLAGS
-  mkdir $WADIR
-  make && checkinstall -D --dpkgflags=--force-overwrite --fstrans=yes --arch $ARCH --pakdir $WORKINGDIR/packages/xrdp/ --pkgname=xrdp --pkgversion=$VERSION --pkgrelease=$RELEASE --install=$INSTOPT --default make install 
-  rm -rf $WADIR
-
+  
+  #Step 2 : Rename xrdp dir to xrdp-$VERSION for dh-make to work on...
+  cd ..
+  mv xrdp xrdp-$VERSION
+  cd xrdp-$VERSION
+  
+  #Step 3 : Use dh-make to create the debian directory package template...
+  dh_make --single --native --yes
+  
+  #Step 4 : edit/configure the debian directory...
+  cd debian
+  rm *.ex *.EX # remove the example templates
+  rm README.Debian
+  rm README.source
+  cp ../COPYING copyright # use the xrdp copyright file
+  cp ../readme.txt README # use the xrdp readme.txt as the README file
+  cp $WORKINGDIR/xrdp_postinst postinst # postinst to create xrdp init.d defaults
+  cp $WORKINGDIR/xrdp_control control # use a generic control file
+  cp $WORKINGDIR/xrdp_prerm prerm # pre-removal script
+  cp $WORKINGDIR/xrdp_docs docs # use xrdp docs list
+  
+  #Step 5 : run dpkg-buildpackage to compile xrdp and build a package...
+  echo $LINE
+  echo "Preparation complete. Building and packaging xrdp..."
+  echo $LINE
+  cd ..
+  dpkg-buildpackage -uc -us -tc -rfakeroot
+  cd $WORKINGDIR
+  mv xrdp*.deb $WORKINGDIR/packages/xrdp/
 }
 
 remove_x11rdp_packages()
@@ -685,13 +763,18 @@ download_compile_noninteractively()
   then
     cpu_cores_noninteractive
   fi
-    alter_xrdp_source
+
+  alter_xrdp_source # Patches the downloaded source
+
   if  [ "$X11RDP" == "1" ]
   then
     compile_X11rdp_noninteractive 
     package_X11rdp_noninteractive
     make_X11rdp_symbolic_link
   fi
+
+  # New method...
+  # Compiles & packages using dh_make and dpkg-buildpackage
   compile_xrdp_noninteractive
 }
 
@@ -794,9 +877,11 @@ build_turbojpeg()
   cd $WORKINGDIR
 }
 
+
+# if v0.8 selected and --withturbojpeg also selected, we need to build turbojpeg
 check_v08_and_turbojpeg()
 {
-  if [[ $XRDPBRANCH = "v0.8" ]] # if v0.8 selected and --withturbojpeg also selected, we need to build turbojpeg
+  if [[ $XRDPBRANCH = "v0.8" ]] 
   then
     if [ "$TURBOJPEG" == "1" ]
     then
@@ -818,7 +903,7 @@ check_v08_and_turbojpeg()
 
 cleanup()
 {
-  rm -rf $WORKINGDIR/xrdp
+  rm -rf $WORKINGDIR/xrdp-$VERSION
 }
 
 ##########################
@@ -831,13 +916,11 @@ check_for_opt_directory
 # Figure out what version number to use for the debian packages
 calculate_version_num
 
-
 # trap keyboard interrupt (control-c)
 trap control_c SIGINT
 
-
 if [ "$X11RDP" == "1" ]; then
-  echo " *** Will remove the contents of $X11DIR and $WORKINGDIR/xrdp ***"
+  echo " *** Will remove the contents of $X11DIR and $WORKINGDIR/xrdp-$VERSION ***"
   echo
 fi
 
@@ -875,6 +958,11 @@ else
   download_compile_noninteractively
 fi
 
+if [ "$CLEANUP" == "1" ] # Also remove the xrdp source tree if asked to.
+then
+  cleanup 
+fi
+
 if [ "$INSTFLAG" == "0" ] # If not installing on this system...
 then
   # this is stupid but some Makefiles from X11rdp don't have an uninstall target (ex: Python!)
@@ -883,32 +971,28 @@ then
   then
     rm -rf $X11DIR
   fi
-  
-  if [ "$CLEANUP" == "1" ] # Also remove the xrdp source tree if asked to.
-  then
-    cleanup 
-  fi
+
   echo $LINE
   echo "Will exit now, since we are not installing on this system..."
+  echo "Packages have been placed under their respective directories in the"
+  echo "packages directory."
   echo $LINE
   exit
 
  else # Install the packages on the system
-  make_doc_directory
+  # make_doc_directory # <--- Probably not needed anymore since the dh_make
+                       # method includes the doc directory ;)
   # stop xrdp if running
   /etc/init.d/xrdp stop
 
   install_generated_packages
 
-  # create the rc.d calls for startup/shutdown...
-  update-rc.d xrdp defaults
-
-  # Crank the engine ;)
-  /etc/init.d/xrdp start
-  dialogtext="X11rdp and xrdp should now be fully installed, configured, and running on this system. One last thing to do now is to configure which desktop will be presented to the user after they log in via RDP. You may not have to do this - test by logging into xrdp now. Or use the RDPsesconfig.sh utility to configure a session's desktop."
-
   if [ $INTERACTIVE == 1 ]
   then
+    dialogtext="X11rdp and xrdp should now be fully installed, configured, and running on this system.\n
+    One last thing to do now is to configure which desktop will be presented to the user after they log in via RDP.\n
+    You may not have to do this - test by logging into xrdp now.\n
+    Or use the RDPsesconfig.sh utility to configure a session's desktop."
     info_window
   else
     echo $LINE
