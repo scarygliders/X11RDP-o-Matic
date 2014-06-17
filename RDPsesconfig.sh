@@ -3,9 +3,9 @@
 # Automatic RDP session configurator
 # a.k.a. ScaryGliders RDPsesconfig
 #
-# Version 3.02
+# Version 3.11
 #
-# Version release date : 20131017
+# Version release date : 20140617
 ########################(yyyyMMDD)
 #
 # See CHANGELOG for release detials
@@ -312,7 +312,7 @@ config_for_unity2d()
 config_for_xfce()
 {
 	session="startxfce4"
-	RequiredPackages=(xfdesktop4)
+	RequiredPackages=(xfdesktop4 xfce4-session)
 	selecttext="Select which user(s) to configure an Xfce RDP session for..."
 }
 
