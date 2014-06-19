@@ -107,7 +107,7 @@ fi
 if [ ! -e /usr/bin/lsb_release ]
 then
   echo "Installing the lsb_release package..."
-  apt-get -y install lsb_release
+  apt-get -y install lsb-release
 fi
 
 #################################################################
@@ -136,7 +136,8 @@ REQUIREDPACKAGES=(build-essential checkinstall automake automake1.9 git
 git-core libssl-dev libpam0g-dev zlib1g-dev libtool libx11-dev libxfixes-dev 
 pkg-config flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2 
 g++ xutils libfuse-dev wget libxrandr-dev x11proto-* libdrm-dev libpixman-1-dev 
-libgl1-mesa-dev libxkbfile-dev libxfont-dev libpciaccess-dev dh-make gettext)
+libgl1-mesa-dev libxkbfile-dev libxfont-dev libpciaccess-dev dh-make gettext 
+xfonts-utils)
 
 DIST=`lsb_release -d -s`
 
