@@ -423,7 +423,7 @@ compile_xrdp_interactive()
   cd xrdp-$VERSION;
   
   #Step 3 : Use dh-make to create the debian directory package template...
-  ( dh_make --single --native ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
+  ( echo | dh_make --single --native ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
   
   #Step 4 : edit/configure the debian directory...
   cd debian
