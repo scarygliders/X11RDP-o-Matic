@@ -5,7 +5,7 @@
 #
 # Version 3.11
 #
-# Version release date : 20140616
+# Version release date : 20140819
 ########################(yyyyMMDD)
 #
 # Will run on Debian-based systems only at the moment. RPM based distros perhaps some time in the future...
@@ -252,6 +252,7 @@ case "$1" in
     ;;
     --withxrdpvr)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-xrdpvr"
+      REQUIREDPACKAGES=("${REQUIREDPACKAGES[@]}" "libavcodec-dev libavformat-dev")
     ;;
     --withnopam)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-nopam"
@@ -319,8 +320,11 @@ compile_X11rdp_interactive()
 
 compile_X11rdp_noninteractive()
 {
+  # Don't compile to /opt, compile to a target within the xrdp source...
+  mkdir -p $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/$X11DIR
   cd $WORKINGDIR/xrdp/xorg/X11R7.6/
-  sh buildx.sh $X11DIR 
+  # -------> sh buildx.sh $X11DIR
+  sh buildx.sh $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/$X11DIR
   RC=$?
   if [ $RC -ne 0 ]; then
     echo "error building X11rdp"
@@ -336,34 +340,19 @@ package_X11rdp_noninteractive()
     mkdir -p $PKGDEST
   fi
 
-
-  if [ $BLEED == 1 ]
-  then
-    cd $WORKINGDIR/xrdp/xorg/debuild
-    ./debX11rdp.sh $VERSION $RELEASE $X11DIR $PKGDEST
-  else
-    mkdir -p $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN
-    cp $WORKINGDIR/control $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN
-    cp -a $WORKINGDIR/x11rdp_postinst $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/postinst
-    cd $WORKINGDIR/xrdp/xorg/debuild
-    PACKDIR=x11rdp-files
-    DESTDIR=$PACKDIR/opt
-    NAME=x11rdp
-    sed -i -e  "s/DUMMYVERINFO/$VERSION-$RELEASE/"  $PACKDIR/DEBIAN/control
-    sed -i -e  "s/DUMMYARCHINFO/$ARCH/"  $PACKDIR/DEBIAN/control
-    # need a different delimiter, since it has a path
-    sed -i -e  "s,DUMMYDIRINFO,$X11DIR,"  $PACKDIR/DEBIAN/postinst
-    mkdir -p $DESTDIR
-    cp -Rf $X11DIR $DESTDIR
-    dpkg-deb --build $PACKDIR $PKGDEST/${NAME}_$VERSION-${RELEASE}_${ARCH}.deb
-    XORGPKGNAME=${NAME}_$VERSION-${RELEASE}_${ARCH}.deb
-    # revert to initial state
-    rm -rf $DESTDIR
-    sed -i -e  "s/$VERSION-$RELEASE/DUMMYVERINFO/"  $PACKDIR/DEBIAN/control
-    sed -i -e  "s/$ARCH/DUMMYARCHINFO/"  $PACKDIR/DEBIAN/control
-    # need a different delimiter, since it has a path
-    sed -i -e  "s,$X11DIR,DUMMYDIRINFO,"  $PACKDIR/DEBIAN/postinst
-   fi
+  mkdir -p $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN
+  cp $WORKINGDIR/control $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN
+  cp -a $WORKINGDIR/x11rdp_postinst $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/postinst
+  cd $WORKINGDIR/xrdp/xorg/debuild
+  PACKDIR=x11rdp-files
+  NAME=x11rdp
+  sed -i -e  "s/DUMMYVERINFO/$VERSION-$RELEASE/"  $PACKDIR/DEBIAN/control
+  sed -i -e  "s/DUMMYARCHINFO/$ARCH/"  $PACKDIR/DEBIAN/control
+  # need a different delimiter, since it has a path
+  sed -i -e  "s,DUMMYDIRINFO,/$X11DIR,"  $PACKDIR/DEBIAN/postinst
+  dpkg-deb --build $PACKDIR $PKGDEST/${NAME}_$VERSION-${RELEASE}_${ARCH}.deb
+  XORGPKGNAME=${NAME}_$VERSION-${RELEASE}_${ARCH}.deb
+  rm -rf $PACKDIR
 }
 
 package_X11rdp_interactive()
@@ -375,34 +364,21 @@ package_X11rdp_interactive()
     mkdir -p $PKGDEST
   fi
 
-
-  if [ $BLEED == 1 ]
-  then
-    cd $WORKINGDIR/xrdp/xorg/debuild
-    ./debX11rdp.sh $VERSION $RELEASE $X11DIR $PKGDEST
-  else
-    ( mkdir -p $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN;
+  ( 
+    mkdir -p $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN;
     cp $WORKINGDIR/control $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN;
     cp -a $WORKINGDIR/x11rdp_postinst $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN;
     cd $WORKINGDIR/xrdp/xorg/debuild;
     PACKDIR=x11rdp-files;
-    DESTDIR=$PACKDIR/opt;
     NAME=x11rdp;
     sed -i -e  "s/DUMMYVERINFO/$VERSION-$RELEASE/"  $PACKDIR/DEBIAN/control;
     sed -i -e  "s/DUMMYARCHINFO/$ARCH/"  $PACKDIR/DEBIAN/control;
     # need a different delimiter, since it has a path
     sed -i -e  "s,DUMMYDIRINFO,$X11DIR,"  $PACKDIR/DEBIAN/postinst;
-    mkdir -p $DESTDIR;
-    cp -Rf $X11DIR $DESTDIR;
     dpkg-deb --build $PACKDIR $PKGDEST/${NAME}_$VERSION-${RELEASE}_${ARCH}.deb;
     XORGPKGNAME=${NAME}_$VERSION-${RELEASE}_${ARCH}.deb;
-    # revert to initial state
-    rm -rf $DESTDIR;
-    sed -i -e  "s/$VERSION-$RELEASE/DUMMYVERINFO/"  $PACKDIR/DEBIAN/control;
-    sed -i -e  "s/$ARCH/DUMMYARCHINFO/"  $PACKDIR/DEBIAN/control;
-    # need a different delimiter, since it has a path
-    sed -i -e  "s,$X11DIR,DUMMYDIRINFO,"  $PACKDIR/DEBIAN/postinst ) 2>&1 | dialog  --progressbox "Making X11rdp Debian Package..." 30 100
-   fi
+    rm -rf $PACKDIR;
+   ) 2>&1 | dialog  --progressbox "Making X11rdp Debian Package..." 30 100
 }
 
 # Interactively compile & package xrdp using dh-make...
@@ -759,7 +735,7 @@ download_compile_interactively()
   if  [ "$X11RDP" == "1" ]; then
     compile_X11rdp_interactive 
     package_X11rdp_interactive
-    make_X11rdp_symbolic_link
+    # -----> make_X11rdp_symbolic_link
   fi
   compile_xrdp_interactive
 }
@@ -778,7 +754,7 @@ download_compile_noninteractively()
   then
     compile_X11rdp_noninteractive 
     package_X11rdp_noninteractive
-    make_X11rdp_symbolic_link
+    # -----> make_X11rdp_symbolic_link
   fi
 
   # New method...
@@ -975,10 +951,10 @@ if [ "$INSTFLAG" == "0" ] # If not installing on this system...
 then
   # this is stupid but some Makefiles from X11rdp don't have an uninstall target (ex: Python!)
   # ... so instead of not installing X11rdp we remove it in the end
-  if  [ "$X11RDP" == "1" ] # If we compiled X11rdp then remove the generated X11rdp files (from /opt)
-  then
-    rm -rf $X11DIR
-  fi
+  #if  [ "$X11RDP" == "1" ] # If we compiled X11rdp then remove the generated X11rdp files (from /opt)
+  #then
+  #  rm -rf $X11DIR
+  #fi
 
   echo $LINE
   echo "Will exit now, since we are not installing on this system..."
