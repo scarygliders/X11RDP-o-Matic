@@ -5,7 +5,7 @@
 #
 # Version 3.11
 #
-# Version release date : 20140819
+# Version release date : 20140927
 ########################(yyyyMMDD)
 #
 # Will run on Debian-based systems only at the moment. RPM based distros perhaps some time in the future...
@@ -599,7 +599,7 @@ welcome_message()
 calculate_version_num()
 {
   README=https://raw.github.com/neutrinolabs/xrdp/$XRDPBRANCH/readme.txt
-  wget -O $TMPFILE $README >& /dev/null
+  wget --no-check-certificate -O $TMPFILE $README >& /dev/null
   VERSION=$(grep xrdp $TMPFILE | head -1 | cut -d " " -f2)
   rm -f $TMPFILE
   if [[ $( echo $XRDPBRANCH | cut -c 1 ) != "v" ]]
