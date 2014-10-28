@@ -255,7 +255,7 @@ case "$1" in
       REQUIREDPACKAGES=("${REQUIREDPACKAGES[@]}" "libavcodec-dev libavformat-dev")
     ;;
     --withnopam)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-nopam"
+      CONFIGUREFLAGS=$CONFIGUREFLAGS" --disable-pam"
     ;;
     --withpamuserpass)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-pamuserpass"
