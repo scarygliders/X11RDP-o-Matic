@@ -1,0 +1,11 @@
+--- buildx.sh.orig      2014-06-13 23:15:19.000000000 +0200
++++ buildx.sh   2014-06-13 23:38:26.360783277 +0200
+@@ -45,7 +45,7 @@
+         cd ..
+         return $status
+     elif [ "$file" = "MesaLib-7.10.3.tar.bz2" ]; then
+-        wget -cq ftp://ftp.freedesktop.org/pub/mesa/7.10.3/$file
++       wget -cq ftp://ftp.freedesktop.org/pub/mesa/older-versions/7.x/7.10.3/$file
+         status=$?
+         cd ..
+         return $status
