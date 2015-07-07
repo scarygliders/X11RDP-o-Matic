@@ -677,9 +677,7 @@ alter_xrdp_source()
   cd "$WORKINGDIR/xrdp"
   for file in `rgrep "localstatedir\}" . | cut -d":" -f1`
   do
-    sed 's/localstatedir\}\/run/localstatedir\}\/run\/xrdp/' < "$file" > "$file.new"
-    rm "$file"
-    mv "$file.new" "$file"
+    sed -i 's/localstatedir\}\/run/localstatedir\}\/run\/xrdp/' "$file"
   done
   cd "$WORKINGDIR"
   # Patch Jay's buildx.sh.
