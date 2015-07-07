@@ -220,25 +220,25 @@ case "$1" in
     ;;
     --withjpeg)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-jpeg"
-      REQUIREDPACKAGES=("${REQUIREDPACKAGES[@]}" "libjpeg-dev")
+      REQUIREDPACKAGES+=(libjpeg-dev)
     ;;
     --withturbojpeg)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-tjpeg"
       if [[ $XRDPBRANCH = "v0.8" ]] # branch v0.8 has a hard-coded requirement for libjpeg-turbo to be in /opt
       then
-	REQUIREDPACKAGES=("${REQUIREDPACKAGES[@]}" "nasm curl") # Need these for downloading and compiling libjpeg-turbo, later.
+	REQUIREDPACKAGES+=(nasm curl) # Need these for downloading and compiling libjpeg-turbo, later.
       else
-	REQUIREDPACKAGES=("${REQUIREDPACKAGES[@]}" "libturbojpeg1 libturbojpeg1-dev") # The distro packages suffice for 0.9 onwards.
+	REQUIREDPACKAGES+=(libturbojpeg1 libturbojpeg1-dev) # The distro packages suffice for 0.9 onwards.
       fi
       TURBOJPEG=1
     ;;
     --withsimplesound)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-simplesound"
-      REQUIREDPACKAGES=("${REQUIREDPACKAGES[@]}" "libpulse-dev")
+      REQUIREDPACKAGES+=(libpulse-dev)
     ;;
     --withpulse)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-loadpulsemodules"
-      REQUIREDPACKAGES=("${REQUIREDPACKAGES[@]}" "libpulse-dev")
+      REQUIREDPACKAGES+=(libpulse-dev)
     ;;
     --withdebug)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-xrdpdebug"
@@ -251,7 +251,7 @@ case "$1" in
     ;;
     --withxrdpvr)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-xrdpvr"
-      REQUIREDPACKAGES=("${REQUIREDPACKAGES[@]}" "libavcodec-dev libavformat-dev")
+      REQUIREDPACKAGES+=(libavcodec-dev libavformat-dev)
     ;;
     --withnopam)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --disable-pam"
