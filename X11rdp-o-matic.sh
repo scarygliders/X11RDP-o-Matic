@@ -869,7 +869,6 @@ download_and_extract_libturbojpeg()
 {
   cd "$WORKINGDIR"
   echo "TurboJPEG library needs to be built and installed to /opt... downloading and extracting source..."
-  sleep 2
   curl -O -J -L http://sourceforge.net/projects/libjpeg-turbo/files/1.3.1/libjpeg-turbo-1.3.1.tar.gz/download#
   tar xf libjpeg-turbo-1.3.1.tar.gz
 }
@@ -904,7 +903,6 @@ build_turbojpeg()
   fi
   echo "Continuing with building xrdp..."
   echo $LINE
-  sleep 2
   cd "$WORKINGDIR"
 }
 
@@ -926,7 +924,6 @@ check_v08_and_turbojpeg()
       else
 	echo "The necessary turbojpeg lib already exists in /opt so no need to build it again. Waiting 5 seconds..."
 	echo $LINE
-	sleep 5
       fi
     fi
   fi
@@ -959,9 +956,6 @@ if [ $INTERACTIVE -eq 1 ]
 then
   echo "Press ENTER to continue or CTRL-C to abort"
   read DUMMY
-else
-  echo "Waiting 5 seconds. Press CTRL+C to abort"
-  sleep 5
 fi
 
 if [ $INSTFLAG -eq 0 ]; then
