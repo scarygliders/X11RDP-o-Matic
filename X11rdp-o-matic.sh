@@ -323,7 +323,6 @@ apt_update_interactive()
 install_package_interactive()
 {
   debconf-apt-progress --dlwaypoint 50 -- apt-get -y install "$PkgName"
-  sleep 1 # Prevent possible dpkg race condition (had that with Xubuntu 12.04 for some reason)
 }
 
 download_xrdp_interactive()
