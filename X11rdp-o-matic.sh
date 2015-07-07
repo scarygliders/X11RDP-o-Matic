@@ -129,7 +129,7 @@ ARCH=$( dpkg --print-architecture )
 # Would have used /tmp for this, but some distros I tried mount /tmp as tmpfs
 # and filled up.
 WORKINGDIR=`pwd`
-CONFIGUREFLAGS="--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse"
+CONFIGUREFLAGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse)
 
 # Declare a list of packages required to download sources/compile them...
 REQUIREDPACKAGES=(build-essential checkinstall automake automake1.9 git
@@ -219,11 +219,11 @@ case "$1" in
       echo $LINE
     ;;
     --withjpeg)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-jpeg"
+      CONFIGUREFLAGS+=(--enable-jpeg)
       REQUIREDPACKAGES+=(libjpeg-dev)
     ;;
     --withturbojpeg)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-tjpeg"
+      CONFIGUREFLAGS+=(--enable-tjpeg)
       if [[ $XRDPBRANCH = "v0.8" ]] # branch v0.8 has a hard-coded requirement for libjpeg-turbo to be in /opt
       then
 	REQUIREDPACKAGES+=(nasm curl) # Need these for downloading and compiling libjpeg-turbo, later.
@@ -233,34 +233,34 @@ case "$1" in
       TURBOJPEG=1
     ;;
     --withsimplesound)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-simplesound"
+      CONFIGUREFLAGS+=(--enable-simplesound)
       REQUIREDPACKAGES+=(libpulse-dev)
     ;;
     --withpulse)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-loadpulsemodules"
+      CONFIGUREFLAGS+=(--enable-loadpulsemodules)
       REQUIREDPACKAGES+=(libpulse-dev)
     ;;
     --withdebug)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-xrdpdebug"
+      CONFIGUREFLAGS+=(--enable-xrdpdebug)
     ;;
     --withneutrino)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-neutrinordp"
+      CONFIGUREFLAGS+=(--enable-neutrinordp)
     ;;
     --withkerberos)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-kerberos"
+      CONFIGUREFLAGS+=(--enable-kerberos)
     ;;
     --withxrdpvr)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-xrdpvr"
+      CONFIGUREFLAGS+=(--enable-xrdpvr)
       REQUIREDPACKAGES+=(libavcodec-dev libavformat-dev)
     ;;
     --withnopam)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --disable-pam"
+      CONFIGUREFLAGS+=(--disable-pam)
     ;;
     --withpamuserpass)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-pamuserpass"
+      CONFIGUREFLAGS+=(--enable-pamuserpass)
     ;;
     --withfreerdp)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-freerdp1"
+      CONFIGUREFLAGS+=(--enable-freerdp1)
     ;;
 esac
 shift
@@ -413,7 +413,7 @@ compile_xrdp_interactive()
 
   # Step 1: Run the bootstrap and configure scripts
   cd $WORKINGDIR/xrdp
-  ( ./bootstrap && ./configure $CONFIGUREFLAGS ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
+  ( ./bootstrap && ./configure "$CONFIGUREFLAGS[@]}" ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
 
   #Step 2 : Rename xrdp dir to xrdp-$VERSION for dh-make to work on...
   cd ..
@@ -456,7 +456,7 @@ compile_xrdp_noninteractive()
 
   # Step 1: Run the bootstrap and configure scripts
   cd $WORKINGDIR/xrdp
-  ./bootstrap && ./configure $CONFIGUREFLAGS
+  ./bootstrap && ./configure "${CONFIGUREFLAGS[@]}"
 
   #Step 2 : Rename xrdp dir to xrdp-$VERSION for dh-make to work on...
   cd ..
