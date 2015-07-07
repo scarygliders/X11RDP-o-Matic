@@ -166,31 +166,31 @@ xfonts-utils)
 DIST=`lsb_release -d -s`
 
 # Check for running on supported/tested Distros...
-SUPPORTED=0
+SUPPORTED=false
 while read i
 do
   if [ "$DIST" = "$i" ]
   then
-    SUPPORTED=1
+    SUPPORTED=true
     break
   fi
 done < SupportedDistros.txt
 
-INTERACTIVE=1	# Interactive by default.
-PARALLELMAKE=1	# Utilise all available CPU's for compilation by default.
-CLEANUP=0	# Keep the x11rdp and xrdp sources by default - to remove
+INTERACTIVE=true	# Interactive by default.
+PARALLELMAKE=true	# Utilise all available CPU's for compilation by default.
+CLEANUP=false	# Keep the x11rdp and xrdp sources by default - to remove
 		# requires --cleanup command line switch
-INSTFLAG=1	# Install xrdp and x11rdp on this system
-X11RDP=1	# Build and package x11rdp
-BLEED=0		# Not bleeding-edge unless specified
-TURBOJPEG=0     # Turbo JPEG not selected by default
+INSTALL_XRDP=true	# Install xrdp and x11rdp on this system
+BUILD_XRDP=true	# Build and package x11rdp
+BLEED=false		# Not bleeding-edge unless specified
+USE_TURBOJPEG=false     # Turbo JPEG not selected by default
 
 # Parse the command line for any arguments
 while [ $# -gt 0 ]
 do
 case "$1" in
   --justdoit)
-    INTERACTIVE=0	# Don't bother with fancy schmancy dialogs, just go
+    INTERACTIVE=false	# Don't bother with fancy schmancy dialogs, just go
 			# through and do everything!
 			# Note this will override even interactive Text Mode
     echo "Okay, will just do the install from start to finish with no user interaction..."
@@ -217,28 +217,28 @@ case "$1" in
     if [ "$XRDPBRANCH" = "devel" ]
     then
       echo "Note : using the bleeding-edge version may result in problems :)"
-      BLEED=1
+      BLEED=true
     fi
     echo $LINE
     shift
     ;;
     --nocpuoptimize)
-      PARALLELMAKE=0
+      PARALLELMAKE=false
       echo "Will not utilize additional CPU's for compilation..."
       echo $LINE
     ;;
     --cleanup)
-      CLEANUP=1
+      CLEANUP=true
       echo "Will remove the xrdp and x11rdp sources in the working directory after compilation/installation..."
       echo $LINE
     ;;
     --noinstall)
-      INSTFLAG=0
+      INSTALL_XRDP=false
       echo "Will not install anything on the system but will build the packages"
       echo $LINE
     ;;
     --nox11rdp)
-      X11RDP=0
+      BUILD_XRDP=false
       echo "Will not build and package x11rdp"
       echo $LINE
     ;;
@@ -254,7 +254,7 @@ case "$1" in
       else
 	REQUIREDPACKAGES+=(libturbojpeg1 libturbojpeg1-dev) # The distro packages suffice for 0.9 onwards.
       fi
-      TURBOJPEG=1
+      USE_TURBOJPEG=true
     ;;
     --withsimplesound)
       CONFIGUREFLAGS+=(--enable-simplesound)
@@ -361,7 +361,7 @@ package_X11rdp_noninteractive()
     mkdir -p "$PKGDEST"
   fi
 
-  if [ $BLEED -eq 1 ]
+  if $BLEED
     then
         cd "$WORKINGDIR/xrdp/xorg/debuild"
         ./debX11rdp.sh "$VERSION" "$RELEASE" "$X11DIR" "$PKGDEST"
@@ -399,7 +399,7 @@ package_X11rdp_interactive()
     mkdir -p "$PKGDEST"
   fi
 
-  if [ $BLEED -eq 1 ]
+  if $BLEED
   then
     cd "$WORKINGDIR/xrdp/xorg/debuild"
     ./debX11rdp.sh "$VERSION" "$RELEASE" "$X11DIR" "$PKGDEST"
@@ -520,7 +520,7 @@ remove_x11rdp_packages()
 
 update_repositories()
 {
-  if [ $INTERACTIVE -eq 1 ]
+  if $INTERACTIVE
   then
     welcome_message
     apt_update_interactive
@@ -553,7 +553,7 @@ check_package()
 # Install or re-install package and give a relatively nice-ish message whilst doing so (if interactive)
 install_package()
 {
-  if [ $INTERACTIVE -eq 1 ]
+  if $INTERACTIVE
   then
     install_package_interactive
   else
@@ -582,17 +582,15 @@ calc_cpu_cores()
     let "MakesystemWorkHarder = $Cores + 1"
     makeCommand="make -j $MakesystemWorkHarder"
   else
-    PARALLELMAKE=0
+    PARALLELMAKE=false
   fi
 }
 
 cpu_cores_interactive()
 {
   # See how many cpu cores we have to play with - we can speed up compilation if we have more cores ;)
-  if [ ! -e "$WORKINGDIR/PARALLELMAKE" ] && [ $PARALLELMAKE -eq 1 ] # No need to perform this if for some reason we've been here before...
+  if [ ! -e "$WORKINGDIR/PARALLELMAKE" ] && $PARALLELMAKE # No need to perform this if for some reason we've been here before...
   then
-    if [ $PARALLELMAKE -eq 1 ]
-    then
       dialogtext="Good news!\n\nYou can speed up the compilation because there are $Cores CPU cores available to this system.\n\nI can patch the X11rdp build script for you, to utilize the additional CPU cores.\nWould you like me to do this for you?\n\n(Answering Yes will add the \"-j [#cores+1]\" switch to the make command in the build script.\n\nIn this case it will be changed to \"$makeCommand\")."
       ask_question
       Question=$?
@@ -610,7 +608,6 @@ cpu_cores_interactive()
 	  info_window
 	;;
       esac
-    fi
   fi
 }
 
@@ -618,7 +615,7 @@ cpu_cores_noninteractive()
 {
   if [ ! -e "$WORKINGDIR/PARALLELMAKE" ] # No need to perform this if for some reason we've been here before...
   then
-    if [ "$PARALLELMAKE" -eq 1 ]
+    if $PARALLELMAKE
     then
       sed -i -e "s/make -j 1/$makeCommand/g" "$WORKINGDIR/buildx_patch.diff"
       touch "$WORKINGDIR/PARALLELMAKE"
@@ -661,7 +658,7 @@ calculate_version_num()
 # place all the built binaries and files.
 make_X11rdp_env()
 {
-  if [ -e "$X11DIR" ] && [ $X11RDP -eq 1 ]
+  if [ -e "$X11DIR" ] && $BUILD_XRDP
   then
     rm -rf "$X11DIR"
     mkdir -p "$X11DIR"
@@ -688,7 +685,7 @@ alter_xrdp_source()
   # Patch Jay's buildx.sh.
   # This will patch the make command for parallel makes if that was requested,
   # which should speed up compilation. It will make a backup copy of the original buildx.sh.
-  if [ "$PARALLELMAKE" -eq 1 ]
+  if $PARALLELMAKE
   then
   	patch -b -d "$WORKINGDIR/xrdp/xorg/X11R7.6" buildx.sh < "$WORKINGDIR/buildx_patch.diff"
   fi
@@ -734,7 +731,7 @@ install_generated_packages()
 {
   ERRORFOUND=0
 
-  if [ $X11RDP -eq 1 ]
+  if $BUILD_XRDP
   then
     FILES=("$WORKINGDIR"/packages/Xorg/X11rdp*.deb)
     if [ ${#FILES[@]} -gt 0 ]
@@ -774,12 +771,13 @@ control_c()
 download_compile_interactively()
 {
   download_xrdp_interactive
-  if [ "$PARALLELMAKE" -eq 1 ] && [ $Cores -gt 1 ] # Ask about parallel make if requested AND if you have more than 1 CPU core...
+  if $PARALLELMAKE && [ $Cores -gt 1 ] # Ask about parallel make if requested AND if you have more than 1 CPU core...
   then
     cpu_cores_interactive
   fi
   alter_xrdp_source
-  if  [ "$X11RDP" -eq 1 ]; then
+  if  $BUILD_XRDP
+  then
     compile_X11rdp_interactive
     package_X11rdp_interactive
     make_X11rdp_symbolic_link
@@ -790,14 +788,14 @@ download_compile_interactively()
 download_compile_noninteractively()
 {
   download_xrdp_noninteractive
-  if [ $PARALLELMAKE -eq 1 ]
+  if $PARALLELMAKE
   then
     cpu_cores_noninteractive
   fi
 
   alter_xrdp_source # Patches the downloaded source
 
-  if [ $X11RDP -eq 1 ]
+  if $BUILD_XRDP
   then
     compile_X11rdp_noninteractive
     package_X11rdp_noninteractive
@@ -912,7 +910,7 @@ check_v08_and_turbojpeg()
 {
   if [[ "$XRDPBRANCH" = "v0.8"* ]]
   then
-    if [ $TURBOJPEG -eq 1 ]
+    if $USE_TURBOJPEG
     then
       echo $LINE
       echo "v0.8 branch selected and --withturbojpeg. Checking for existing lib in /opt ..."
@@ -947,18 +945,20 @@ calculate_version_num
 # trap keyboard interrupt (control-c)
 trap control_c SIGINT
 
-if [ $X11RDP -eq 1 ]; then
+if $BUILD_XRDP
+then
   echo " *** Will remove the contents of $X11DIR and $WORKINGDIR/xrdp-$VERSION ***"
   echo
 fi
 
-if [ $INTERACTIVE -eq 1 ]
+if $INTERACTIVE
 then
   echo "Press ENTER to continue or CTRL-C to abort"
   read DUMMY
 fi
 
-if [ $INSTFLAG -eq 0 ]; then
+if ! $INSTALL_XRDP
+then
   INSTOPT="no"
 else
   INSTOPT="yes"
@@ -976,23 +976,23 @@ remove_existing_generated_packages # Yes my function names become ever more ridi
 
 check_v08_and_turbojpeg # v0.8 branch needs libturbojpeg to be in /opt
 
-if [ $INTERACTIVE -eq 1 ]
+if $INTERACTIVE
 then
   download_compile_interactively
 else
   download_compile_noninteractively
 fi
 
-if [ $CLEANUP -eq 1 ] # Also remove the xrdp source tree if asked to.
+if $CLEANUP # Also remove the xrdp source tree if asked to.
 then
   cleanup
 fi
 
-if [ $INSTFLAG -eq 0 ] # If not installing on this system...
+if ! $INSTALL_XRDP # If not installing on this system...
 then
   # this is stupid but some Makefiles from X11rdp don't have an uninstall target (ex: Python!)
   # ... so instead of not installing X11rdp we remove it in the end
-  if [ $X11RDP -eq 1 ] # If we compiled X11rdp then remove the generated X11rdp files (from /opt)
+  if $BUILD_XRDP # If we compiled X11rdp then remove the generated X11rdp files (from /opt)
   then
     rm -rf "$X11DIR"
   fi
@@ -1012,7 +1012,7 @@ then
 
   install_generated_packages
 
-  if [ $INTERACTIVE -eq 1 ]
+  if $INTERACTIVE
   then
     dialogtext="X11rdp and xrdp should now be fully installed, configured, and running on this system.\n
     One last thing to do now is to configure which desktop will be presented to the user after they log in via RDP.\n
