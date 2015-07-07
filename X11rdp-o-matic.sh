@@ -551,7 +551,7 @@ install_required_packages()
 
 calc_cpu_cores()
 {
-  Cores=`grep -c ^processor /proc/cpuinfo`
+  Cores=`nproc`
   if [ $Cores -gt 1 ]
   then
     let "MakesystemWorkHarder = $Cores + 1"
