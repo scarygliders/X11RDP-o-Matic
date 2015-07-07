@@ -248,7 +248,6 @@ case "$1" in
     ;;
     --withkerberos)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-kerberos"
-      REQUIREDPACKAGES=("${REQUIREDPACKAGES[@]}" "libpam0g-dev")
     ;;
     --withxrdpvr)
       CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-xrdpvr"
