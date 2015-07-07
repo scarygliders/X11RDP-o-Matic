@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: System Maintainer <root@your-system>
 Build-Depends: debhelper (>= 8.0.0), autotools-dev
 Standards-Version: 3.9.4
-Homepage: http://sourceforge.net/projects/xrdp/
+Homepage: https://github.com/neutrinolabs/xrdp
 
 Package: xrdp
 Architecture: any
