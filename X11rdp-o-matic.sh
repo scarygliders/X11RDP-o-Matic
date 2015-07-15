@@ -867,13 +867,16 @@ download_and_extract_libturbojpeg()
 {
   cd "$WORKINGDIR"
   echo "TurboJPEG library needs to be built and installed to /opt... downloading and extracting source..."
+  [ -d libjpeg-turbo ] && return 0
+  [ -s libjpeg-turbo-1.3.1.tar.gz ] ||
   curl -O -J -L http://sourceforge.net/projects/libjpeg-turbo/files/1.3.1/libjpeg-turbo-1.3.1.tar.gz/download#
   tar xf libjpeg-turbo-1.3.1.tar.gz
+  ln -s libjpeg-turbo-1.3.1 libjpeg-turbo
 }
 
 build_turbojpeg()
 {
-  cd "$WORKINGDIR/libjpeg-turbo-1.3.1"
+  cd "$WORKINGDIR/libjpeg-turbo"
   echo "Configuring Turbo JPEG..."
   ./configure
   echo "Building TurboJPEG..."
