@@ -438,14 +438,12 @@ compile_xrdp_interactive()
     mkdir -p "$WORKINGDIR/packages/xrdp"
   fi
 
-  # Step 1: Run the bootstrap and configure scripts
-  cd "$WORKINGDIR/xrdp"
-  ( ./bootstrap && ./configure "$CONFIGUREFLAGS[@]}" ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
+  # Step 1: Link xrdp dir to xrdp-$VERSION for dh_make to work on...
+  cp -lr "$WORKINGDIR/xrdp" "$WORKINGDIR/xrdp-$VERSION"
 
-  #Step 2 : Rename xrdp dir to xrdp-$VERSION for dh-make to work on...
-  cd ..
-  mv xrdp "xrdp-$VERSION"
-  cd "xrdp-$VERSION"
+  # Step 2: Run the bootstrap and configure scripts
+  cd "$WORKINGDIR/xrdp-$VERSION"
+  ( ./bootstrap && ./configure "$CONFIGUREFLAGS[@]}" ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
 
   #Step 3 : Use dh-make to create the debian directory package template...
   ( echo | dh_make --single --native ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
@@ -481,14 +479,12 @@ compile_xrdp_noninteractive()
     mkdir -p "$WORKINGDIR/packages/xrdp"
   fi
 
-  # Step 1: Run the bootstrap and configure scripts
-  cd "$WORKINGDIR/xrdp"
-  ./bootstrap && ./configure "${CONFIGUREFLAGS[@]}"
+  # Step 1: Link xrdp dir to xrdp-$VERSION for dh_make to work on...
+  cp -lr "$WORKINGDIR/xrdp" "$WORKINGDIR/xrdp-$VERSION"
 
-  #Step 2 : Rename xrdp dir to xrdp-$VERSION for dh-make to work on...
-  cd ..
-  mv xrdp "xrdp-$VERSION"
-  cd "xrdp-$VERSION"
+  # Step 2: Run the bootstrap and configure scripts
+  cd "$WORKINGDIR/xrdp-$VERSION"
+  ./bootstrap && ./configure "${CONFIGUREFLAGS[@]}"
 
   #Step 3 : Use dh-make to create the debian directory package template...
   echo | dh_make --single --native
