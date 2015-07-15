@@ -327,12 +327,14 @@ install_package_interactive()
 
 download_xrdp_interactive()
 {
+  [ -d xrdp ] ||
   git clone --depth 1 "$XRDPGIT" -b "$XRDPBRANCH" 2>&1 | dialog  --progressbox "Downloading xrdp source..." 30 100
 }
 
 download_xrdp_noninteractive()
 {
   echo "Downloading xrdp source from the GIT repository..."
+  [ -d xrdp ] ||
   git clone --depth 1 "$XRDPGIT" -b "$XRDPBRANCH"
 }
 
