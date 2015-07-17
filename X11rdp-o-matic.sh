@@ -446,7 +446,7 @@ compile_xrdp_interactive()
   ( ./bootstrap && ./configure "$CONFIGUREFLAGS[@]}" ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
 
   #Step 3 : Use dh-make to create the debian directory package template...
-  ( echo | dh_make --single --native ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
+  ( dh_make --single --yes --copyright apache --createorig ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
 
   #Step 4 : edit/configure the debian directory...
   cd debian
@@ -488,7 +488,7 @@ compile_xrdp_noninteractive()
   ./configure "${CONFIGUREFLAGS[@]}"
 
   #Step 3 : Use dh-make to create the debian directory package template...
-  echo | dh_make --single --native
+  dh_make --single --yes --copyright apache --createorig
 
   #Step 4 : edit/configure the debian directory...
   cd debian
