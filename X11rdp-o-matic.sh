@@ -135,7 +135,31 @@ CONFIGUREFLAGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fu
 REQUIREDPACKAGES=(build-essential checkinstall automake automake1.9 git
 git-core libssl-dev libpam0g-dev zlib1g-dev libtool libtool-bin libx11-dev libxfixes-dev
 pkg-config flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2
-g++ xutils libfuse-dev wget libxrandr-dev x11proto-* libdrm-dev libpixman-1-dev
+g++ xutils libfuse-dev wget libxrandr-dev libdrm-dev libpixman-1-dev
+x11proto-xf86dri-dev
+x11proto-video-dev
+x11proto-resource-dev
+x11proto-dmx-dev
+x11proto-xf86dga-dev
+x11proto-xinerama-dev
+x11proto-render-dev
+x11proto-bigreqs-dev
+x11proto-kb-dev
+x11proto-randr-dev
+x11proto-gl-dev
+x11proto-record-dev
+x11proto-input-dev
+x11proto-fixes-dev
+x11proto-xf86vidmode-dev
+x11proto-xext-dev
+x11proto-scrnsaver-dev
+x11proto-damage-dev
+x11proto-xf86bigfont-dev
+x11proto-composite-dev
+x11proto-core-dev
+x11proto-xcmisc-dev
+x11proto-dri2-dev
+x11proto-fonts-dev
 libgl1-mesa-dev libxkbfile-dev libxfont-dev libpciaccess-dev dh-make gettext
 xfonts-utils)
 
@@ -220,7 +244,7 @@ case "$1" in
     ;;
     --withjpeg)
       CONFIGUREFLAGS+=(--enable-jpeg)
-      REQUIREDPACKAGES+=(libjpeg-dev)
+      REQUIREDPACKAGES+=(libjpeg8-dev)
     ;;
     --withturbojpeg)
       CONFIGUREFLAGS+=(--enable-tjpeg)
