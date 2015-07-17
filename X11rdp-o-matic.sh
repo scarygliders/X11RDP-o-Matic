@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # Automatic Xrdp/X11rdp Compiler/Installer
 # a.k.a. ScaryGliders X11rdp-O-Matic
@@ -347,7 +348,7 @@ compile_X11rdp_interactive()
 compile_X11rdp_noninteractive()
 {
   cd "$WORKINGDIR/xrdp/xorg/X11R7.6/"
-  sh buildx.sh "$X11DIR"
+  sh buildx.sh "$X11DIR" && :
   RC=$?
   if [ $RC -ne 0 ]; then
     echo "error building X11rdp"
@@ -484,7 +485,8 @@ compile_xrdp_noninteractive()
 
   # Step 2: Run the bootstrap and configure scripts
   cd "$WORKINGDIR/xrdp-$VERSION"
-  ./bootstrap && ./configure "${CONFIGUREFLAGS[@]}"
+  ./bootstrap
+  ./configure "${CONFIGUREFLAGS[@]}"
 
   #Step 3 : Use dh-make to create the debian directory package template...
   echo | dh_make --single --native
@@ -531,7 +533,7 @@ update_repositories()
 # Interrogates dpkg to find out the status of a given package name...
 check_package()
 {
-  DpkgStatus=`dpkg-query -s "$PkgName" 2>&1`
+  DpkgStatus=`dpkg-query -s "$PkgName" 2>&1` || PkgStatus=0
   case "$DpkgStatus" in
     *"is not installed and no info"*)
       PkgStatus=0
@@ -807,16 +809,14 @@ remove_existing_generated_packages()
 {
   echo "Checking for previously generated packages..."
   echo $LINE
-  ls "$WORKINGDIR"/packages/xrdp/X11rdp*.deb >/dev/null 2>&1
-  if [ $? == 0 ]
+  if ls "$WORKINGDIR"/packages/xrdp/X11rdp*.deb >/dev/null 2>&1
   then
     echo "Removing previously generated Debian X11rdp package file(s)."
     echo $LINE
     rm "$WORKINGDIR"/packages/Xorg/*.deb
   fi
 
-  ls "$WORKINGDIR"/packages/xrdp/xrdp*.deb >/dev/null 2>&1
-  if [ $? == 0 ]
+  if ls "$WORKINGDIR"/packages/xrdp/xrdp*.deb >/dev/null 2>&1
   then
     echo "Removing previously generated Debian xrdp package file(s)."
     echo $LINE
@@ -1007,7 +1007,7 @@ then
   # make_doc_directory # <--- Probably not needed anymore since the dh_make
                        # method includes the doc directory ;)
   # stop xrdp if running
-  /etc/init.d/xrdp stop
+  /etc/init.d/xrdp stop || :
 
   install_generated_packages
 
