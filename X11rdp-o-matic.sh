@@ -285,6 +285,7 @@ case "$1" in
     ;;
     --withfreerdp)
       CONFIGUREFLAGS+=(--enable-freerdp1)
+      REQUIREDPACKAGES+=(libfreerdp-dev)
     ;;
 esac
 shift
