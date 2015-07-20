@@ -322,7 +322,7 @@ apt_update_interactive()
 # Installs a package
 install_package_interactive()
 {
-  debconf-apt-progress --dlwaypoint 50 -- apt-get -y install "$PkgName"
+  debconf-apt-progress --dlwaypoint 50 -- apt-get -y install "$1"
 }
 
 download_xrdp_interactive()
@@ -532,7 +532,7 @@ update_repositories()
 # Interrogates dpkg to find out the status of a given package name...
 check_package()
 {
-  DpkgStatus=`dpkg-query -s "$PkgName" 2>&1` || PkgStatus=0
+  DpkgStatus=`dpkg-query -s "$1" 2>&1` || PkgStatus=0
   case "$DpkgStatus" in
     *"is not installed and no info"*)
       PkgStatus=0
@@ -554,9 +554,9 @@ install_package()
 {
   if $INTERACTIVE
   then
-    install_package_interactive
+    install_package_interactive "$1"
   else
-    apt-get -y install "$PkgName"
+    apt-get -y install "$1"
   fi
 }
 
@@ -565,10 +565,10 @@ install_required_packages()
 {
   for PkgName in "${REQUIREDPACKAGES[@]}"
   do
-    check_package
+    check_package "$PkgName"
     if [ $PkgStatus -eq 0  ] || [ $PkgStatus -eq 1 ]
     then
-      install_package
+      install_package "$PkgName"
     fi
   done
 }
@@ -825,8 +825,7 @@ remove_existing_generated_packages()
 
 remove_currently_installed_xrdp()
 {
-  PkgName="xrdp"
-  check_package
+  check_package xrdp
   if [ $PkgStatus -eq 2 ]
   then
     echo "Removing the currently installed xrdp package."
@@ -837,8 +836,7 @@ remove_currently_installed_xrdp()
 
 remove_currently_installed_X11rdp()
 {
-  PkgName="X11rdp"
-  check_package
+  check_package X11rdp
   if [ $PkgStatus -eq 2 ]
   then
     echo "Removing the currently installed X11rdp package."
