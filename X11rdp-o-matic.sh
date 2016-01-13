@@ -445,11 +445,11 @@ compile_xrdp_interactive()
   cd "$WORKINGDIR/xrdp-$VERSION"
   ( ./bootstrap && ./configure "$CONFIGUREFLAGS[@]}" ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
 
-  #Step 3 : Use dh-make to create the debian directory package template...
+  # Step 3 : Use dh-make to create the debian directory package template...
   # for backwards-compatibility, using echo instead of --yes flag
   ( echo | dh_make --single --copyright apache --createorig ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
 
-  #Step 4 : edit/configure the debian directory...
+  # Step 4 : edit/configure the debian directory...
   cd debian
   rm *.ex *.EX # remove the example templates
   rm README.Debian
@@ -461,7 +461,7 @@ compile_xrdp_interactive()
   cp "$WORKINGDIR/xrdp_prerm" prerm # pre-removal script
   cp "$WORKINGDIR/xrdp_docs" docs # use xrdp docs list
 
-  #Step 5 : run dpkg-buildpackage to compile xrdp and build a package...
+  # Step 5 : run dpkg-buildpackage to compile xrdp and build a package...
   cd ..
   ( dpkg-buildpackage -uc -us -tc -rfakeroot ) 2>&1 | dialog  --progressbox "Building xrdp source and packaging..." 50 100
   cd "$WORKINGDIR"
@@ -488,11 +488,11 @@ compile_xrdp_noninteractive()
   ./bootstrap
   ./configure "${CONFIGUREFLAGS[@]}"
 
-  #Step 3 : Use dh-make to create the debian directory package template...
+  # Step 3 : Use dh-make to create the debian directory package template...
   # for backwards-compatibility, using echo instead of --yes flag
   echo | dh_make --single --copyright apache --createorig
 
-  #Step 4 : edit/configure the debian directory...
+  # Step 4 : edit/configure the debian directory...
   cd debian
   rm *.ex *.EX # remove the example templates
   rm README.Debian
@@ -504,7 +504,7 @@ compile_xrdp_noninteractive()
   cp "$WORKINGDIR/xrdp_prerm" prerm # pre-removal script
   cp "$WORKINGDIR/xrdp_docs" docs # use xrdp docs list
 
-  #Step 5 : run dpkg-buildpackage to compile xrdp and build a package...
+  # Step 5 : run dpkg-buildpackage to compile xrdp and build a package...
   echo $LINE
   echo "Preparation complete. Building and packaging xrdp..."
   echo $LINE
