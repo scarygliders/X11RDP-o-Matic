@@ -133,7 +133,7 @@ WORKINGDIR=`pwd`
 CONFIGUREFLAGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse)
 
 # Declare a list of packages required to download sources/compile them...
-REQUIREDPACKAGES=(build-essential checkinstall automake automake1.9 git
+REQUIREDPACKAGES=(build-essential checkinstall automake git
 git-core libssl-dev libpam0g-dev zlib1g-dev libtool libtool-bin libx11-dev libxfixes-dev
 pkg-config flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2
 g++ xutils libfuse-dev wget libxrandr-dev libdrm-dev libpixman-1-dev
