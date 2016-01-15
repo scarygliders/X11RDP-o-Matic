@@ -134,10 +134,11 @@ X11DIR=/opt/X11rdp
 
 ARCH=$( dpkg --print-architecture )
 
+BASEDIR=$(dirname $(readlink -f $0))
 # Would have used /tmp for this, but some distros I tried mount /tmp as tmpfs
 # and filled up.
-WORKINGDIR=$(dirname $(readlink -f $0))
-PATCHDIR=$(dirname $(readlink -f $0))/patch
+WORKINGDIR=$BASEDIR/work
+PATCHDIR=$BASEDIR/patch
 CONFIGUREFLAGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse)
 
 # Declare a list of packages required to download sources/compile them...
@@ -335,15 +336,16 @@ install_package_interactive()
 
 download_xrdp_interactive()
 {
-  [ -d xrdp ] ||
-  git clone --depth 1 "$XRDPGIT" -b "$XRDPBRANCH" 2>&1 | dialog  --progressbox "Downloading xrdp source..." 30 100
+  [ -d "$WORKINGDIR/xrdp" ] ||
+  git clone --depth 1 "$XRDPGIT" -b "$XRDPBRANCH" "$WORKINGDIR/xrdp" 2>&1 | \
+  dialog  --progressbox "Downloading xrdp source..." 30 100
 }
 
 download_xrdp_noninteractive()
 {
   echo "Downloading xrdp source from the GIT repository..."
-  [ -d xrdp ] ||
-  git clone --depth 1 "$XRDPGIT" -b "$XRDPBRANCH"
+  [ -d "$WORKINGDIR/xrdp" ] ||
+  git clone --depth 1 "$XRDPGIT" -b "$XRDPBRANCH" "$WORKINGDIR/xrdp"
 }
 
 compile_X11rdp_interactive()
@@ -464,10 +466,10 @@ compile_xrdp_interactive()
   rm README.source
   cp ../COPYING copyright # use the xrdp copyright file
   cp ../readme.txt README # use the xrdp readme.txt as the README file
-  cp "$WORKINGDIR/xrdp_postinst" postinst # postinst to create xrdp init.d defaults
-  cp "$WORKINGDIR/xrdp_control" control # use a generic control file
-  cp "$WORKINGDIR/xrdp_prerm" prerm # pre-removal script
-  cp "$WORKINGDIR/xrdp_docs" docs # use xrdp docs list
+  cp "$BASEDIR/xrdp_postinst" postinst # postinst to create xrdp init.d defaults
+  cp "$BASEDIR/xrdp_control" control # use a generic control file
+  cp "$BASEDIR/xrdp_prerm" prerm # pre-removal script
+  cp "$BASEDIR/xrdp_docs" docs # use xrdp docs list
 
   # Step 5 : run dpkg-buildpackage to compile xrdp and build a package...
   cd ..
@@ -507,10 +509,10 @@ compile_xrdp_noninteractive()
   rm README.source
   cp ../COPYING copyright # use the xrdp copyright file
   cp ../readme.txt README # use the xrdp readme.txt as the README file
-  cp "$WORKINGDIR/xrdp_postinst" postinst # postinst to create xrdp init.d defaults
-  cp "$WORKINGDIR/xrdp_control" control # use a generic control file
-  cp "$WORKINGDIR/xrdp_prerm" prerm # pre-removal script
-  cp "$WORKINGDIR/xrdp_docs" docs # use xrdp docs list
+  cp "$BASEDIR/xrdp_postinst" postinst # postinst to create xrdp init.d defaults
+  cp "$BASEDIR/xrdp_control" control # use a generic control file
+  cp "$BASEDIR/xrdp_prerm" prerm # pre-removal script
+  cp "$BASEDIR/xrdp_docs" docs # use xrdp docs list
 
   # Step 5 : run dpkg-buildpackage to compile xrdp and build a package...
   echo $LINE
@@ -770,7 +772,7 @@ install_generated_packages()
 control_c()
 {
   clear
-  cd "$WORKINGDIR"
+  cd "$BASEDIR"
   echo "*** CTRL-C was pressed - aborted ***"
   exit
 }
