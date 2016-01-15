@@ -136,7 +136,7 @@ ARCH=$( dpkg --print-architecture )
 
 # Would have used /tmp for this, but some distros I tried mount /tmp as tmpfs
 # and filled up.
-WORKINGDIR=`pwd`
+WORKINGDIR=$(dirname $(readlink -f $0))
 CONFIGUREFLAGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse)
 
 # Declare a list of packages required to download sources/compile them...
