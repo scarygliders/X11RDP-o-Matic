@@ -1,4 +1,8 @@
 #!/bin/sh
-/etc/init.d/xrdp stop
-update-rc.d xrdp remove
+case "$1" in
+remove|purge)
+	invoke-rc.d xrdp stop
+	update-rc.d xrdp remove
+	;;
+esac
 exit 0

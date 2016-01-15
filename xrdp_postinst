@@ -1,7 +1,11 @@
 #!/bin/sh
 
-# create the rc.d calls for startup/shutdown...
-update-rc.d xrdp defaults
-# Crank the engine ;)
-/etc/init.d/xrdp start
+case "$1" in
+configure)
+	# create the rc.d calls for startup/shutdown...
+	update-rc.d xrdp defaults
+	# Crank the engine ;)
+	invoke-rc.d xrdp start
+	;;
+esac
 exit 0
