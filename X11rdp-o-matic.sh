@@ -446,7 +446,7 @@ compile_xrdp_interactive()
   fi
 
   # Step 1: Link xrdp dir to xrdp-$VERSION for dh_make to work on...
-  rsync -a --delete -- "${WORKINGDIR}/xrdp" "${WORKINGDIR}/xrdp-${VERSION}"
+  rsync -a --delete -- "${WORKINGDIR}/xrdp/" "${WORKINGDIR}/xrdp-${VERSION}"
 
   # Step 2: Run the bootstrap and configure scripts
   cd "$WORKINGDIR/xrdp-$VERSION"
@@ -488,7 +488,7 @@ compile_xrdp_noninteractive()
   fi
 
   # Step 1: Link xrdp dir to xrdp-$VERSION for dh_make to work on...
-  rsync -a --delete -- "${WORKINGDIR}/xrdp" "${WORKINGDIR}/xrdp-${VERSION}"
+  rsync -a --delete -- "${WORKINGDIR}/xrdp/" "${WORKINGDIR}/xrdp-${VERSION}"
 
   # Step 2: Run the bootstrap and configure scripts
   cd "$WORKINGDIR/xrdp-$VERSION"
