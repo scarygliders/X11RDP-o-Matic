@@ -137,6 +137,7 @@ ARCH=$( dpkg --print-architecture )
 # Would have used /tmp for this, but some distros I tried mount /tmp as tmpfs
 # and filled up.
 WORKINGDIR=$(dirname $(readlink -f $0))
+PATCHDIR=$(dirname $(readlink -f $0))/patch
 CONFIGUREFLAGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse)
 
 # Declare a list of packages required to download sources/compile them...
@@ -605,7 +606,7 @@ cpu_cores_interactive()
       case "$Question" in
 	"0") # Yes please warm up my computer even more! ;)
 	  # edit the buildx.sh patch file ;)
-	  sed -i -e "s/make -j 1/$makeCommand/g" "$WORKINGDIR/patch/buildx"_patch.diff
+	  sed -i -e "s/make -j 1/$makeCommand/g" "$PATCHDIR/buildx_patch.diff"
 	  # create a file flag to say we've already done this
 	  touch "$WORKINGDIR/PARALLELMAKE"
 	  dialogtext="Ok, the optimization has been made.\n\nLooks like your system is going to be working hard soon ;)\n\nClick OK to proceed with the compilation."
@@ -625,7 +626,7 @@ cpu_cores_noninteractive()
   then
     if $PARALLELMAKE
     then
-      sed -i -e "s/make -j 1/$makeCommand/g" "$WORKINGDIR/patch/buildx_patch.diff"
+      sed -i -e "s/make -j 1/$makeCommand/g" "$PATCHDIR/buildx_patch.diff"
       touch "$WORKINGDIR/PARALLELMAKE"
     fi
   fi
@@ -693,17 +694,17 @@ alter_xrdp_source()
   # which should speed up compilation. It will make a backup copy of the original buildx.sh.
   if $PARALLELMAKE
   then
-  	patch -b -d "$WORKINGDIR/xrdp/xorg/X11R7.6" buildx.sh < "$WORKINGDIR/patch/buildx_patch.diff"
+  	patch -b -d "$WORKINGDIR/xrdp/xorg/X11R7.6" buildx.sh < "$PATCHDIR/buildx_patch.diff"
   fi
 
   # Patch rdp Makefile
-  patch -b -d "$WORKINGDIR/xrdp/xorg/X11R7.6/rdp" Makefile < "$WORKINGDIR/patch/rdp_Makefile.patch"
+  patch -b -d "$WORKINGDIR/xrdp/xorg/X11R7.6/rdp" Makefile < "$PATCHDIR/rdp_Makefile.patch"
 
   # Patch v0.7 buildx.sh, as the file download location for Mesa has changed...
   if [[ $XRDPBRANCH = "v0.7"* ]] # branch v0.7 has a moved libmesa
   then
       echo "Patching mesa download location..."
-      patch -b -d "$WORKINGDIR/xrdp/xorg/X11R7.6" buildx.sh < "$WORKINGDIR/patch/mesa.patch"
+      patch -b -d "$WORKINGDIR/xrdp/xorg/X11R7.6" buildx.sh < "$PATCHDIR/mesa.patch"
   fi
 }
 
