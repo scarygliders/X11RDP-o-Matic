@@ -466,10 +466,10 @@ compile_xrdp_interactive()
   rm README.source
   cp ../COPYING copyright # use the xrdp copyright file
   cp ../readme.txt README # use the xrdp readme.txt as the README file
-  cp "$BASEDIR/xrdp_postinst" postinst # postinst to create xrdp init.d defaults
-  cp "$BASEDIR/xrdp_control" control # use a generic control file
-  cp "$BASEDIR/xrdp_prerm" prerm # pre-removal script
-  cp "$BASEDIR/xrdp_docs" docs # use xrdp docs list
+  cp "$BASEDIR/debian/postinst" postinst # postinst to create xrdp init.d defaults
+  cp "$BASEDIR/debian/control" control # use a generic control file
+  cp "$BASEDIR/debian/prerm" prerm # pre-removal script
+  cp "$BASEDIR/debian/docs" docs # use xrdp docs list
 
   # Step 5 : run dpkg-buildpackage to compile xrdp and build a package...
   cd ..
@@ -509,10 +509,10 @@ compile_xrdp_noninteractive()
   rm README.source
   cp ../COPYING copyright # use the xrdp copyright file
   cp ../readme.txt README # use the xrdp readme.txt as the README file
-  cp "$BASEDIR/xrdp_postinst" postinst # postinst to create xrdp init.d defaults
-  cp "$BASEDIR/xrdp_control" control # use a generic control file
-  cp "$BASEDIR/xrdp_prerm" prerm # pre-removal script
-  cp "$BASEDIR/xrdp_docs" docs # use xrdp docs list
+  cp "$BASEDIR/debian/postinst" postinst # postinst to create xrdp init.d defaults
+  cp "$BASEDIR/debian/control" control # use a generic control file
+  cp "$BASEDIR/debian/prerm" prerm # pre-removal script
+  cp "$BASEDIR/debian/docs" docs # use xrdp docs list
 
   # Step 5 : run dpkg-buildpackage to compile xrdp and build a package...
   echo $LINE
