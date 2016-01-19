@@ -739,11 +739,11 @@ install_generated_packages()
 
   if $BUILD_XRDP
   then
-    FILES=("$WORKINGDIR"/packages/Xorg/X11rdp*.deb)
+    FILES=("$WORKINGDIR"/packages/x11rdp/x11rdp*.deb)
     if [ ${#FILES[@]} -gt 0 ]
     then
       remove_currently_installed_X11rdp
-      dpkg -i "$WORKINGDIR/packages/Xorg/*.deb"
+      dpkg -i "$WORKINGDIR"/packages/x11rdp/x11rdp*.deb
     else
       ERRORFOUND=1
       echo "We were supposed to have built X11rdp but I couldn't find a package file."
