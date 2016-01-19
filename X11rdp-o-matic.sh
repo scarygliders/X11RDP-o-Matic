@@ -379,8 +379,8 @@ package_X11rdp_noninteractive()
         ./debX11rdp.sh "$VERSION" "$RELEASE" "$X11DIR" "$PKGDEST"
     else
         mkdir -p "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN"
-        cp "$WORKINGDIR/control" "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN"
-        cp -a "$WORKINGDIR/x11rdp_postinst" "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/postinst"
+        cp "$BASEDIR/debian/x11rdp_control" "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/control"
+        cp -a "$BASEDIR/debian/x11rdp_postinst" "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/postinst"
         cd "$WORKINGDIR/xrdp/xorg/debuild"
         PACKDIR=x11rdp-files
         DESTDIR="$PACKDIR/opt"
@@ -417,8 +417,8 @@ package_X11rdp_interactive()
     ./debX11rdp.sh "$VERSION" "$RELEASE" "$X11DIR" "$PKGDEST"
   else
     ( mkdir -p "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN"
-      cp "$WORKINGDIR/control" "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN"
-      cp -a "$WORKINGDIR/x11rdp_postinst" "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN"
+      cp "$BASEDIR/debian/x11rdp_control" "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/control"
+      cp -a "$BASEDIR/debian/x11rdp_postinst" "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/postinst"
       cd "$WORKINGDIR/xrdp/xorg/debuild"
       PACKDIR=x11rdp-files
       DESTDIR="$PACKDIR/opt"
