@@ -1027,7 +1027,12 @@ then
   # make_doc_directory # <--- Probably not needed anymore since the dh_make
                        # method includes the doc directory ;)
   # stop xrdp if running
-  /etc/init.d/xrdp stop || :
+  if $USING_SYSTEMD
+  then
+    systemctl stop xrdp || :
+  else
+    service xrdp stop || :
+  fi
 
   install_generated_packages
 
