@@ -694,11 +694,6 @@ make_X11rdp_env()
 # Also patch rdp Makefile to tell Ubuntu linker to include GL symbols - pesky Ubuntu...
 alter_xrdp_source()
 {
-  cd "$WORKINGDIR/xrdp"
-  for file in `rgrep "localstatedir\}" . | cut -d":" -f1`
-  do
-    sed -i 's/localstatedir\}\/run/localstatedir\}\/run\/xrdp/' "$file"
-  done
   cd "$WORKINGDIR"
   # Patch Jay's buildx.sh.
   # This will patch the make command for parallel makes if that was requested,
