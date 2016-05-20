@@ -123,12 +123,10 @@ fi
 #################################################################
 
 # check if the system is using systemd or not
-if [ -z "$(pidof systemd)" ]
-then
-  USING_SYSTEMD=false
-else
+[ -z "$(pidof systemd)" ] && \
+  USING_SYSTEMD=false || \
   USING_SYSTEMD=true
-fi
+
 
 # change dh_make option depending on if dh_make supports -y option
 dh_make -h | grep -q -- -y && \
