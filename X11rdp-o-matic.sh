@@ -134,9 +134,11 @@ X11DIR=/opt/X11rdp
 
 ARCH=$( dpkg --print-architecture )
 
+BASEDIR=$(dirname $(readlink -f $0))
 # Would have used /tmp for this, but some distros I tried mount /tmp as tmpfs
 # and filled up.
-WORKINGDIR=`pwd`
+WORKINGDIR=$BASEDIR/work
+PATCHDIR=$BASEDIR/patch
 CONFIGUREFLAGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse)
 
 # Declare a list of packages required to download sources/compile them...
@@ -334,15 +336,16 @@ install_package_interactive()
 
 download_xrdp_interactive()
 {
-  [ -d xrdp ] ||
-  git clone --depth 1 "$XRDPGIT" -b "$XRDPBRANCH" 2>&1 | dialog  --progressbox "Downloading xrdp source..." 30 100
+  [ -d "$WORKINGDIR/xrdp" ] ||
+  git clone --depth 1 "$XRDPGIT" -b "$XRDPBRANCH" "$WORKINGDIR/xrdp" 2>&1 | \
+  dialog  --progressbox "Downloading xrdp source..." 30 100
 }
 
 download_xrdp_noninteractive()
 {
   echo "Downloading xrdp source from the GIT repository..."
-  [ -d xrdp ] ||
-  git clone --depth 1 "$XRDPGIT" -b "$XRDPBRANCH"
+  [ -d "$WORKINGDIR/xrdp" ] ||
+  git clone --depth 1 "$XRDPGIT" -b "$XRDPBRANCH" "$WORKINGDIR/xrdp"
 }
 
 compile_X11rdp_interactive()
@@ -376,8 +379,8 @@ package_X11rdp_noninteractive()
         ./debX11rdp.sh "$VERSION" "$RELEASE" "$X11DIR" "$PKGDEST"
     else
         mkdir -p "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN"
-        cp "$WORKINGDIR/control" "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN"
-        cp -a "$WORKINGDIR/x11rdp_postinst" "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/postinst"
+        cp "$BASEDIR/debian/x11rdp_control" "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/control"
+        cp -a "$BASEDIR/debian/x11rdp_postinst" "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/postinst"
         cd "$WORKINGDIR/xrdp/xorg/debuild"
         PACKDIR=x11rdp-files
         DESTDIR="$PACKDIR/opt"
@@ -414,8 +417,8 @@ package_X11rdp_interactive()
     ./debX11rdp.sh "$VERSION" "$RELEASE" "$X11DIR" "$PKGDEST"
   else
     ( mkdir -p "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN"
-      cp "$WORKINGDIR/control" "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN"
-      cp -a "$WORKINGDIR/x11rdp_postinst" "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN"
+      cp "$BASEDIR/debian/x11rdp_control" "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/control"
+      cp -a "$BASEDIR/debian/x11rdp_postinst" "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/postinst"
       cd "$WORKINGDIR/xrdp/xorg/debuild"
       PACKDIR=x11rdp-files
       DESTDIR="$PACKDIR/opt"
@@ -463,10 +466,10 @@ compile_xrdp_interactive()
   rm README.source
   cp ../COPYING copyright # use the xrdp copyright file
   cp ../readme.txt README # use the xrdp readme.txt as the README file
-  cp "$WORKINGDIR/xrdp_postinst" postinst # postinst to create xrdp init.d defaults
-  cp "$WORKINGDIR/xrdp_control" control # use a generic control file
-  cp "$WORKINGDIR/xrdp_prerm" prerm # pre-removal script
-  cp "$WORKINGDIR/xrdp_docs" docs # use xrdp docs list
+  cp "$BASEDIR/debian/postinst" postinst # postinst to create xrdp init.d defaults
+  cp "$BASEDIR/debian/control" control # use a generic control file
+  cp "$BASEDIR/debian/prerm" prerm # pre-removal script
+  cp "$BASEDIR/debian/docs" docs # use xrdp docs list
 
   # Step 5 : run dpkg-buildpackage to compile xrdp and build a package...
   cd ..
@@ -506,10 +509,10 @@ compile_xrdp_noninteractive()
   rm README.source
   cp ../COPYING copyright # use the xrdp copyright file
   cp ../readme.txt README # use the xrdp readme.txt as the README file
-  cp "$WORKINGDIR/xrdp_postinst" postinst # postinst to create xrdp init.d defaults
-  cp "$WORKINGDIR/xrdp_control" control # use a generic control file
-  cp "$WORKINGDIR/xrdp_prerm" prerm # pre-removal script
-  cp "$WORKINGDIR/xrdp_docs" docs # use xrdp docs list
+  cp "$BASEDIR/debian/postinst" postinst # postinst to create xrdp init.d defaults
+  cp "$BASEDIR/debian/control" control # use a generic control file
+  cp "$BASEDIR/debian/prerm" prerm # pre-removal script
+  cp "$BASEDIR/debian/docs" docs # use xrdp docs list
 
   # Step 5 : run dpkg-buildpackage to compile xrdp and build a package...
   echo $LINE
@@ -605,7 +608,7 @@ cpu_cores_interactive()
       case "$Question" in
 	"0") # Yes please warm up my computer even more! ;)
 	  # edit the buildx.sh patch file ;)
-	  sed -i -e "s/make -j 1/$makeCommand/g" "$WORKINGDIR/buildx"_patch.diff
+	  sed -i -e "s/make -j 1/$makeCommand/g" "$PATCHDIR/buildx_patch.diff"
 	  # create a file flag to say we've already done this
 	  touch "$WORKINGDIR/PARALLELMAKE"
 	  dialogtext="Ok, the optimization has been made.\n\nLooks like your system is going to be working hard soon ;)\n\nClick OK to proceed with the compilation."
@@ -625,7 +628,7 @@ cpu_cores_noninteractive()
   then
     if $PARALLELMAKE
     then
-      sed -i -e "s/make -j 1/$makeCommand/g" "$WORKINGDIR/buildx_patch.diff"
+      sed -i -e "s/make -j 1/$makeCommand/g" "$PATCHDIR/buildx_patch.diff"
       touch "$WORKINGDIR/PARALLELMAKE"
     fi
   fi
@@ -693,17 +696,17 @@ alter_xrdp_source()
   # which should speed up compilation. It will make a backup copy of the original buildx.sh.
   if $PARALLELMAKE
   then
-  	patch -b -d "$WORKINGDIR/xrdp/xorg/X11R7.6" buildx.sh < "$WORKINGDIR/buildx_patch.diff"
+  	patch -b -d "$WORKINGDIR/xrdp/xorg/X11R7.6" buildx.sh < "$PATCHDIR/buildx_patch.diff"
   fi
 
   # Patch rdp Makefile
-  patch -b -d "$WORKINGDIR/xrdp/xorg/X11R7.6/rdp" Makefile < "$WORKINGDIR/rdp_Makefile.patch"
+  patch -b -d "$WORKINGDIR/xrdp/xorg/X11R7.6/rdp" Makefile < "$PATCHDIR/rdp_Makefile.patch"
 
   # Patch v0.7 buildx.sh, as the file download location for Mesa has changed...
   if [[ $XRDPBRANCH = "v0.7"* ]] # branch v0.7 has a moved libmesa
   then
       echo "Patching mesa download location..."
-      patch -b -d "$WORKINGDIR/xrdp/xorg/X11R7.6" buildx.sh < "$WORKINGDIR/mesa.patch"
+      patch -b -d "$WORKINGDIR/xrdp/xorg/X11R7.6" buildx.sh < "$PATCHDIR/mesa.patch"
   fi
 }
 
@@ -769,7 +772,7 @@ install_generated_packages()
 control_c()
 {
   clear
-  cd "$WORKINGDIR"
+  cd "$BASEDIR"
   echo "*** CTRL-C was pressed - aborted ***"
   exit
 }
