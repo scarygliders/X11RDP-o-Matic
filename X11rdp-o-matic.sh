@@ -122,6 +122,14 @@ fi
 # Initialise variables and parse any command line switches here #
 #################################################################
 
+# check if the system is using systemd or not
+if [ -z "$(pidof systemd)" ]
+then
+  USING_SYSTEMD=false
+else
+  USING_SYSTEMD=true
+fi
+
 # set LANG so that dpkg etc. return the expected responses so the script is
 # guaranteed to work under different locales
 export LANG="C"
