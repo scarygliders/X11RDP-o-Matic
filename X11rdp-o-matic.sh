@@ -129,9 +129,18 @@ fi
 
 
 # change dh_make option depending on if dh_make supports -y option
-dh_make -h | grep -q -- -y && \
-  DH_MAKE_Y="dh_make -y" || \
-  DH_MAKE_Y="echo | dh_make"
+dh_make_y()
+{
+  dh_make -h | grep -q -- -y && \
+    DH_MAKE_Y=true || DH_MAKE_Y=false
+
+  if $DH_MAKE_Y
+  then
+    dh_make -y $@
+  else
+    echo | dh_make $@
+  fi
+}
 
 # set LANG so that dpkg etc. return the expected responses so the script is
 # guaranteed to work under different locales
@@ -472,7 +481,7 @@ compile_xrdp_interactive()
   ( ./bootstrap && ./configure "$CONFIGUREFLAGS[@]}" ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
 
   # Step 3 : Use dh-make to create the debian directory package template...
-  ( $DH_MAKE_Y --single --copyright apache --createorig ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
+  ( dh_make_y --single --copyright apache --createorig ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
 
   # Step 4 : edit/configure the debian directory...
   cd debian
@@ -514,7 +523,7 @@ compile_xrdp_noninteractive()
   ./configure "${CONFIGUREFLAGS[@]}"
 
   # Step 3 : Use dh-make to create the debian directory package template...
-  $DH_MAKE_Y --single --copyright apache --createorig
+  dh_make_y --single --copyright apache --createorig
 
   # Step 4 : edit/configure the debian directory...
   cd debian
