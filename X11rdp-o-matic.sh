@@ -122,6 +122,26 @@ fi
 # Initialise variables and parse any command line switches here #
 #################################################################
 
+# check if the system is using systemd or not
+[ -z "$(pidof systemd)" ] && \
+  USING_SYSTEMD=false || \
+  USING_SYSTEMD=true
+
+
+# change dh_make option depending on if dh_make supports -y option
+dh_make_y()
+{
+  dh_make -h | grep -q -- -y && \
+    DH_MAKE_Y=true || DH_MAKE_Y=false
+
+  if $DH_MAKE_Y
+  then
+    dh_make -y $@
+  else
+    echo | dh_make $@
+  fi
+}
+
 # set LANG so that dpkg etc. return the expected responses so the script is
 # guaranteed to work under different locales
 export LANG="C"
@@ -143,7 +163,7 @@ CONFIGUREFLAGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fu
 
 # Declare a list of packages required to download sources/compile them...
 REQUIREDPACKAGES=(build-essential checkinstall automake git
-git-core libssl-dev libpam0g-dev zlib1g-dev libtool libtool-bin libx11-dev libxfixes-dev
+git-core libssl-dev libpam0g-dev zlib1g-dev libtool libx11-dev libxfixes-dev
 pkg-config flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2
 g++ xutils libfuse-dev wget libxrandr-dev libdrm-dev libpixman-1-dev
 x11proto-xf86dri-dev
@@ -172,6 +192,11 @@ x11proto-dri2-dev
 x11proto-fonts-dev
 libgl1-mesa-dev libxkbfile-dev libxfont-dev libpciaccess-dev dh-make gettext
 xfonts-utils)
+
+# libtool binaries are separated to libtool-bin package since Ubuntu 15.04
+# if libtool-bin package exists, add it to REQUIREDPACKAGES
+apt-cache search ^libtool-bin | grep -q libtool-bin && \
+  REQUIREDPACKAGES+=(libtool-bin)
 
 DIST=`lsb_release -d -s`
 
@@ -456,8 +481,7 @@ compile_xrdp_interactive()
   ( ./bootstrap && ./configure "$CONFIGUREFLAGS[@]}" ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
 
   # Step 3 : Use dh-make to create the debian directory package template...
-  # for backwards-compatibility, using echo instead of --yes flag
-  ( echo | dh_make --single --copyright apache --createorig ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
+  ( dh_make_y --single --copyright apache --createorig ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
 
   # Step 4 : edit/configure the debian directory...
   cd debian
@@ -499,8 +523,7 @@ compile_xrdp_noninteractive()
   ./configure "${CONFIGUREFLAGS[@]}"
 
   # Step 3 : Use dh-make to create the debian directory package template...
-  # for backwards-compatibility, using echo instead of --yes flag
-  echo | dh_make --single --copyright apache --createorig
+  dh_make_y --single --copyright apache --createorig
 
   # Step 4 : edit/configure the debian directory...
   cd debian
@@ -685,11 +708,6 @@ make_X11rdp_env()
 # Also patch rdp Makefile to tell Ubuntu linker to include GL symbols - pesky Ubuntu...
 alter_xrdp_source()
 {
-  cd "$WORKINGDIR/xrdp"
-  for file in `rgrep "localstatedir\}" . | cut -d":" -f1`
-  do
-    sed -i 's/localstatedir\}\/run/localstatedir\}\/run\/xrdp/' "$file"
-  done
   cd "$WORKINGDIR"
   # Patch Jay's buildx.sh.
   # This will patch the make command for parallel makes if that was requested,
@@ -1016,7 +1034,12 @@ then
   # make_doc_directory # <--- Probably not needed anymore since the dh_make
                        # method includes the doc directory ;)
   # stop xrdp if running
-  /etc/init.d/xrdp stop || :
+  if $USING_SYSTEMD
+  then
+    systemctl stop xrdp || :
+  else
+    service xrdp stop || :
+  fi
 
   install_generated_packages
 
