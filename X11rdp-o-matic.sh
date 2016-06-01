@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # Automatic Xrdp/X11rdp Compiler/Installer
 # a.k.a. ScaryGliders X11rdp-O-Matic
@@ -39,13 +40,13 @@ get_branches()
   echo $LINE
   echo "Obtaining list of available branches..."
   echo $LINE
-  BRANCHES=`git ls-remote --heads $XRDPGIT | cut -f2 | cut -d "/" -f 3`
+  BRANCHES=`git ls-remote --heads "$XRDPGIT" | cut -f2 | cut -d "/" -f 3`
   echo $BRANCHES
   echo $LINE
 }
 
 # If first switch = --help, display the help/usage message then exit.
-if [[ $1 = "--help" ]]
+if [ $1 = "--help" ]
 then
   clear
   echo "usage: $0 OPTIONS
@@ -110,9 +111,36 @@ then
   apt-get -y install lsb-release
 fi
 
+# Install rsync if it's not already installed...
+if [ ! -e /usr/bin/rsync ]
+then
+  echo "Installing the rsync package..."
+  apt-get -y install rsync
+fi
+
 #################################################################
 # Initialise variables and parse any command line switches here #
 #################################################################
+
+# check if the system is using systemd or not
+[ -z "$(pidof systemd)" ] && \
+  USING_SYSTEMD=false || \
+  USING_SYSTEMD=true
+
+
+# change dh_make option depending on if dh_make supports -y option
+dh_make_y()
+{
+  dh_make -h | grep -q -- -y && \
+    DH_MAKE_Y=true || DH_MAKE_Y=false
+
+  if $DH_MAKE_Y
+  then
+    dh_make -y $@
+  else
+    echo | dh_make $@
+  fi
+}
 
 # set LANG so that dpkg etc. return the expected responses so the script is
 # guaranteed to work under different locales
@@ -126,47 +154,78 @@ X11DIR=/opt/X11rdp
 
 ARCH=$( dpkg --print-architecture )
 
+BASEDIR=$(dirname $(readlink -f $0))
 # Would have used /tmp for this, but some distros I tried mount /tmp as tmpfs
 # and filled up.
-WORKINGDIR=`pwd` 
-CONFIGUREFLAGS="--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse"
+WORKINGDIR=$BASEDIR/work
+PATCHDIR=$BASEDIR/patch
+CONFIGUREFLAGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse)
 
 # Declare a list of packages required to download sources/compile them...
-REQUIREDPACKAGES=(build-essential checkinstall automake automake1.9 git 
-git-core libssl-dev libpam0g-dev zlib1g-dev libtool libtool-bin libx11-dev libxfixes-dev 
-pkg-config flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2 
-g++ xutils libfuse-dev wget libxrandr-dev x11proto-* libdrm-dev libpixman-1-dev 
-libgl1-mesa-dev libxkbfile-dev libxfont-dev libpciaccess-dev dh-make gettext 
+REQUIREDPACKAGES=(build-essential checkinstall automake git
+git-core libssl-dev libpam0g-dev zlib1g-dev libtool libx11-dev libxfixes-dev
+pkg-config flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2
+g++ xutils libfuse-dev wget libxrandr-dev libdrm-dev libpixman-1-dev
+x11proto-xf86dri-dev
+x11proto-video-dev
+x11proto-resource-dev
+x11proto-dmx-dev
+x11proto-xf86dga-dev
+x11proto-xinerama-dev
+x11proto-render-dev
+x11proto-bigreqs-dev
+x11proto-kb-dev
+x11proto-randr-dev
+x11proto-gl-dev
+x11proto-record-dev
+x11proto-input-dev
+x11proto-fixes-dev
+x11proto-xf86vidmode-dev
+x11proto-xext-dev
+x11proto-scrnsaver-dev
+x11proto-damage-dev
+x11proto-xf86bigfont-dev
+x11proto-composite-dev
+x11proto-core-dev
+x11proto-xcmisc-dev
+x11proto-dri2-dev
+x11proto-fonts-dev
+libgl1-mesa-dev libxkbfile-dev libxfont-dev libpciaccess-dev dh-make gettext
 xfonts-utils)
+
+# libtool binaries are separated to libtool-bin package since Ubuntu 15.04
+# if libtool-bin package exists, add it to REQUIREDPACKAGES
+apt-cache search ^libtool-bin | grep -q libtool-bin && \
+  REQUIREDPACKAGES+=(libtool-bin)
 
 DIST=`lsb_release -d -s`
 
 # Check for running on supported/tested Distros...
-SUPPORTED=0
+SUPPORTED=false
 while read i
 do
   if [ "$DIST" = "$i" ]
   then
-    SUPPORTED=1
+    SUPPORTED=true
     break
   fi
 done < SupportedDistros.txt
 
-INTERACTIVE=1	# Interactive by default.
-PARALLELMAKE=1	# Utilise all available CPU's for compilation by default.
-CLEANUP=0	# Keep the x11rdp and xrdp sources by default - to remove 
+INTERACTIVE=true	# Interactive by default.
+PARALLELMAKE=true	# Utilise all available CPU's for compilation by default.
+CLEANUP=false	# Keep the x11rdp and xrdp sources by default - to remove
 		# requires --cleanup command line switch
-INSTFLAG=1	# Install xrdp and x11rdp on this system
-X11RDP=1	# Build and package x11rdp
-BLEED=0		# Not bleeding-edge unless specified
-TURBOJPEG=0     # Turbo JPEG not selected by default
+INSTALL_XRDP=true	# Install xrdp and x11rdp on this system
+BUILD_XRDP=true	# Build and package x11rdp
+BLEED=false		# Not bleeding-edge unless specified
+USE_TURBOJPEG=false     # Turbo JPEG not selected by default
 
 # Parse the command line for any arguments
-while [[ $# -gt 0 ]]
+while [ $# -gt 0 ]
 do
 case "$1" in
   --justdoit)
-    INTERACTIVE=0	# Don't bother with fancy schmancy dialogs, just go 
+    INTERACTIVE=false	# Don't bother with fancy schmancy dialogs, just go
 			# through and do everything!
 			# Note this will override even interactive Text Mode
     echo "Okay, will just do the install from start to finish with no user interaction..."
@@ -177,12 +236,12 @@ case "$1" in
     ok=0
     for check in ${BRANCHES[@]}
     do
-      if [[ $check = $2 ]]
+      if [ "$check" = "$2" ]
       then
 	ok=1
       fi
     done
-    if [[ $ok == 0 ]]
+    if [ $ok -eq 0 ]
     then
       echo "**** Error detected in branch selection. Argument after --branch was : $2 ."
       echo "**** Available branches : "$BRANCHES
@@ -190,78 +249,78 @@ case "$1" in
     fi
     XRDPBRANCH="$2"
     echo "Using branch ==>> $2 <<=="
-    if [[ $XRDPBRANCH = "devel" ]]
+    if [ "$XRDPBRANCH" = "devel" ]
     then
       echo "Note : using the bleeding-edge version may result in problems :)"
-      BLEED=1
+      BLEED=true
     fi
     echo $LINE
     shift
     ;;
     --nocpuoptimize)
-      PARALLELMAKE=0
+      PARALLELMAKE=false
       echo "Will not utilize additional CPU's for compilation..."
       echo $LINE
     ;;
     --cleanup)
-      CLEANUP=1
+      CLEANUP=true
       echo "Will remove the xrdp and x11rdp sources in the working directory after compilation/installation..."
       echo $LINE
     ;;
     --noinstall)
-      INSTFLAG=0
+      INSTALL_XRDP=false
       echo "Will not install anything on the system but will build the packages"
       echo $LINE
     ;;
     --nox11rdp)
-      X11RDP=0
+      BUILD_XRDP=false
       echo "Will not build and package x11rdp"
       echo $LINE
     ;;
     --withjpeg)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-jpeg"
-      REQUIREDPACKAGES=("${REQUIREDPACKAGES[@]}" "libjpeg-dev")
+      CONFIGUREFLAGS+=(--enable-jpeg)
+      REQUIREDPACKAGES+=(libjpeg8-dev)
     ;;
     --withturbojpeg)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-tjpeg"
-      if [[ $XRDPBRANCH = "v0.8" ]] # branch v0.8 has a hard-coded requirement for libjpeg-turbo to be in /opt
+      CONFIGUREFLAGS+=(--enable-tjpeg)
+      if [[ $XRDPBRANCH = "v0.8"* ]] # branch v0.8 has a hard-coded requirement for libjpeg-turbo to be in /opt
       then
-	REQUIREDPACKAGES=("${REQUIREDPACKAGES[@]}" "nasm curl") # Need these for downloading and compiling libjpeg-turbo, later.
+	REQUIREDPACKAGES+=(nasm curl) # Need these for downloading and compiling libjpeg-turbo, later.
       else
-	REQUIREDPACKAGES=("${REQUIREDPACKAGES[@]}" "libturbojpeg1 libturbojpeg1-dev") # The distro packages suffice for 0.9 onwards.
+	REQUIREDPACKAGES+=(libturbojpeg1 libturbojpeg1-dev) # The distro packages suffice for 0.9 onwards.
       fi
-      TURBOJPEG=1
+      USE_TURBOJPEG=true
     ;;
     --withsimplesound)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-simplesound"
-      REQUIREDPACKAGES=("${REQUIREDPACKAGES[@]}" "libpulse-dev")
+      CONFIGUREFLAGS+=(--enable-simplesound)
+      REQUIREDPACKAGES+=(libpulse-dev)
     ;;
     --withpulse)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-loadpulsemodules"
-      REQUIREDPACKAGES=("${REQUIREDPACKAGES[@]}" "libpulse-dev")
+      CONFIGUREFLAGS+=(--enable-loadpulsemodules)
+      REQUIREDPACKAGES+=(libpulse-dev)
     ;;
     --withdebug)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-xrdpdebug"
+      CONFIGUREFLAGS+=(--enable-xrdpdebug)
     ;;
     --withneutrino)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-neutrinordp"
+      CONFIGUREFLAGS+=(--enable-neutrinordp)
     ;;
     --withkerberos)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-kerberos"
-      REQUIREDPACKAGES=("${REQUIREDPACKAGES[@]}" "libpam0g-dev")
+      CONFIGUREFLAGS+=(--enable-kerberos)
     ;;
     --withxrdpvr)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-xrdpvr"
-      REQUIREDPACKAGES=("${REQUIREDPACKAGES[@]}" "libavcodec-dev libavformat-dev")
+      CONFIGUREFLAGS+=(--enable-xrdpvr)
+      REQUIREDPACKAGES+=(libavcodec-dev libavformat-dev)
     ;;
     --withnopam)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --disable-pam"
+      CONFIGUREFLAGS+=(--disable-pam)
     ;;
     --withpamuserpass)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-pamuserpass"
+      CONFIGUREFLAGS+=(--enable-pamuserpass)
     ;;
     --withfreerdp)
-      CONFIGUREFLAGS=$CONFIGUREFLAGS" --enable-freerdp1"
+      CONFIGUREFLAGS+=(--enable-freerdp1)
+      REQUIREDPACKAGES+=(libfreerdp-dev)
     ;;
 esac
 shift
@@ -297,31 +356,33 @@ apt_update_interactive()
 # Installs a package
 install_package_interactive()
 {
-  debconf-apt-progress --dlwaypoint 50 -- apt-get -y install $PkgName
-  sleep 1 # Prevent possible dpkg race condition (had that with Xubuntu 12.04 for some reason)
+  debconf-apt-progress --dlwaypoint 50 -- apt-get -y install "$1"
 }
 
 download_xrdp_interactive()
 {
-  git clone --depth 1 $XRDPGIT -b $XRDPBRANCH 2>&1 | dialog  --progressbox "Downloading xrdp source..." 30 100
+  [ -d "$WORKINGDIR/xrdp" ] ||
+  git clone --depth 1 "$XRDPGIT" -b "$XRDPBRANCH" "$WORKINGDIR/xrdp" 2>&1 | \
+  dialog  --progressbox "Downloading xrdp source..." 30 100
 }
 
 download_xrdp_noninteractive()
 {
   echo "Downloading xrdp source from the GIT repository..."
-  git clone --depth 1 $XRDPGIT -b $XRDPBRANCH
+  [ -d "$WORKINGDIR/xrdp" ] ||
+  git clone --depth 1 "$XRDPGIT" -b "$XRDPBRANCH" "$WORKINGDIR/xrdp"
 }
 
 compile_X11rdp_interactive()
 {
-  cd $WORKINGDIR/xrdp/xorg/X11R7.6/
-  (sh buildx.sh $X11DIR ) 2>&1 | dialog  --progressbox "Compiling and installing X11rdp. This will take a while...." 30 100
+  cd "$WORKINGDIR/xrdp/xorg/X11R7.6/"
+  (sh buildx.sh "$X11DIR") 2>&1 | dialog  --progressbox "Compiling and installing X11rdp. This will take a while...." 30 100
 }
 
 compile_X11rdp_noninteractive()
 {
-  cd $WORKINGDIR/xrdp/xorg/X11R7.6/
-  sh buildx.sh $X11DIR
+  cd "$WORKINGDIR/xrdp/xorg/X11R7.6/"
+  sh buildx.sh "$X11DIR" && :
   RC=$?
   if [ $RC -ne 0 ]; then
     echo "error building X11rdp"
@@ -331,116 +392,114 @@ compile_X11rdp_noninteractive()
 
 package_X11rdp_noninteractive()
 {
-  PKGDEST=$WORKINGDIR/packages/x11rdp
+  PKGDEST="$WORKINGDIR/packages/x11rdp"
 
-  if [ ! -e $PKGDEST ]; then
-    mkdir -p $PKGDEST
+  if [ ! -e "$PKGDEST" ]; then
+    mkdir -p "$PKGDEST"
   fi
 
-  if [ $BLEED == 1 ]
+  if $BLEED
     then
-        cd $WORKINGDIR/xrdp/xorg/debuild
-        ./debX11rdp.sh $VERSION $RELEASE $X11DIR $PKGDEST
+        cd "$WORKINGDIR/xrdp/xorg/debuild"
+        ./debX11rdp.sh "$VERSION" "$RELEASE" "$X11DIR" "$PKGDEST"
     else
-        mkdir -p $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN
-        cp $WORKINGDIR/control $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN
-        cp -a $WORKINGDIR/x11rdp_postinst $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/postinst
-        cd $WORKINGDIR/xrdp/xorg/debuild
+        mkdir -p "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN"
+        cp "$BASEDIR/debian/x11rdp_control" "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/control"
+        cp -a "$BASEDIR/debian/x11rdp_postinst" "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/postinst"
+        cd "$WORKINGDIR/xrdp/xorg/debuild"
         PACKDIR=x11rdp-files
-        DESTDIR=$PACKDIR/opt
+        DESTDIR="$PACKDIR/opt"
         NAME=x11rdp
-        sed -i -e "s/DUMMYVERINFO/$VERSION-$RELEASE/" $PACKDIR/DEBIAN/control
-        sed -i -e "s/DUMMYARCHINFO/$ARCH/" $PACKDIR/DEBIAN/control
+        sed -i -e "s/DUMMYVERINFO/$VERSION-$RELEASE/" "$PACKDIR/DEBIAN/control"
+        sed -i -e "s/DUMMYARCHINFO/$ARCH/" "$PACKDIR/DEBIAN/control"
         # need a different delimiter, since it has a path
-        sed -i -e "s,DUMMYDIRINFO,$X11DIR," $PACKDIR/DEBIAN/postinst
-        mkdir -p $DESTDIR
-        cp -Rf $X11DIR $DESTDIR
-        dpkg-deb --build $PACKDIR $PKGDEST/${NAME}_$VERSION-${RELEASE}_${ARCH}.deb
-        XORGPKGNAME=${NAME}_$VERSION-${RELEASE}_${ARCH}.deb
+        sed -i -e "s,DUMMYDIRINFO,$X11DIR," "$PACKDIR/DEBIAN/postinst"
+        mkdir -p "$DESTDIR"
+        cp -Rf "$X11DIR" "$DESTDIR"
+        dpkg-deb --build "$PACKDIR" "$PKGDEST/${NAME}_$VERSION-${RELEASE}_${ARCH}.deb"
+        XORGPKGNAME="${NAME}_$VERSION-${RELEASE}_${ARCH}.deb"
         # revert to initial state
-        rm -rf $DESTDIR
-        sed -i -e "s/$VERSION-$RELEASE/DUMMYVERINFO/" $PACKDIR/DEBIAN/control
-        sed -i -e "s/$ARCH/DUMMYARCHINFO/" $PACKDIR/DEBIAN/control
+        rm -rf "$DESTDIR"
+        sed -i -e "s/$VERSION-$RELEASE/DUMMYVERINFO/" "$PACKDIR/DEBIAN/control"
+        sed -i -e "s/$ARCH/DUMMYARCHINFO/" "$PACKDIR/DEBIAN/control"
         # need a different delimiter, since it has a path
-        sed -i -e "s,$X11DIR,DUMMYDIRINFO," $PACKDIR/DEBIAN/postinst
+        sed -i -e "s,$X11DIR,DUMMYDIRINFO," "$PACKDIR/DEBIAN/postinst"
   fi
 }
 
 package_X11rdp_interactive()
 {
-  PKGDEST=$WORKINGDIR/packages/x11rdp
+  PKGDEST="$WORKINGDIR/packages/x11rdp"
 
-  if [ ! -e $PKGDEST ]
+  if [ ! -e "$PKGDEST" ]
   then
-    mkdir -p $PKGDEST
+    mkdir -p "$PKGDEST"
   fi
 
-  if [ $BLEED == 1 ]
+  if $BLEED
   then
-    cd $WORKINGDIR/xrdp/xorg/debuild
-    ./debX11rdp.sh $VERSION $RELEASE $X11DIR $PKGDEST
+    cd "$WORKINGDIR/xrdp/xorg/debuild"
+    ./debX11rdp.sh "$VERSION" "$RELEASE" "$X11DIR" "$PKGDEST"
   else
-    ( mkdir -p $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN;
-      cp $WORKINGDIR/control $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN;
-      cp -a $WORKINGDIR/x11rdp_postinst $WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN;
-      cd $WORKINGDIR/xrdp/xorg/debuild;
-      PACKDIR=x11rdp-files;
-      DESTDIR=$PACKDIR/opt;
-      NAME=x11rdp;
-      sed -i -e  "s/DUMMYVERINFO/$VERSION-$RELEASE/"  $PACKDIR/DEBIAN/control;
-      sed -i -e  "s/DUMMYARCHINFO/$ARCH/"  $PACKDIR/DEBIAN/control;
+    ( mkdir -p "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN"
+      cp "$BASEDIR/debian/x11rdp_control" "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/control"
+      cp -a "$BASEDIR/debian/x11rdp_postinst" "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/postinst"
+      cd "$WORKINGDIR/xrdp/xorg/debuild"
+      PACKDIR=x11rdp-files
+      DESTDIR="$PACKDIR/opt"
+      NAME=x11rdp
+      sed -i -e  "s/DUMMYVERINFO/$VERSION-$RELEASE/"  "$PACKDIR/DEBIAN/control"
+      sed -i -e  "s/DUMMYARCHINFO/$ARCH/"  "$PACKDIR/DEBIAN/control"
       # need a different delimiter, since it has a path
-      sed -i -e  "s,DUMMYDIRINFO,$X11DIR,"  $PACKDIR/DEBIAN/postinst;
-      mkdir -p $DESTDIR;
-      cp -Rf $X11DIR $DESTDIR;
-      dpkg-deb --build $PACKDIR $PKGDEST/${NAME}_$VERSION-${RELEASE}_${ARCH}.deb;
-      XORGPKGNAME=${NAME}_$VERSION-${RELEASE}_${ARCH}.deb;
+      sed -i -e  "s,DUMMYDIRINFO,$X11DIR,"  "$PACKDIR/DEBIAN/postinst"
+      mkdir -p "$DESTDIR"
+      cp -Rf "$X11DIR" "$DESTDIR"
+      dpkg-deb --build "$PACKDIR" "$PKGDEST/${NAME}_$VERSION-${RELEASE}_${ARCH}.deb"
+      XORGPKGNAME="${NAME}_$VERSION-${RELEASE}_${ARCH}.deb"
       # revert to initial state
-      rm -rf $DESTDIR;
-      sed -i -e "s/$VERSION-$RELEASE/DUMMYVERINFO/" $PACKDIR/DEBIAN/control;
-      sed -i -e "s/$ARCH/DUMMYARCHINFO/" $PACKDIR/DEBIAN/control;
+      rm -rf "$DESTDIR"
+      sed -i -e "s/$VERSION-$RELEASE/DUMMYVERINFO/" "$PACKDIR/DEBIAN/control"
+      sed -i -e "s/$ARCH/DUMMYARCHINFO/" "$PACKDIR/DEBIAN/control"
       # need a different delimiter, since it has a path
-      sed -i -e "s,$X11DIR,DUMMYDIRINFO," $PACKDIR/DEBIAN/postinst ) 2>&1 | dialog --progressbox "Making X11rdp Debian Package..." 30 100
+      sed -i -e "s,$X11DIR,DUMMYDIRINFO," "$PACKDIR/DEBIAN/postinst" ) 2>&1 | dialog --progressbox "Making X11rdp Debian Package..." 30 100
   fi
 }
 
 # Interactively compile & package xrdp using dh-make...
 compile_xrdp_interactive()
 {
-  if [ ! -e $WORKINGDIR/packages/xrdp ]
+  if [ ! -e "$WORKINGDIR/packages/xrdp" ]
   then
-    mkdir -p $WORKINGDIR/packages/xrdp
+    mkdir -p "$WORKINGDIR/packages/xrdp"
   fi
 
-  # Step 1: Run the bootstrap and configure scripts
-  cd $WORKINGDIR/xrdp
-  ( ./bootstrap && ./configure $CONFIGUREFLAGS ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
-  
-  #Step 2 : Rename xrdp dir to xrdp-$VERSION for dh-make to work on...
-  cd ..;
-  mv xrdp xrdp-$VERSION;
-  cd xrdp-$VERSION;
-  
-  #Step 3 : Use dh-make to create the debian directory package template...
-  ( echo | dh_make --single --native ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
-  
-  #Step 4 : edit/configure the debian directory...
+  # Step 1: Link xrdp dir to xrdp-$VERSION for dh_make to work on...
+  rsync -a --delete -- "${WORKINGDIR}/xrdp/" "${WORKINGDIR}/xrdp-${VERSION}"
+
+  # Step 2: Run the bootstrap and configure scripts
+  cd "$WORKINGDIR/xrdp-$VERSION"
+  ( ./bootstrap && ./configure "$CONFIGUREFLAGS[@]}" ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
+
+  # Step 3 : Use dh-make to create the debian directory package template...
+  ( dh_make_y --single --copyright apache --createorig ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
+
+  # Step 4 : edit/configure the debian directory...
   cd debian
   rm *.ex *.EX # remove the example templates
   rm README.Debian
   rm README.source
   cp ../COPYING copyright # use the xrdp copyright file
   cp ../readme.txt README # use the xrdp readme.txt as the README file
-  cp $WORKINGDIR/xrdp_postinst postinst # postinst to create xrdp init.d defaults
-  cp $WORKINGDIR/xrdp_control control # use a generic control file
-  cp $WORKINGDIR/xrdp_prerm prerm # pre-removal script
-  cp $WORKINGDIR/xrdp_docs docs # use xrdp docs list
-  
-  #Step 5 : run dpkg-buildpackage to compile xrdp and build a package...
+  cp "$BASEDIR/debian/postinst" postinst # postinst to create xrdp init.d defaults
+  cp "$BASEDIR/debian/control" control # use a generic control file
+  cp "$BASEDIR/debian/prerm" prerm # pre-removal script
+  cp "$BASEDIR/debian/docs" docs # use xrdp docs list
+
+  # Step 5 : run dpkg-buildpackage to compile xrdp and build a package...
   cd ..
   ( dpkg-buildpackage -uc -us -tc -rfakeroot ) 2>&1 | dialog  --progressbox "Building xrdp source and packaging..." 50 100
-  cd $WORKINGDIR
-  mv xrdp*.deb $WORKINGDIR/packages/xrdp/
+  cd "$WORKINGDIR"
+  mv xrdp*.deb "$WORKINGDIR/packages/xrdp/"
 }
 
 # Package xrdp using dh-make...
@@ -450,43 +509,42 @@ compile_xrdp_noninteractive()
   echo "Preparing xrdp source to make a Debian package..."
   echo $LINE
 
-  if [ ! -e $WORKINGDIR/packages/xrdp ]
+  if [ ! -e "$WORKINGDIR/packages/xrdp" ]
   then
-    mkdir -p $WORKINGDIR/packages/xrdp
-  fi  
+    mkdir -p "$WORKINGDIR/packages/xrdp"
+  fi
 
-  # Step 1: Run the bootstrap and configure scripts
-  cd $WORKINGDIR/xrdp
-  ./bootstrap && ./configure $CONFIGUREFLAGS
-  
-  #Step 2 : Rename xrdp dir to xrdp-$VERSION for dh-make to work on...
-  cd ..
-  mv xrdp xrdp-$VERSION
-  cd xrdp-$VERSION
-  
-  #Step 3 : Use dh-make to create the debian directory package template...
-  echo | dh_make --single --native
-  
-  #Step 4 : edit/configure the debian directory...
+  # Step 1: Link xrdp dir to xrdp-$VERSION for dh_make to work on...
+  rsync -a --delete -- "${WORKINGDIR}/xrdp/" "${WORKINGDIR}/xrdp-${VERSION}"
+
+  # Step 2: Run the bootstrap and configure scripts
+  cd "$WORKINGDIR/xrdp-$VERSION"
+  ./bootstrap
+  ./configure "${CONFIGUREFLAGS[@]}"
+
+  # Step 3 : Use dh-make to create the debian directory package template...
+  dh_make_y --single --copyright apache --createorig
+
+  # Step 4 : edit/configure the debian directory...
   cd debian
   rm *.ex *.EX # remove the example templates
   rm README.Debian
   rm README.source
   cp ../COPYING copyright # use the xrdp copyright file
   cp ../readme.txt README # use the xrdp readme.txt as the README file
-  cp $WORKINGDIR/xrdp_postinst postinst # postinst to create xrdp init.d defaults
-  cp $WORKINGDIR/xrdp_control control # use a generic control file
-  cp $WORKINGDIR/xrdp_prerm prerm # pre-removal script
-  cp $WORKINGDIR/xrdp_docs docs # use xrdp docs list
-  
-  #Step 5 : run dpkg-buildpackage to compile xrdp and build a package...
+  cp "$BASEDIR/debian/postinst" postinst # postinst to create xrdp init.d defaults
+  cp "$BASEDIR/debian/control" control # use a generic control file
+  cp "$BASEDIR/debian/prerm" prerm # pre-removal script
+  cp "$BASEDIR/debian/docs" docs # use xrdp docs list
+
+  # Step 5 : run dpkg-buildpackage to compile xrdp and build a package...
   echo $LINE
   echo "Preparation complete. Building and packaging xrdp..."
   echo $LINE
   cd ..
   dpkg-buildpackage -uc -us -tc -rfakeroot
-  cd $WORKINGDIR
-  mv xrdp*.deb $WORKINGDIR/packages/xrdp/
+  cd "$WORKINGDIR"
+  mv xrdp*.deb "$WORKINGDIR/packages/xrdp/"
 }
 
 remove_x11rdp_packages()
@@ -496,7 +554,7 @@ remove_x11rdp_packages()
 
 update_repositories()
 {
-  if [ "$INTERACTIVE" == "1" ]
+  if $INTERACTIVE
   then
     welcome_message
     apt_update_interactive
@@ -509,7 +567,7 @@ update_repositories()
 # Interrogates dpkg to find out the status of a given package name...
 check_package()
 {
-  DpkgStatus=`dpkg-query -s $PkgName 2>&1`
+  DpkgStatus=`dpkg-query -s "$1" 2>&1` || PkgStatus=0
   case "$DpkgStatus" in
     *"is not installed and no info"*)
       PkgStatus=0
@@ -529,55 +587,53 @@ check_package()
 # Install or re-install package and give a relatively nice-ish message whilst doing so (if interactive)
 install_package()
 {
-  if [ "$INTERACTIVE" == "1" ]
+  if $INTERACTIVE
   then
-    install_package_interactive
+    install_package_interactive "$1"
   else
-    apt-get -y install $PkgName
+    apt-get -y install "$1"
   fi
 }
 
 # Check for necessary packages and install if necessary...
 install_required_packages()
 {
-  for PkgName in ${REQUIREDPACKAGES[@]}
+  for PkgName in "${REQUIREDPACKAGES[@]}"
   do
-    check_package
-    if [[ "$PkgStatus" == "0"  ||  $PkgStatus == "1" ]]
+    check_package "$PkgName"
+    if [ $PkgStatus -eq 0  ] || [ $PkgStatus -eq 1 ]
     then
-      install_package
+      install_package "$PkgName"
     fi
   done
 }
 
 calc_cpu_cores()
 {
-  Cores=`grep -c ^processor /proc/cpuinfo`
+  Cores=`nproc`
   if [ $Cores -gt 1 ]
   then
     let "MakesystemWorkHarder = $Cores + 1"
     makeCommand="make -j $MakesystemWorkHarder"
   else
-    PARALLELMAKE=0
+    PARALLELMAKE=false
   fi
 }
 
 cpu_cores_interactive()
 {
   # See how many cpu cores we have to play with - we can speed up compilation if we have more cores ;)
-  if [[ ! -e $WORKINGDIR/PARALLELMAKE && PARALLELMAKE = 1 ]] # No need to perform this if for some reason we've been here before...
+  if [ ! -e "$WORKINGDIR/PARALLELMAKE" ] && $PARALLELMAKE # No need to perform this if for some reason we've been here before...
   then
-    if [ "$PARALLELMAKE" == "1" ]
-    then
       dialogtext="Good news!\n\nYou can speed up the compilation because there are $Cores CPU cores available to this system.\n\nI can patch the X11rdp build script for you, to utilize the additional CPU cores.\nWould you like me to do this for you?\n\n(Answering Yes will add the \"-j [#cores+1]\" switch to the make command in the build script.\n\nIn this case it will be changed to \"$makeCommand\")."
       ask_question
       Question=$?
       case "$Question" in
 	"0") # Yes please warm up my computer even more! ;)
 	  # edit the buildx.sh patch file ;)
-	  sed -i -e "s/make -j 1/$makeCommand/g" $WORKINGDIR/buildx_patch.diff
+	  sed -i -e "s/make -j 1/$makeCommand/g" "$PATCHDIR/buildx_patch.diff"
 	  # create a file flag to say we've already done this
-	  touch $WORKINGDIR/PARALLELMAKE
+	  touch "$WORKINGDIR/PARALLELMAKE"
 	  dialogtext="Ok, the optimization has been made.\n\nLooks like your system is going to be working hard soon ;)\n\nClick OK to proceed with the compilation."
 	  info_window
 	;;
@@ -586,18 +642,17 @@ cpu_cores_interactive()
 	  info_window
 	;;
       esac
-    fi
   fi
 }
 
 cpu_cores_noninteractive()
 {
-  if [ ! -e $WORKINGDIR/PARALLELMAKE ] # No need to perform this if for some reason we've been here before...
+  if [ ! -e "$WORKINGDIR/PARALLELMAKE" ] # No need to perform this if for some reason we've been here before...
   then
-    if [ "$PARALLELMAKE" == "1" ]
+    if $PARALLELMAKE
     then
-      sed -i -e "s/make -j 1/$makeCommand/g" $WORKINGDIR/buildx_patch.diff
-      touch $WORKINGDIR/PARALLELMAKE
+      sed -i -e "s/make -j 1/$makeCommand/g" "$PATCHDIR/buildx_patch.diff"
+      touch "$WORKINGDIR/PARALLELMAKE"
     fi
   fi
 }
@@ -621,31 +676,31 @@ welcome_message()
 # Worked out from the chosen branch.
 calculate_version_num()
 {
-  README=https://raw.github.com/neutrinolabs/xrdp/$XRDPBRANCH/readme.txt
-  wget --no-check-certificate -O $TMPFILE $README >& /dev/null
-  VERSION=$(grep xrdp $TMPFILE | head -1 | cut -d " " -f2)
-  rm -f $TMPFILE
-  if [[ $( echo $XRDPBRANCH | cut -c 1 ) != "v" ]]
+  README="https://raw.github.com/neutrinolabs/xrdp/$XRDPBRANCH/readme.txt"
+  wget --no-check-certificate -O "$TMPFILE" "$README" >& /dev/null
+  VERSION=$(grep xrdp "$TMPFILE" | head -1 | cut -d " " -f2)
+  rm -f "$TMPFILE"
+  if [ "${XRDPBRANCH#v}" = "$XRDPBRANCH" ]
   then
-    VERSION=$VERSION"+"$XRDPBRANCH
+    VERSION="$VERSION+$XRDPBRANCH"
   fi
-  echo "Debian package version number will be : "$VERSION
+  echo "Debian package version number will be : $VERSION"
   echo $LINE
 }
 
-# Make a directory, to which the X11rdp build system will 
-# place all the built binaries and files. 
+# Make a directory, to which the X11rdp build system will
+# place all the built binaries and files.
 make_X11rdp_env()
 {
-  if [ -e $X11DIR ] && [ $X11RDP -eq 1 ]
+  if [ -e "$X11DIR" ] && $BUILD_XRDP
   then
-    rm -rf $X11DIR
-    mkdir -p $X11DIR
+    rm -rf "$X11DIR"
+    mkdir -p "$X11DIR"
   fi
 
-  if [ -e $WORKINGDIR/xrdp ]
+  if [ -e "$WORKINGDIR/xrdp" ]
   then
-    rm -rf $WORKINGDIR/xrdp
+    rm -rf "$WORKINGDIR/xrdp"
   fi
 }
 
@@ -653,30 +708,23 @@ make_X11rdp_env()
 # Also patch rdp Makefile to tell Ubuntu linker to include GL symbols - pesky Ubuntu...
 alter_xrdp_source()
 {
-  cd $WORKINGDIR/xrdp
-  for file in `rgrep "localstatedir\}" . | cut -d":" -f1`
-  do
-    sed 's/localstatedir\}\/run/localstatedir\}\/run\/xrdp/' < $file > $file.new
-    rm $file
-    mv $file.new $file
-  done
-  cd $WORKINGDIR
+  cd "$WORKINGDIR"
   # Patch Jay's buildx.sh.
   # This will patch the make command for parallel makes if that was requested,
   # which should speed up compilation. It will make a backup copy of the original buildx.sh.
-  if [ "$PARALLELMAKE" == "1" ]
+  if $PARALLELMAKE
   then
-  	patch -b -d $WORKINGDIR/xrdp/xorg/X11R7.6 buildx.sh < $WORKINGDIR/buildx_patch.diff
+  	patch -b -d "$WORKINGDIR/xrdp/xorg/X11R7.6" buildx.sh < "$PATCHDIR/buildx_patch.diff"
   fi
-  
+
   # Patch rdp Makefile
-  patch -b -d $WORKINGDIR/xrdp/xorg/X11R7.6/rdp Makefile < $WORKINGDIR/rdp_Makefile.patch
-  
+  patch -b -d "$WORKINGDIR/xrdp/xorg/X11R7.6/rdp" Makefile < "$PATCHDIR/rdp_Makefile.patch"
+
   # Patch v0.7 buildx.sh, as the file download location for Mesa has changed...
-  if [[ $XRDPBRANCH = "v0.7" ]] # branch v0.7 has a moved libmesa
+  if [[ $XRDPBRANCH = "v0.7"* ]] # branch v0.7 has a moved libmesa
   then
       echo "Patching mesa download location..."
-      patch -b -d $WORKINGDIR/xrdp/xorg/X11R7.6 buildx.sh < $WORKINGDIR/mesa.patch
+      patch -b -d "$WORKINGDIR/xrdp/xorg/X11R7.6" buildx.sh < "$PATCHDIR/mesa.patch"
   fi
 }
 
@@ -685,9 +733,9 @@ make_X11rdp_symbolic_link()
 {
   if [ ! -e /usr/bin/X11rdp ]
   then
-    if [ -e $X11DIR/bin/X11rdp ]
+    if [ -e "$X11DIR/bin/X11rdp" ]
     then
-      ln -s $X11DIR/bin/X11rdp /usr/bin/X11rdp
+      ln -s "$X11DIR/bin/X11rdp" /usr/bin/X11rdp
     else
       clear
       echo "There was a problem... the /opt/X11rdp/bin/X11rdp binary could not be found. Did the compilation complete?"
@@ -710,30 +758,30 @@ install_generated_packages()
 {
   ERRORFOUND=0
 
-  if [ $X11RDP == "1" ]
+  if $BUILD_XRDP
   then
-    FILES=($WORKINGDIR/packages/Xorg/X11rdp*.deb)
+    FILES=("$WORKINGDIR"/packages/x11rdp/x11rdp*.deb)
     if [ ${#FILES[@]} -gt 0 ]
     then
       remove_currently_installed_X11rdp
-      dpkg -i $WORKINGDIR/packages/Xorg/*.deb
+      dpkg -i "$WORKINGDIR"/packages/x11rdp/x11rdp*.deb
     else
       ERRORFOUND=1
       echo "We were supposed to have built X11rdp but I couldn't find a package file."
       echo "Please check that X11rdp built correctly. It probably didn't."
     fi
   fi
-  FILES=($WORKINGDIR/packages/xrdp/xrdp*.deb)
+  FILES=("$WORKINGDIR"/packages/xrdp/xrdp*.deb)
   if [ ${#FILES[@]} -gt 0 ]
   then
     remove_currently_installed_xrdp
-    dpkg -i $WORKINGDIR/packages/xrdp/xrdp*.deb
+    dpkg -i "$WORKINGDIR"/packages/xrdp/xrdp*.deb
   else
     echo "I couldn't find an xrdp Debian package to install."
     echo "Please check that xrdp compiled correctly. It probably didn't."
     ERRORFOUND=1
   fi
-  if [ $ERRORFOUND == "1" ]
+  if [ $ERRORFOUND -eq 1 ]
   then
     exit
   fi
@@ -742,7 +790,7 @@ install_generated_packages()
 control_c()
 {
   clear
-  cd $WORKINGDIR
+  cd "$BASEDIR"
   echo "*** CTRL-C was pressed - aborted ***"
   exit
 }
@@ -750,13 +798,14 @@ control_c()
 download_compile_interactively()
 {
   download_xrdp_interactive
-  if [[ "$PARALLELMAKE" == "1"  && "$Cores" -gt "1" ]] # Ask about parallel make if requested AND if you have more than 1 CPU core...
+  if $PARALLELMAKE && [ $Cores -gt 1 ] # Ask about parallel make if requested AND if you have more than 1 CPU core...
   then
     cpu_cores_interactive
   fi
   alter_xrdp_source
-  if  [ "$X11RDP" == "1" ]; then
-    compile_X11rdp_interactive 
+  if  $BUILD_XRDP
+  then
+    compile_X11rdp_interactive
     package_X11rdp_interactive
     make_X11rdp_symbolic_link
   fi
@@ -766,16 +815,16 @@ download_compile_interactively()
 download_compile_noninteractively()
 {
   download_xrdp_noninteractive
-  if [ "$PARALLELMAKE" == "1" ]
+  if $PARALLELMAKE
   then
     cpu_cores_noninteractive
   fi
 
   alter_xrdp_source # Patches the downloaded source
 
-  if  [ "$X11RDP" == "1" ]
+  if $BUILD_XRDP
   then
-    compile_X11rdp_noninteractive 
+    compile_X11rdp_noninteractive
     package_X11rdp_noninteractive
     make_X11rdp_symbolic_link
   fi
@@ -789,28 +838,25 @@ remove_existing_generated_packages()
 {
   echo "Checking for previously generated packages..."
   echo $LINE
-  ls $WORKINGDIR/packages/xrdp/X11rdp*.deb >/dev/null 2>&1
-  if [ $? == 0 ]
+  if ls "$WORKINGDIR"/packages/xrdp/X11rdp*.deb >/dev/null 2>&1
   then
     echo "Removing previously generated Debian X11rdp package file(s)."
     echo $LINE
-    rm $WORKINGDIR/packages/Xorg/*.deb
+    rm "$WORKINGDIR"/packages/Xorg/*.deb
   fi
 
-  ls $WORKINGDIR/packages/xrdp/xrdp*.deb >/dev/null 2>&1
-  if [ $? == 0 ]
+  if ls "$WORKINGDIR"/packages/xrdp/xrdp*.deb >/dev/null 2>&1
   then
     echo "Removing previously generated Debian xrdp package file(s)."
     echo $LINE
-    rm $WORKINGDIR/packages/xrdp/*.deb
+    rm "$WORKINGDIR"/packages/xrdp/*.deb
   fi
 }
 
 remove_currently_installed_xrdp()
 {
-  PkgName="xrdp"
-  check_package
-  if [ $PkgStatus == "2" ]
+  check_package xrdp
+  if [ $PkgStatus -eq 2 ]
   then
     echo "Removing the currently installed xrdp package."
     echo $LINE
@@ -820,9 +866,8 @@ remove_currently_installed_xrdp()
 
 remove_currently_installed_X11rdp()
 {
-  PkgName="X11rdp"
-  check_package
-  if [ $PkgStatus == "2" ]
+  check_package X11rdp
+  if [ $PkgStatus -eq 2 ]
   then
     echo "Removing the currently installed X11rdp package."
     echo $LINE
@@ -832,7 +877,7 @@ remove_currently_installed_X11rdp()
 
 check_for_opt_directory()
 {
-  if [[ ! -e /opt ]]
+  if [ ! -e /opt ]
   then
     echo "Did not find a /opt directory... creating it."
     echo $LINE
@@ -843,16 +888,18 @@ check_for_opt_directory()
 
 download_and_extract_libturbojpeg()
 {
-  cd $WORKINGDIR
+  cd "$WORKINGDIR"
   echo "TurboJPEG library needs to be built and installed to /opt... downloading and extracting source..."
-  sleep 2
+  [ -d libjpeg-turbo ] && return 0
+  [ -s libjpeg-turbo-1.3.1.tar.gz ] ||
   curl -O -J -L http://sourceforge.net/projects/libjpeg-turbo/files/1.3.1/libjpeg-turbo-1.3.1.tar.gz/download#
   tar xf libjpeg-turbo-1.3.1.tar.gz
+  ln -s libjpeg-turbo-1.3.1 libjpeg-turbo
 }
 
 build_turbojpeg()
 {
-  cd $WORKINGDIR/libjpeg-turbo-1.3.1
+  cd "$WORKINGDIR/libjpeg-turbo"
   echo "Configuring Turbo JPEG..."
   ./configure
   echo "Building TurboJPEG..."
@@ -861,18 +908,18 @@ build_turbojpeg()
   echo "Installing TurboJPEG to default /opt directory..."
   make install
   echo $LINE
-  if [[ -e /opt/libjpeg-turbo/lib64 ]] # Make symbolic link to libjpeg-turbo's lib64 if it doesn't already exist
+  if [ -e /opt/libjpeg-turbo/lib64 ] # Make symbolic link to libjpeg-turbo's lib64 if it doesn't already exist
   then
-    if [[ ! -e /opt/libjpeg-turbo/lib ]]
+    if [ ! -e /opt/libjpeg-turbo/lib ]
     then
       echo "Making symbolic link to /opt/libjpeg-turbo/lib64..."
       ln -s /opt/libjpeg-turbo/lib64 /opt/libjpeg-turbo/lib
     fi
   fi
 
-  if [[ -e /opt/libjpeg-turbo/lib32 ]] # Make symbolic link to libjpeg-turbo's lib32 if it doesn't already exist
+  if [ -e /opt/libjpeg-turbo/lib32 ] # Make symbolic link to libjpeg-turbo's lib32 if it doesn't already exist
   then
-    if [[ ! -e /opt/libjpeg-turbo/lib ]]
+    if [ ! -e /opt/libjpeg-turbo/lib ]
     then
       echo "Making symbolic link to /opt/libjpeg-turbo/lib32..."
       ln -s /opt/libjpeg-turbo/lib32 /opt/libjpeg-turbo/lib
@@ -880,29 +927,27 @@ build_turbojpeg()
   fi
   echo "Continuing with building xrdp..."
   echo $LINE
-  sleep 2
-  cd $WORKINGDIR
+  cd "$WORKINGDIR"
 }
 
 
 # if v0.8 selected and --withturbojpeg also selected, we need to build turbojpeg
 check_v08_and_turbojpeg()
 {
-  if [[ $XRDPBRANCH = "v0.8" ]] 
+  if [[ "$XRDPBRANCH" = "v0.8"* ]]
   then
-    if [ "$TURBOJPEG" == "1" ]
+    if $USE_TURBOJPEG
     then
       echo $LINE
       echo "v0.8 branch selected and --withturbojpeg. Checking for existing lib in /opt ..."
       echo $LINE
-      if [[ ! -e /opt/libjpeg-turbo ]] # If the library hasn't already been downloaded & built, then do so
+      if [ ! -e /opt/libjpeg-turbo ] # If the library hasn't already been downloaded & built, then do so
       then                             # Otherwise, assume it has already been built and do nothing more.
 	download_and_extract_libturbojpeg
 	build_turbojpeg
       else
 	echo "The necessary turbojpeg lib already exists in /opt so no need to build it again. Waiting 5 seconds..."
 	echo $LINE
-	sleep 5
       fi
     fi
   fi
@@ -910,7 +955,7 @@ check_v08_and_turbojpeg()
 
 cleanup()
 {
-  rm -rf $WORKINGDIR/xrdp-$VERSION
+  rm -rf "$WORKINGDIR/xrdp-$VERSION"
 }
 
 ##########################
@@ -926,21 +971,20 @@ calculate_version_num
 # trap keyboard interrupt (control-c)
 trap control_c SIGINT
 
-if [ "$X11RDP" == "1" ]; then
+if $BUILD_XRDP
+then
   echo " *** Will remove the contents of $X11DIR and $WORKINGDIR/xrdp-$VERSION ***"
   echo
 fi
 
-if [ "$INTERACTIVE" == "1" ]
+if $INTERACTIVE
 then
   echo "Press ENTER to continue or CTRL-C to abort"
   read DUMMY
-else
-  echo "Waiting 5 seconds. Press CTRL+C to abort"
-  sleep 5
 fi
 
-if [ "$INSTFLAG" == "0" ]; then
+if ! $INSTALL_XRDP
+then
   INSTOPT="no"
 else
   INSTOPT="yes"
@@ -950,7 +994,7 @@ make_X11rdp_env
 
 calc_cpu_cores # find out how many cores we have to play with, and if >1, set a possible make command
 
-update_repositories # perform an apt update to make sure we have a current list of available packages 
+update_repositories # perform an apt update to make sure we have a current list of available packages
 
 install_required_packages # install any packages required for xrdp/X11rdp (and libjpeg-turbo if needed) compilation
 
@@ -958,25 +1002,25 @@ remove_existing_generated_packages # Yes my function names become ever more ridi
 
 check_v08_and_turbojpeg # v0.8 branch needs libturbojpeg to be in /opt
 
-if [ "$INTERACTIVE" == "1" ]
+if $INTERACTIVE
 then
   download_compile_interactively
 else
   download_compile_noninteractively
 fi
 
-if [ "$CLEANUP" == "1" ] # Also remove the xrdp source tree if asked to.
+if $CLEANUP # Also remove the xrdp source tree if asked to.
 then
-  cleanup 
+  cleanup
 fi
 
-if [ "$INSTFLAG" == "0" ] # If not installing on this system...
+if ! $INSTALL_XRDP # If not installing on this system...
 then
   # this is stupid but some Makefiles from X11rdp don't have an uninstall target (ex: Python!)
   # ... so instead of not installing X11rdp we remove it in the end
-  if  [ "$X11RDP" == "1" ] # If we compiled X11rdp then remove the generated X11rdp files (from /opt)
+  if $BUILD_XRDP # If we compiled X11rdp then remove the generated X11rdp files (from /opt)
   then
-    rm -rf $X11DIR
+    rm -rf "$X11DIR"
   fi
 
   echo $LINE
@@ -990,11 +1034,16 @@ then
   # make_doc_directory # <--- Probably not needed anymore since the dh_make
                        # method includes the doc directory ;)
   # stop xrdp if running
-  /etc/init.d/xrdp stop
+  if $USING_SYSTEMD
+  then
+    systemctl stop xrdp || :
+  else
+    service xrdp stop || :
+  fi
 
   install_generated_packages
 
-  if [ $INTERACTIVE == 1 ]
+  if $INTERACTIVE
   then
     dialogtext="X11rdp and xrdp should now be fully installed, configured, and running on this system.\n
     One last thing to do now is to configure which desktop will be presented to the user after they log in via RDP.\n

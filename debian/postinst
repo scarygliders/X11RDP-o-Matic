@@ -1,0 +1,21 @@
+#!/bin/sh
+[ -z "$(pidof systemd)" ] && \
+  USING_SYSTEMD=false || \
+  USING_SYSTEMD=true
+
+case "$1" in
+configure)
+	if $USING_SYSTEMD
+	then
+		systemctl daemon-reload
+		systemctl enable xrdp
+		systemctl start xrdp
+	else
+		# create the rc.d calls for startup/shutdown...
+		update-rc.d xrdp defaults
+		# Crank the engine ;)
+		invoke-rc.d xrdp start
+	fi
+	;;
+esac
+exit 0

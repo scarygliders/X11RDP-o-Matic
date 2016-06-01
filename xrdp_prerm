@@ -1,4 +1,0 @@
-#!/bin/sh
-/etc/init.d/xrdp stop
-update-rc.d xrdp remove
-exit 0
