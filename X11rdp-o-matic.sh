@@ -1,4 +1,5 @@
 #!/bin/bash
+# vim:ts=2:sw=2:sts=0:number:expandtab
 set -e
 
 # Automatic Xrdp/X11rdp Compiler/Installer
