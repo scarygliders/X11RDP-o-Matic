@@ -89,8 +89,7 @@ fi
 # priveleges, because from here onwards we need to be.    #
 ###########################################################
 clear
-id=`id -u`
-if [ $id -ne 0 ]
+if [ $UID -ne 0 ]
 then
   clear
   echo "You tried running the Scarygliders X11rdp-O-Matic installation script as a non-priveleged user. Please run as root."
