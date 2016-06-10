@@ -203,13 +203,13 @@ do
   fi
 done < SupportedDistros.txt
 
-PARALLELMAKE=true	# Utilise all available CPU's for compilation by default.
-CLEANUP=false	# Keep the x11rdp and xrdp sources by default - to remove
-		# requires --cleanup command line switch
-INSTALL_XRDP=true	# Install xrdp and x11rdp on this system
-BUILD_XRDP=true	# Build and package x11rdp
-BLEED=false		# Not bleeding-edge unless specified
-USE_TURBOJPEG=false     # Turbo JPEG not selected by default
+PARALLELMAKE=true   # Utilise all available CPU's for compilation by default.
+CLEANUP=false       # Keep the x11rdp and xrdp sources by default - to remove
+                    # requires --cleanup command line switch
+INSTALL_XRDP=true   # Install xrdp and x11rdp on this system
+BUILD_XRDP=true     # Build and package x11rdp
+BLEED=false         # Not bleeding-edge unless specified
+USE_TURBOJPEG=false # Turbo JPEG not selected by default
 
 # Parse the command line for any arguments
 while [ $# -gt 0 ]
@@ -535,7 +535,7 @@ alter_xrdp_source()
   # which should speed up compilation. It will make a backup copy of the original buildx.sh.
   if $PARALLELMAKE
   then
-  	patch -b -d "$WORKINGDIR/xrdp/xorg/X11R7.6" buildx.sh < "$PATCHDIR/buildx_patch.diff"
+    patch -b -d "$WORKINGDIR/xrdp/xorg/X11R7.6" buildx.sh < "$PATCHDIR/buildx_patch.diff"
   fi
 
   # Patch rdp Makefile
