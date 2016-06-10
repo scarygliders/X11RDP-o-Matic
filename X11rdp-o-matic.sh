@@ -223,14 +223,14 @@ case "$1" in
     echo "Okay, will just do the install from start to finish with no user interaction..."
     echo $LINE
     ;;
-    --branch)
+  --branch)
     get_branches
     ok=0
     for check in ${BRANCHES[@]}
     do
       if [ "$check" = "$2" ]
       then
-	ok=1
+        ok=1
       fi
     done
     if [ $ok -eq 0 ]
@@ -249,70 +249,70 @@ case "$1" in
     echo $LINE
     shift
     ;;
-    --nocpuoptimize)
-      PARALLELMAKE=false
-      echo "Will not utilize additional CPU's for compilation..."
-      echo $LINE
+  --nocpuoptimize)
+    PARALLELMAKE=false
+    echo "Will not utilize additional CPU's for compilation..."
+    echo $LINE
     ;;
-    --cleanup)
-      CLEANUP=true
-      echo "Will remove the xrdp and x11rdp sources in the working directory after compilation/installation..."
-      echo $LINE
+  --cleanup)
+    CLEANUP=true
+    echo "Will remove the xrdp and x11rdp sources in the working directory after compilation/installation..."
+    echo $LINE
     ;;
-    --noinstall)
-      INSTALL_XRDP=false
-      echo "Will not install anything on the system but will build the packages"
-      echo $LINE
+  --noinstall)
+    INSTALL_XRDP=false
+    echo "Will not install anything on the system but will build the packages"
+    echo $LINE
     ;;
-    --nox11rdp)
-      BUILD_XRDP=false
-      echo "Will not build and package x11rdp"
-      echo $LINE
+  --nox11rdp)
+    BUILD_XRDP=false
+    echo "Will not build and package x11rdp"
+    echo $LINE
     ;;
-    --withjpeg)
-      CONFIGUREFLAGS+=(--enable-jpeg)
-      REQUIREDPACKAGES+=(libjpeg8-dev)
+  --withjpeg)
+    CONFIGUREFLAGS+=(--enable-jpeg)
+    REQUIREDPACKAGES+=(libjpeg8-dev)
     ;;
-    --withturbojpeg)
-      CONFIGUREFLAGS+=(--enable-tjpeg)
-      if [[ $XRDPBRANCH = "v0.8"* ]] # branch v0.8 has a hard-coded requirement for libjpeg-turbo to be in /opt
-      then
-	REQUIREDPACKAGES+=(nasm curl) # Need these for downloading and compiling libjpeg-turbo, later.
-      else
-	REQUIREDPACKAGES+=(libturbojpeg1 libturbojpeg1-dev) # The distro packages suffice for 0.9 onwards.
-      fi
-      USE_TURBOJPEG=true
+  --withturbojpeg)
+    CONFIGUREFLAGS+=(--enable-tjpeg)
+    if [[ $XRDPBRANCH = "v0.8"* ]] # branch v0.8 has a hard-coded requirement for libjpeg-turbo to be in /opt
+    then
+      REQUIREDPACKAGES+=(nasm curl) # Need these for downloading and compiling libjpeg-turbo, later.
+    else
+      REQUIREDPACKAGES+=(libturbojpeg1 libturbojpeg1-dev) # The distro packages suffice for 0.9 onwards.
+    fi
+    USE_TURBOJPEG=true
     ;;
-    --withsimplesound)
-      CONFIGUREFLAGS+=(--enable-simplesound)
-      REQUIREDPACKAGES+=(libpulse-dev)
+  --withsimplesound)
+    CONFIGUREFLAGS+=(--enable-simplesound)
+    REQUIREDPACKAGES+=(libpulse-dev)
     ;;
-    --withpulse)
-      CONFIGUREFLAGS+=(--enable-loadpulsemodules)
-      REQUIREDPACKAGES+=(libpulse-dev)
+  --withpulse)
+    CONFIGUREFLAGS+=(--enable-loadpulsemodules)
+    REQUIREDPACKAGES+=(libpulse-dev)
     ;;
-    --withdebug)
-      CONFIGUREFLAGS+=(--enable-xrdpdebug)
+  --withdebug)
+    CONFIGUREFLAGS+=(--enable-xrdpdebug)
     ;;
-    --withneutrino)
-      CONFIGUREFLAGS+=(--enable-neutrinordp)
+  --withneutrino)
+    CONFIGUREFLAGS+=(--enable-neutrinordp)
     ;;
-    --withkerberos)
-      CONFIGUREFLAGS+=(--enable-kerberos)
+  --withkerberos)
+    CONFIGUREFLAGS+=(--enable-kerberos)
     ;;
-    --withxrdpvr)
-      CONFIGUREFLAGS+=(--enable-xrdpvr)
-      REQUIREDPACKAGES+=(libavcodec-dev libavformat-dev)
+  --withxrdpvr)
+    CONFIGUREFLAGS+=(--enable-xrdpvr)
+    REQUIREDPACKAGES+=(libavcodec-dev libavformat-dev)
     ;;
-    --withnopam)
-      CONFIGUREFLAGS+=(--disable-pam)
+  --withnopam)
+    CONFIGUREFLAGS+=(--disable-pam)
     ;;
-    --withpamuserpass)
-      CONFIGUREFLAGS+=(--enable-pamuserpass)
+  --withpamuserpass)
+    CONFIGUREFLAGS+=(--enable-pamuserpass)
     ;;
-    --withfreerdp)
-      CONFIGUREFLAGS+=(--enable-freerdp1)
-      REQUIREDPACKAGES+=(libfreerdp-dev)
+  --withfreerdp)
+    CONFIGUREFLAGS+=(--enable-freerdp1)
+    REQUIREDPACKAGES+=(libfreerdp-dev)
     ;;
 esac
 shift
@@ -735,7 +735,6 @@ build_turbojpeg()
   cd "$WORKINGDIR"
 }
 
-
 # if v0.8 selected and --withturbojpeg also selected, we need to build turbojpeg
 check_v08_and_turbojpeg()
 {
@@ -748,11 +747,11 @@ check_v08_and_turbojpeg()
       echo $LINE
       if [ ! -e /opt/libjpeg-turbo ] # If the library hasn't already been downloaded & built, then do so
       then                             # Otherwise, assume it has already been built and do nothing more.
-	download_and_extract_libturbojpeg
-	build_turbojpeg
+        download_and_extract_libturbojpeg
+        build_turbojpeg
       else
-	echo "The necessary turbojpeg lib already exists in /opt so no need to build it again. Waiting 5 seconds..."
-	echo $LINE
+        echo "The necessary turbojpeg lib already exists in /opt so no need to build it again. Waiting 5 seconds..."
+        echo $LINE
       fi
     fi
   fi
@@ -824,7 +823,7 @@ then
   echo $LINE
   exit
 
- else # Install the packages on the system
+else # Install the packages on the system
   # make_doc_directory # <--- Probably not needed anymore since the dh_make
                        # method includes the doc directory ;)
   # stop xrdp if running
@@ -836,7 +835,6 @@ then
   fi
 
   install_generated_packages
-
 
   echo $LINE
   echo "X11rdp and xrdp should now be fully installed, configured, and running on this system."
