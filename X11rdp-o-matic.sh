@@ -91,10 +91,10 @@ fi
 clear
 id=`id -u`
 if [ $id -ne 0 ]
-	then
-		clear
-		echo "You tried running the Scarygliders X11rdp-O-Matic installation script as a non-priveleged user. Please run as root."
-		exit 1
+then
+  clear
+  echo "You tried running the Scarygliders X11rdp-O-Matic installation script as a non-priveleged user. Please run as root."
+  exit 1
 fi
 
 # Install lsb_release if it's not already installed...
