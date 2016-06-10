@@ -97,13 +97,6 @@ if [ $id -ne 0 ]
 		exit 1
 fi
 
-# Install dialog if it's not already installed...
-if [ ! -e /usr/bin/dialog ]
-then
-    echo "Installing the dialog package..."
-    apt-get -y install dialog
-fi
-
 # Install lsb_release if it's not already installed...
 if [ ! -e /usr/bin/lsb_release ]
 then
@@ -211,7 +204,6 @@ do
   fi
 done < SupportedDistros.txt
 
-INTERACTIVE=true	# Interactive by default.
 PARALLELMAKE=true	# Utilise all available CPU's for compilation by default.
 CLEANUP=false	# Keep the x11rdp and xrdp sources by default - to remove
 		# requires --cleanup command line switch
@@ -225,9 +217,9 @@ while [ $# -gt 0 ]
 do
 case "$1" in
   --justdoit)
-    INTERACTIVE=false	# Don't bother with fancy schmancy dialogs, just go
-			# through and do everything!
-			# Note this will override even interactive Text Mode
+    echo
+    echo "NOTICE: --justdoit options is deprecated since it is now default behaviour"
+    echo
     echo "Okay, will just do the install from start to finish with no user interaction..."
     echo $LINE
     ;;
@@ -326,9 +318,6 @@ esac
 shift
 done
 
-let "HEIGHT = $LINES - 3"
-let "WIDTH = $COLUMNS - 8"
-
 echo "Using the following xrdp configuration : "$CONFIGUREFLAGS
 echo $LINE
 
@@ -336,47 +325,11 @@ echo $LINE
 # Common function declarations begin here...#
 #############################################
 
-# Display a message box
-info_window()
-{
-  dialog --backtitle "$backtitle" --title "$title" --msgbox "$dialogtext" 0 0
-}
-
-ask_question()
-{
-  dialog --backtitle "$backtitle" --title "$questiontitle" --yesno "$dialogtext" 0 0
-  Answer=$?
-}
-
-apt_update_interactive()
-{
-  apt-get update | dialog --progressbox "Updating package databases..." 30 100
-}
-
-# Installs a package
-install_package_interactive()
-{
-  debconf-apt-progress --dlwaypoint 50 -- apt-get -y install "$1"
-}
-
-download_xrdp_interactive()
-{
-  [ -d "$WORKINGDIR/xrdp" ] ||
-  git clone --depth 1 "$XRDPGIT" -b "$XRDPBRANCH" "$WORKINGDIR/xrdp" 2>&1 | \
-  dialog  --progressbox "Downloading xrdp source..." 30 100
-}
-
 download_xrdp_noninteractive()
 {
   echo "Downloading xrdp source from the GIT repository..."
   [ -d "$WORKINGDIR/xrdp" ] ||
   git clone --depth 1 "$XRDPGIT" -b "$XRDPBRANCH" "$WORKINGDIR/xrdp"
-}
-
-compile_X11rdp_interactive()
-{
-  cd "$WORKINGDIR/xrdp/xorg/X11R7.6/"
-  (sh buildx.sh "$X11DIR") 2>&1 | dialog  --progressbox "Compiling and installing X11rdp. This will take a while...." 30 100
 }
 
 compile_X11rdp_noninteractive()
@@ -427,81 +380,6 @@ package_X11rdp_noninteractive()
   fi
 }
 
-package_X11rdp_interactive()
-{
-  PKGDEST="$WORKINGDIR/packages/x11rdp"
-
-  if [ ! -e "$PKGDEST" ]
-  then
-    mkdir -p "$PKGDEST"
-  fi
-
-  if $BLEED
-  then
-    cd "$WORKINGDIR/xrdp/xorg/debuild"
-    ./debX11rdp.sh "$VERSION" "$RELEASE" "$X11DIR" "$PKGDEST"
-  else
-    ( mkdir -p "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN"
-      cp "$BASEDIR/debian/x11rdp_control" "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/control"
-      cp -a "$BASEDIR/debian/x11rdp_postinst" "$WORKINGDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/postinst"
-      cd "$WORKINGDIR/xrdp/xorg/debuild"
-      PACKDIR=x11rdp-files
-      DESTDIR="$PACKDIR/opt"
-      NAME=x11rdp
-      sed -i -e  "s/DUMMYVERINFO/$VERSION-$RELEASE/"  "$PACKDIR/DEBIAN/control"
-      sed -i -e  "s/DUMMYARCHINFO/$ARCH/"  "$PACKDIR/DEBIAN/control"
-      # need a different delimiter, since it has a path
-      sed -i -e  "s,DUMMYDIRINFO,$X11DIR,"  "$PACKDIR/DEBIAN/postinst"
-      mkdir -p "$DESTDIR"
-      cp -Rf "$X11DIR" "$DESTDIR"
-      dpkg-deb --build "$PACKDIR" "$PKGDEST/${NAME}_$VERSION-${RELEASE}_${ARCH}.deb"
-      XORGPKGNAME="${NAME}_$VERSION-${RELEASE}_${ARCH}.deb"
-      # revert to initial state
-      rm -rf "$DESTDIR"
-      sed -i -e "s/$VERSION-$RELEASE/DUMMYVERINFO/" "$PACKDIR/DEBIAN/control"
-      sed -i -e "s/$ARCH/DUMMYARCHINFO/" "$PACKDIR/DEBIAN/control"
-      # need a different delimiter, since it has a path
-      sed -i -e "s,$X11DIR,DUMMYDIRINFO," "$PACKDIR/DEBIAN/postinst" ) 2>&1 | dialog --progressbox "Making X11rdp Debian Package..." 30 100
-  fi
-}
-
-# Interactively compile & package xrdp using dh-make...
-compile_xrdp_interactive()
-{
-  if [ ! -e "$WORKINGDIR/packages/xrdp" ]
-  then
-    mkdir -p "$WORKINGDIR/packages/xrdp"
-  fi
-
-  # Step 1: Link xrdp dir to xrdp-$VERSION for dh_make to work on...
-  rsync -a --delete -- "${WORKINGDIR}/xrdp/" "${WORKINGDIR}/xrdp-${VERSION}"
-
-  # Step 2: Run the bootstrap and configure scripts
-  cd "$WORKINGDIR/xrdp-$VERSION"
-  ( ./bootstrap && ./configure "$CONFIGUREFLAGS[@]}" ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
-
-  # Step 3 : Use dh-make to create the debian directory package template...
-  ( dh_make_y --single --copyright apache --createorig ) 2>&1 | dialog  --progressbox "Preparing xrdp source to make a Debian package..." 50 100
-
-  # Step 4 : edit/configure the debian directory...
-  cd debian
-  rm *.ex *.EX # remove the example templates
-  rm README.Debian
-  rm README.source
-  cp ../COPYING copyright # use the xrdp copyright file
-  cp ../readme.txt README # use the xrdp readme.txt as the README file
-  cp "$BASEDIR/debian/postinst" postinst # postinst to create xrdp init.d defaults
-  cp "$BASEDIR/debian/control" control # use a generic control file
-  cp "$BASEDIR/debian/prerm" prerm # pre-removal script
-  cp "$BASEDIR/debian/docs" docs # use xrdp docs list
-
-  # Step 5 : run dpkg-buildpackage to compile xrdp and build a package...
-  cd ..
-  ( dpkg-buildpackage -uc -us -tc -rfakeroot ) 2>&1 | dialog  --progressbox "Building xrdp source and packaging..." 50 100
-  cd "$WORKINGDIR"
-  mv xrdp*.deb "$WORKINGDIR/packages/xrdp/"
-}
-
 # Package xrdp using dh-make...
 compile_xrdp_noninteractive()
 {
@@ -547,21 +425,10 @@ compile_xrdp_noninteractive()
   mv xrdp*.deb "$WORKINGDIR/packages/xrdp/"
 }
 
-remove_x11rdp_packages()
-{
-  (apt-get remove --purge x11rdp-*) 2>&1 | dialog --progressbox "Completely removing previously installed x11rdp packages..." 30 100
-}
-
 update_repositories()
 {
-  if $INTERACTIVE
-  then
-    welcome_message
-    apt_update_interactive
-  else
     echo "running apt-get update"
     apt-get update  >& /dev/null
-  fi
 }
 
 # Interrogates dpkg to find out the status of a given package name...
@@ -587,12 +454,7 @@ check_package()
 # Install or re-install package and give a relatively nice-ish message whilst doing so (if interactive)
 install_package()
 {
-  if $INTERACTIVE
-  then
-    install_package_interactive "$1"
-  else
-    apt-get -y install "$1"
-  fi
+  apt-get -y install "$1"
 }
 
 # Check for necessary packages and install if necessary...
@@ -620,31 +482,6 @@ calc_cpu_cores()
   fi
 }
 
-cpu_cores_interactive()
-{
-  # See how many cpu cores we have to play with - we can speed up compilation if we have more cores ;)
-  if [ ! -e "$WORKINGDIR/PARALLELMAKE" ] && $PARALLELMAKE # No need to perform this if for some reason we've been here before...
-  then
-      dialogtext="Good news!\n\nYou can speed up the compilation because there are $Cores CPU cores available to this system.\n\nI can patch the X11rdp build script for you, to utilize the additional CPU cores.\nWould you like me to do this for you?\n\n(Answering Yes will add the \"-j [#cores+1]\" switch to the make command in the build script.\n\nIn this case it will be changed to \"$makeCommand\")."
-      ask_question
-      Question=$?
-      case "$Question" in
-	"0") # Yes please warm up my computer even more! ;)
-	  # edit the buildx.sh patch file ;)
-	  sed -i -e "s/make -j 1/$makeCommand/g" "$PATCHDIR/buildx_patch.diff"
-	  # create a file flag to say we've already done this
-	  touch "$WORKINGDIR/PARALLELMAKE"
-	  dialogtext="Ok, the optimization has been made.\n\nLooks like your system is going to be working hard soon ;)\n\nClick OK to proceed with the compilation."
-	  info_window
-	;;
-	"1") # No thanks, I like waiting ;)
-	  dialogtext="Ok, I will not change the build script as suggested.\n\nIt will take longer to compile though :)\n\nPress OK to proceed with the compilation..."
-	  info_window
-	;;
-      esac
-  fi
-}
-
 cpu_cores_noninteractive()
 {
   if [ ! -e "$WORKINGDIR/PARALLELMAKE" ] # No need to perform this if for some reason we've been here before...
@@ -656,21 +493,6 @@ cpu_cores_noninteractive()
     fi
   fi
 }
-
-welcome_message()
-{
-  case "$SUPPORTED" in
-    "1")
-      dialogtext="Welcome to the ScaryGliders X11rdp-O-Matic installation script.\n\nThe detected distribution is : $DIST.\n\nThis utility has been tested on this distribution.\n\nClick OK to continue..."
-      info_window
-    ;;
-    "0")
-      dialogtext=" Welcome to the ScaryGliders X11rdp-O-Matic installation script.\n\nThe detected distribution is : $DIST .\n\nUnfortunately, no testing has been done for running this utility on this distribution.\n\nIf this is a Debian-based distro, you can try running it. It might work, it might not.\n\nIf the utility does work on this distribution, please let the author know!\n\nClick OK to continue..."
-      info_window
-      ;;
-  esac
-}
-
 
 # Create a useful version number for creating Debian packages.
 # Worked out from the chosen branch.
@@ -793,23 +615,6 @@ control_c()
   cd "$BASEDIR"
   echo "*** CTRL-C was pressed - aborted ***"
   exit
-}
-
-download_compile_interactively()
-{
-  download_xrdp_interactive
-  if $PARALLELMAKE && [ $Cores -gt 1 ] # Ask about parallel make if requested AND if you have more than 1 CPU core...
-  then
-    cpu_cores_interactive
-  fi
-  alter_xrdp_source
-  if  $BUILD_XRDP
-  then
-    compile_X11rdp_interactive
-    package_X11rdp_interactive
-    make_X11rdp_symbolic_link
-  fi
-  compile_xrdp_interactive
 }
 
 download_compile_noninteractively()
@@ -977,12 +782,6 @@ then
   echo
 fi
 
-if $INTERACTIVE
-then
-  echo "Press ENTER to continue or CTRL-C to abort"
-  read DUMMY
-fi
-
 if ! $INSTALL_XRDP
 then
   INSTOPT="no"
@@ -1002,12 +801,7 @@ remove_existing_generated_packages # Yes my function names become ever more ridi
 
 check_v08_and_turbojpeg # v0.8 branch needs libturbojpeg to be in /opt
 
-if $INTERACTIVE
-then
-  download_compile_interactively
-else
-  download_compile_noninteractively
-fi
+download_compile_noninteractively
 
 if $CLEANUP # Also remove the xrdp source tree if asked to.
 then
@@ -1043,19 +837,11 @@ then
 
   install_generated_packages
 
-  if $INTERACTIVE
-  then
-    dialogtext="X11rdp and xrdp should now be fully installed, configured, and running on this system.\n
-    One last thing to do now is to configure which desktop will be presented to the user after they log in via RDP.\n
-    You may not have to do this - test by logging into xrdp now.\n
-    Or use the RDPsesconfig.sh utility to configure a session's desktop."
-    info_window
-  else
-    echo $LINE
-    echo "X11rdp and xrdp should now be fully installed, configured, and running on this system."
-    echo "One last thing to do now is to configure which desktop will be presented to the user after they log in via RDP."
-    echo "You may not have to do this - test by logging into xrdp now."
-    echo "Or use the RDPsesconfig.sh utility to configure a session's desktop."
-    echo $LINE
-  fi
+
+  echo $LINE
+  echo "X11rdp and xrdp should now be fully installed, configured, and running on this system."
+  echo "One last thing to do now is to configure which desktop will be presented to the user after they log in via RDP."
+  echo "You may not have to do this - test by logging into xrdp now."
+  echo "Or use the RDPsesconfig.sh utility to configure a session's desktop."
+  echo $LINE
 fi
