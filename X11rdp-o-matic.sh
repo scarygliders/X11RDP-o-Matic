@@ -351,8 +351,9 @@ package_X11rdp_noninteractive()
     mkdir -p "$PKGDEST"
   fi
 
-  if $BLEED
+  if [ -f "$WORKINGDIR/xrdp/xorg/debuild/debX11rdp.sh" ]
     then
+        # usually reach here
         cd "$WORKINGDIR/xrdp/xorg/debuild"
         ./debX11rdp.sh "$VERSION" "$RELEASE" "$X11DIR" "$PKGDEST"
     else
