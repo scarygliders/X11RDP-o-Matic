@@ -29,12 +29,42 @@ set -e
 # WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
+if [ $UID -eq 0 ] ; then
+  # write to stderr 1>&2
+  echo "${0}:  Never run this utility as root." 1>&2
+  echo 1>&2
+  echo "This script will gain root privileges via sudo on demand, then type your password." 1>&2
+  exit 1
+fi
+
+if ! hash sudo 2> /dev/null ; then
+  # write to stderr 1>&2
+  echo "${0}: sudo not found." 1>&2
+  echo 1>&2
+  echo 'This utility requires sudo to gain root privileges on demand.' 1>&2
+  echo 'run `apt-get install sudo` in root privileges before run this utility.' 1>&2
+  exit 1
+fi
+
 LINE="----------------------------------------------------------------------"
 # xrdp repository
 GH_ACCOUNT=neutrinolabs
 GH_PROJECT=xrdp
 GH_BRANCH=master
 GH_URL=https://github.com/${GH_ACCOUNT}/${GH_PROJECT}.git
+
+SUDO_CMD()
+{
+  # sudo's password prompt timeouts 5 minutes by most default settings
+  # to avoid exit this script because of sudo timeout
+  echo_stderr
+  # not using echo_stderr here because output also be written $SUDO_LOG
+  echo "Following command will be executed via sudo:" | tee -a $SUDO_LOG 1>&2
+  echo "	$@" | tee -a $SUDO_LOG 1>&2
+  while ! sudo -v; do :; done
+  sudo $@ | tee -a $SUDO_LOG
+  return ${PIPESTATUS[0]}
+}
 
 # Get list of available branches from remote git repository
 get_branches()
@@ -86,17 +116,7 @@ OPTIONS
   exit
 fi
 
-###########################################################
-# Before doing anything else, check if we're running with #
-# priveleges, because from here onwards we need to be.    #
-###########################################################
 clear
-if [ $UID -ne 0 ]
-then
-  clear
-  echo "You tried running the Scarygliders X11rdp-O-Matic installation script as a non-priveleged user. Please run as root."
-  exit 1
-fi
 
 # Install lsb_release if it's not already installed...
 if [ ! -e /usr/bin/lsb_release ]
