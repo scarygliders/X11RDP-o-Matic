@@ -30,10 +30,11 @@ set -e
 #
 
 LINE="----------------------------------------------------------------------"
-# Use the canonical git repo by default
-XRDPGIT=https://github.com/neutrinolabs/xrdp.git
-# Use the master branch by default
-XRDPBRANCH=master
+# xrdp repository
+GH_ACCOUNT=neutrinolabs
+GH_PROJECT=xrdp
+GH_BRANCH=master
+GH_URL=https://github.com/${GH_ACCOUNT}/${GH_PROJECT}.git
 
 # Get list of available branches from remote git repository
 get_branches()
@@ -41,7 +42,7 @@ get_branches()
   echo $LINE
   echo "Obtaining list of available branches..."
   echo $LINE
-  BRANCHES=`git ls-remote --heads "$XRDPGIT" | cut -f2 | cut -d "/" -f 3`
+  BRANCHES=`git ls-remote --heads "$GH_URL" | cut -f2 | cut -d "/" -f 3`
   echo $BRANCHES
   echo $LINE
 }
@@ -241,7 +242,7 @@ case "$1" in
     fi
     XRDPBRANCH="$2"
     echo "Using branch ==>> $2 <<=="
-    if [ "$XRDPBRANCH" = "devel" ]
+    if [ "$GH_BRANCH" = "devel" ]
     then
       echo "Note : using the bleeding-edge version may result in problems :)"
       BLEED=true
@@ -275,7 +276,7 @@ case "$1" in
     ;;
   --withturbojpeg)
     CONFIGUREFLAGS+=(--enable-tjpeg)
-    if [[ $XRDPBRANCH = "v0.8"* ]] # branch v0.8 has a hard-coded requirement for libjpeg-turbo to be in /opt
+    if [[ $GH_BRANCH = "v0.8"* ]] # branch v0.8 has a hard-coded requirement for libjpeg-turbo to be in /opt
     then
       REQUIREDPACKAGES+=(nasm curl) # Need these for downloading and compiling libjpeg-turbo, later.
     else
@@ -329,7 +330,7 @@ download_xrdp_noninteractive()
 {
   echo "Downloading xrdp source from the GIT repository..."
   [ -d "$WORKINGDIR/xrdp" ] ||
-  git clone --depth 1 "$XRDPGIT" -b "$XRDPBRANCH" "$WORKINGDIR/xrdp"
+  git clone --depth 1 "$GH_URL" -b "$GH_BRANCH" "$WORKINGDIR/xrdp"
 }
 
 compile_X11rdp_noninteractive()
@@ -499,13 +500,13 @@ cpu_cores_noninteractive()
 # Worked out from the chosen branch.
 calculate_version_num()
 {
-  README="https://raw.github.com/neutrinolabs/xrdp/$XRDPBRANCH/readme.txt"
+  README="https://raw.github.com/${GH_ACCOUNT}/${GH_PROJECT}/${GH_BRANCH}/readme.txt"
   wget --no-check-certificate -O "$TMPFILE" "$README" >& /dev/null
   VERSION=$(grep xrdp "$TMPFILE" | head -1 | cut -d " " -f2)
   rm -f "$TMPFILE"
-  if [ "${XRDPBRANCH#v}" = "$XRDPBRANCH" ]
+  if [ "${XRDPBRANCH#v}" = "$GH_BRANCH" ]
   then
-    VERSION="$VERSION+$XRDPBRANCH"
+    VERSION="$VERSION+$GH_BRANCH"
   fi
   echo "Debian package version number will be : $VERSION"
   echo $LINE
@@ -544,7 +545,7 @@ alter_xrdp_source()
   patch -b -d "$WORKINGDIR/xrdp/xorg/X11R7.6/rdp" Makefile < "$PATCHDIR/rdp_Makefile.patch"
 
   # Patch v0.7 buildx.sh, as the file download location for Mesa has changed...
-  if [[ $XRDPBRANCH = "v0.7"* ]] # branch v0.7 has a moved libmesa
+  if [[ $GH_BRANCH = "v0.7"* ]] # branch v0.7 has a moved libmesa
   then
       echo "Patching mesa download location..."
       patch -b -d "$WORKINGDIR/xrdp/xorg/X11R7.6" buildx.sh < "$PATCHDIR/mesa.patch"
@@ -739,7 +740,7 @@ build_turbojpeg()
 # if v0.8 selected and --withturbojpeg also selected, we need to build turbojpeg
 check_v08_and_turbojpeg()
 {
-  if [[ "$XRDPBRANCH" = "v0.8"* ]]
+  if [[ "$GH_BRANCH" = "v0.8"* ]]
   then
     if $USE_TURBOJPEG
     then
