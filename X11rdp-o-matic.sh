@@ -171,22 +171,21 @@ clear
 if [ ! -e /usr/bin/lsb_release ]
 then
   echo "Installing the lsb_release package..."
-  SUDO_CMD apt-get -y install lsb-release || error_exit
+  SUDO_CMD apt-get -y install lsb-release >> $APT_LOG || error_exit
 fi
 
 # Install rsync if it's not already installed...
 if [ ! -e /usr/bin/rsync ]
 then
   echo "Installing the rsync package..."
-  SUDO_CMD apt-get -y install rsync || error_exit
+  SUDO_CMD apt-get -y install rsync >> $APT_LOG || error_exit
 fi
 
 #################################################################
 # Initialise variables and parse any command line switches here #
 #################################################################
 
-# this is the release number for the Debian packages
-RELEASE=1
+RELEASE=1 # release number for debian packages
 
 TMPFILE=/tmp/xrdpver
 X11RDPDEST=/opt/X11rdp
@@ -367,12 +366,7 @@ download_xrdp_noninteractive()
 compile_X11rdp_noninteractive()
 {
   cd "$WRKDIR/xrdp/xorg/X11R7.6/"
-  SUDO_CMD sh buildx.sh "$X11RDPDEST" && :
-  RC=$?
-  if [ $RC -ne 0 ]; then
-    echo "error building X11rdp"
-    exit $RC
- fi
+  SUDO_CMD sh buildx.sh "$X11RDPDEST" || error_exit
 }
 
 package_X11rdp_noninteractive()
@@ -461,8 +455,7 @@ compile_xrdp_noninteractive()
 
 update_repositories()
 {
-    echo "running apt-get update"
-    SUDO_CMD apt-get update  >& /dev/null
+    SUDO_CMD apt-get update >> $APT_LOG || error_exit
 }
 
 # Interrogates dpkg to find out the status of a given package name...
@@ -488,7 +481,7 @@ check_package()
 # Install or re-install package and give a relatively nice-ish message whilst doing so (if interactive)
 install_package()
 {
-  SUDO_CMD apt-get -y install "$1"
+  SUDO_CMD apt-get -y install "$1" >> $APT_LOG || error_exit
 }
 
 # Check for necessary packages and install if necessary...
@@ -690,7 +683,7 @@ remove_currently_installed_xrdp()
   then
     echo "Removing the currently installed xrdp package."
     echo $LINE
-    SUDO_CMD apt-get -y remove xrdp
+    SUDO_CMD apt-get -y remove xrdp || error_exit
   fi
 }
 
@@ -701,7 +694,7 @@ remove_currently_installed_X11rdp()
   then
     echo "Removing the currently installed X11rdp package."
     echo $LINE
-    SUDO_CMD apt-get -y remove X11rdp
+    SUDO_CMD apt-get -y remove X11rdp || error_exit
   fi
 }
 
@@ -711,7 +704,7 @@ check_for_opt_directory()
   then
     echo "Did not find a /opt directory... creating it."
     echo $LINE
-    SUDO_CMD mkdir /opt
+    SUDO_CMD mkdir /opt || error_exit
   fi
 }
 
