@@ -849,9 +849,9 @@ else # Install the packages on the system
   # stop xrdp if running
   if $USING_SYSTEMD
   then
-    systemctl stop xrdp || :
+    SUDO_CMD systemctl stop xrdp
   else
-    service xrdp stop || :
+    SUDO_CMD service xrdp stop
   fi
 
   install_generated_packages
