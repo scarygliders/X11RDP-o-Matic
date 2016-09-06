@@ -189,13 +189,12 @@ fi
 RELEASE=1
 
 TMPFILE=/tmp/xrdpver
-X11DIR=/opt/X11rdp
+X11RDPDEST=/opt/X11rdp
 
 ARCH=$(dpkg --print-architecture)
 
 # Would have used /tmp for this, but some distros I tried mount /tmp as tmpfs
 # and filled up.
-PATCHDIR=$BASEDIR/patch
 CONFIGUREFLAGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse)
 
 # Declare a list of packages required to download sources/compile them...
@@ -379,7 +378,7 @@ download_xrdp_noninteractive()
 compile_X11rdp_noninteractive()
 {
   cd "$WRKDIR/xrdp/xorg/X11R7.6/"
-  SUDO_CMD sh buildx.sh "$X11DIR" && :
+  SUDO_CMD sh buildx.sh "$X11RDPDEST" && :
   RC=$?
   if [ $RC -ne 0 ]; then
     echo "error building X11rdp"
@@ -399,7 +398,7 @@ package_X11rdp_noninteractive()
   then
     # usually reach here
     cd "$WRKDIR/xrdp/xorg/debuild"
-    ./debX11rdp.sh "$VERSION" "$RELEASE" "$X11DIR" "$PKGDEST"
+    ./debX11rdp.sh "$VERSION" "$RELEASE" "$X11RDPDEST" "$PKGDEST"
   else
     mkdir -p "$WRKDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN"
     cp "$BASEDIR/debian/x11rdp_control" "$WRKDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/control"
@@ -411,9 +410,9 @@ package_X11rdp_noninteractive()
     sed -i -e "s/DUMMYVERINFO/$VERSION-$RELEASE/" "$PACKDIR/DEBIAN/control"
     sed -i -e "s/DUMMYARCHINFO/$ARCH/" "$PACKDIR/DEBIAN/control"
     # need a different delimiter, since it has a path
-    sed -i -e "s,DUMMYDIRINFO,$X11DIR," "$PACKDIR/DEBIAN/postinst"
+    sed -i -e "s,DUMMYDIRINFO,$X11RDPDEST," "$PACKDIR/DEBIAN/postinst"
     mkdir -p "$DESTDIR"
-    cp -Rf "$X11DIR" "$DESTDIR"
+    cp -Rf "$X11RDPDEST" "$DESTDIR"
     dpkg-deb --build "$PACKDIR" "$PKGDEST/${NAME}_$VERSION-${RELEASE}_${ARCH}.deb"
     XORGPKGNAME="${NAME}_$VERSION-${RELEASE}_${ARCH}.deb"
     # revert to initial state
@@ -421,7 +420,7 @@ package_X11rdp_noninteractive()
     sed -i -e "s/$VERSION-$RELEASE/DUMMYVERINFO/" "$PACKDIR/DEBIAN/control"
     sed -i -e "s/$ARCH/DUMMYARCHINFO/" "$PACKDIR/DEBIAN/control"
     # need a different delimiter, since it has a path
-    sed -i -e "s,$X11DIR,DUMMYDIRINFO," "$PACKDIR/DEBIAN/postinst"
+    sed -i -e "s,$X11RDPDEST,DUMMYDIRINFO," "$PACKDIR/DEBIAN/postinst"
   fi
 }
 
@@ -560,10 +559,10 @@ calculate_version_num()
 # place all the built binaries and files.
 make_X11rdp_env()
 {
-  if [ -e "$X11DIR" -a "$X11DIR" != "/" ] && $BUILD_XRDP
+  if [ -e "$X11RDPDEST" -a "$X11RDPDEST" != "/" ] && $BUILD_XRDP
   then
-    SUDO_CMD rm -rf "$X11DIR" || error_exit
-    SUDO_CMD mkdir -p "$X11DIR" || error_exit
+    SUDO_CMD rm -rf "$X11RDPDEST" || error_exit
+    SUDO_CMD mkdir -p "$X11RDPDEST" || error_exit
   fi
 
   if [ -e "$WRKDIR/xrdp" ]
@@ -601,9 +600,9 @@ make_X11rdp_symbolic_link()
 {
   if [ ! -e /usr/bin/X11rdp ]
   then
-    if [ -e "$X11DIR/bin/X11rdp" ]
+    if [ -e "$X11RDPDEST/bin/X11rdp" ]
     then
-      SUDO_CMD ln -s "$X11DIR/bin/X11rdp" /usr/bin/X11rdp
+      SUDO_CMD ln -s "$X11RDPDEST/bin/X11rdp" /usr/bin/X11rdp
     else
       clear
       echo "There was a problem... the /opt/X11rdp/bin/X11rdp binary could not be found. Did the compilation complete?"
@@ -823,7 +822,7 @@ trap control_c SIGINT
 
 if $BUILD_XRDP
 then
-  echo " *** Will remove the contents of $X11DIR and $WRKDIR/xrdp-$VERSION ***"
+  echo " *** Will remove the contents of $X11RDPDEST and $WRKDIR/xrdp-$VERSION ***"
   echo
 fi
 
@@ -859,7 +858,7 @@ then
   # ... so instead of not installing X11rdp we remove it in the end
   if $BUILD_XRDP # If we compiled X11rdp then remove the generated X11rdp files (from /opt)
   then
-    rm -rf "$X11DIR"
+    rm -rf "$X11RDPDEST"
   fi
 
   echo $LINE
