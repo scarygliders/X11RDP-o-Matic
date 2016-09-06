@@ -172,7 +172,7 @@ get_branches()
   echo $LINE
   echo "Obtaining list of available branches..."
   echo $LINE
-  BRANCHES=`git ls-remote --heads "$GH_URL" | cut -f2 | cut -d "/" -f 3`
+  BRANCHES=$(git ls-remote --heads "$GH_URL" | cut -f2 | cut -d "/" -f 3)
   echo $BRANCHES
   echo $LINE
 }
@@ -273,7 +273,7 @@ xfonts-utils)
 apt-cache search ^libtool-bin | grep -q libtool-bin && \
   REQUIREDPACKAGES+=(libtool-bin)
 
-DIST=`lsb_release -d -s`
+DIST=$(lsb_release -d -s)
 
 PARALLELMAKE=true   # Utilise all available CPU's for compilation by default.
 CLEANUP=false       # Keep the x11rdp and xrdp sources by default - to remove
@@ -512,7 +512,7 @@ update_repositories()
 
 calc_cpu_cores()
 {
-  Cores=`nproc`
+  Cores=$(nproc)
   if [ $Cores -gt 1 ]
   then
     let "MakesystemWorkHarder = $Cores + 1"
