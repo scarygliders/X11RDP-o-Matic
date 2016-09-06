@@ -696,12 +696,12 @@ remove_currently_installed_xrdp()
 
 remove_currently_installed_X11rdp()
 {
-  check_package X11rdp
+  check_package x11rdp
   if [ $? -eq 0 ]
   then
     echo "Removing the currently installed X11rdp package."
     echo $LINE
-    SUDO_CMD apt-get -y remove X11rdp || error_exit
+    SUDO_CMD apt-get -y remove x11rdp || error_exit
   fi
 }
 
