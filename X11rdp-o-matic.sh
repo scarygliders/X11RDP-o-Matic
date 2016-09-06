@@ -282,6 +282,7 @@ INSTALL_XRDP=true   # Install xrdp and x11rdp on this system
 BUILD_XRDP=true     # Build and package x11rdp
 BLEED=false         # Not bleeding-edge unless specified
 USE_TURBOJPEG=false # Turbo JPEG not selected by default
+GIT_USE_HTTPS=true  # Use firewall-friendry https:// instead of git:// to fetch git submodules
 
 # Parse the command line for any arguments
 while [ $# -gt 0 ]
@@ -396,11 +397,21 @@ echo $LINE
 # Common function declarations begin here...#
 #############################################
 
-download_xrdp_noninteractive()
+clone()
 {
-  echo "Downloading xrdp source from the GIT repository..."
-  [ -d "$WRKDIR/xrdp" ] ||
-  git clone --depth 1 "$GH_URL" -b "$GH_BRANCH" "$WRKDIR/xrdp"
+  local CLONE_DEST="${WRKDIR}/xrdp"
+  echo -n 'Cloning source code... '
+ 
+  if [ ! -d "$CLONE_DEST" ]; then
+    if $GIT_USE_HTTPS; then
+      git clone ${GH_URL} --branch ${GH_BRANCH} ${CLONE_DEST} >> $BUILD_LOG 2>&1 || error_exit
+      sed -i -e 's|git://|https://|' ${CLONE_DEST}/.gitmodules ${CLONE_DEST}/.git/config
+      (cd $CLONE_DEST && git submodule update --init --recursive) >> $BUILD_LOG 2>&1
+    else
+      git clone --resursive ${GH_URL} --branch ${GH_BRANCH} ${CLONE_DEST} >> $BUILD_LOG 2>&1 || error_exit
+    fi
+  fi
+  echo 'done'
 }
 
 compile_X11rdp_noninteractive()
@@ -633,7 +644,7 @@ install_generated_packages()
 
 download_compile_noninteractively()
 {
-  download_xrdp_noninteractive
+  clone
   if $PARALLELMAKE
   then
     cpu_cores_noninteractive
