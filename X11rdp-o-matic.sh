@@ -53,6 +53,12 @@ GH_PROJECT=xrdp
 GH_BRANCH=master
 GH_URL=https://github.com/${GH_ACCOUNT}/${GH_PROJECT}.git
 
+
+WRKDIR=$(mktemp --directory --suffix .X11RDP-o-Matic)
+APT_LOG=${WRKDIR}/apt.log
+BUILD_LOG=${WRKDIR}/build.log
+SUDO_LOG=${WRKDIR}/sudo.log
+
 SUDO_CMD()
 {
   # sudo's password prompt timeouts 5 minutes by most default settings
