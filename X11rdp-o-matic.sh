@@ -236,17 +236,6 @@ apt-cache search ^libtool-bin | grep -q libtool-bin && \
 
 DIST=`lsb_release -d -s`
 
-# Check for running on supported/tested Distros...
-SUPPORTED=false
-while read i
-do
-  if [ "$DIST" = "$i" ]
-  then
-    SUPPORTED=true
-    break
-  fi
-done < SupportedDistros.txt
-
 PARALLELMAKE=true   # Utilise all available CPU's for compilation by default.
 CLEANUP=false       # Keep the x11rdp and xrdp sources by default - to remove
                     # requires --cleanup command line switch
@@ -612,15 +601,6 @@ make_X11rdp_symbolic_link()
   fi
 }
 
-# make the doc directory if it doesn't exist...
-make_doc_directory()
-{
-  if [ ! -e /usr/share/doc/xrdp ]
-  then
-    mkdir /usr/share/doc/xrdp
-  fi
-}
-
 install_generated_packages()
 {
   ERRORFOUND=0
@@ -869,8 +849,6 @@ then
   exit
 
 else # Install the packages on the system
-  # make_doc_directory # <--- Probably not needed anymore since the dh_make
-                       # method includes the doc directory ;)
   # stop xrdp if running
   if $USING_SYSTEMD
   then
