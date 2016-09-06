@@ -29,6 +29,7 @@ set -e
 # WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 export LANG=C
+trap user_interrupt_exit SIGINT
 
 if [ $UID -eq 0 ] ; then
   # write to stderr 1>&2
@@ -97,6 +98,14 @@ error_exit()
   echo_stderr "	$APT_LOG"
   echo_stderr "Exitting..."
   #[ -f .PID ] && [ "$(cat .PID)" = $$ ] && rm -f .PID
+  exit 1
+}
+
+user_interrupt_exit()
+{
+  echo_stderr; echo_stderr
+  echo_stderr "Script stopped due to user interrupt, exitting..."
+  cd "$BASEDIR"
   exit 1
 }
 
@@ -627,13 +636,7 @@ install_generated_packages()
   fi
 }
 
-control_c()
-{
-  clear
-  cd "$BASEDIR"
-  echo "*** CTRL-C was pressed - aborted ***"
-  exit
-}
+
 
 download_compile_noninteractively()
 {
@@ -789,9 +792,6 @@ check_for_opt_directory
 
 # Figure out what version number to use for the debian packages
 calculate_version_num
-
-# trap keyboard interrupt (control-c)
-trap control_c SIGINT
 
 if $BUILD_XRDP
 then
