@@ -49,15 +49,18 @@ if ! hash sudo 2> /dev/null ; then
 fi
 
 LINE="----------------------------------------------------------------------"
+
 # xrdp repository
 GH_ACCOUNT=neutrinolabs
 GH_PROJECT=xrdp
 GH_BRANCH=master
 GH_URL=https://github.com/${GH_ACCOUNT}/${GH_PROJECT}.git
-
+# working directories
 WRKDIR=$(mktemp --directory --suffix .X11RDP-o-Matic)
 BASEDIR=$(dirname $(readlink -f $0))
 PKGDIR=${BASEDIR}/packages
+PATCHDIR=${BASEDIR}/patch
+# log dir
 APT_LOG=${WRKDIR}/apt.log
 BUILD_LOG=${WRKDIR}/build.log
 SUDO_LOG=${WRKDIR}/sudo.log
@@ -109,6 +112,46 @@ user_interrupt_exit()
   exit 1
 }
 
+# call like this: install_required_packages ${PACKAGES[@]}
+install_required_packages()
+{
+  for f in $@
+  do
+    echo -n "Checking for ${f}... "
+    check_package $f
+    if [ $? -eq 0 ]; then
+      echo "yes"
+    else
+      echo "no"
+      echo -n "Installing ${f}... "
+      SUDO_CMD apt-get -y install $f >> $APT_LOG && echo "done" || error_exit
+    fi
+  done
+}
+
+# check if given package is installed
+# returns 0 if installed, returns 1 if not installed
+check_package()
+{
+  DpkgStatus=$(dpkg-query -s "$1" 2>&1)
+  case "$DpkgStatus" in
+    *"is not installed and no info"*)
+      return 1 # not installed
+    ;;
+    *"deinstall ok config-files"*)
+      return 1 # deinstalled, config files are still on system
+    ;;
+    *"install ok installed"*)
+      return 0 # installed
+    ;;
+  esac
+}
+
+install_package()
+{
+  SUDO_CMD apt-get -y install "$1" >> $APT_LOG || error_exit
+}
+
 # change dh_make option depending on if dh_make supports -y option
 dh_make_y()
 {
@@ -123,7 +166,6 @@ dh_make_y()
   fi
 }
 
-
 # Get list of available branches from remote git repository
 get_branches()
 {
@@ -134,6 +176,7 @@ get_branches()
   echo $BRANCHES
   echo $LINE
 }
+
 
 # If first switch = --help, display the help/usage message then exit.
 if [ $1 = "--help" ]
@@ -176,19 +219,7 @@ fi
 
 clear
 
-# Install lsb_release if it's not already installed...
-if [ ! -e /usr/bin/lsb_release ]
-then
-  echo "Installing the lsb_release package..."
-  SUDO_CMD apt-get -y install lsb-release >> $APT_LOG || error_exit
-fi
-
-# Install rsync if it's not already installed...
-if [ ! -e /usr/bin/rsync ]
-then
-  echo "Installing the rsync package..."
-  SUDO_CMD apt-get -y install rsync >> $APT_LOG || error_exit
-fi
+install_required_packages ${META_DEPENDS[@]} # install packages required to run this utility
 
 #################################################################
 # Initialise variables and parse any command line switches here #
@@ -467,44 +498,6 @@ update_repositories()
     SUDO_CMD apt-get update >> $APT_LOG || error_exit
 }
 
-# Interrogates dpkg to find out the status of a given package name...
-check_package()
-{
-  DpkgStatus=`dpkg-query -s "$1" 2>&1` || PkgStatus=0
-  case "$DpkgStatus" in
-    *"is not installed and no info"*)
-      PkgStatus=0
-      # "Not installed."
-    ;;
-    *"deinstall ok config-files"*)
-      PkgStatus=1
-      # "Deinstalled, config files are still on system."
-    ;;
-    *"install ok installed"*)
-      PkgStatus=2
-      # "Installed."
-    ;;
-  esac
-}
-
-# Install or re-install package and give a relatively nice-ish message whilst doing so (if interactive)
-install_package()
-{
-  SUDO_CMD apt-get -y install "$1" >> $APT_LOG || error_exit
-}
-
-# Check for necessary packages and install if necessary...
-install_required_packages()
-{
-  for PkgName in "${REQUIREDPACKAGES[@]}"
-  do
-    check_package "$PkgName"
-    if [ $PkgStatus -eq 0  ] || [ $PkgStatus -eq 1 ]
-    then
-      install_package "$PkgName"
-    fi
-  done
-}
 
 calc_cpu_cores()
 {
@@ -682,7 +675,7 @@ remove_existing_generated_packages()
 remove_currently_installed_xrdp()
 {
   check_package xrdp
-  if [ $PkgStatus -eq 2 ]
+  if [ $? -eq 0 ]
   then
     echo "Removing the currently installed xrdp package."
     echo $LINE
@@ -693,7 +686,7 @@ remove_currently_installed_xrdp()
 remove_currently_installed_X11rdp()
 {
   check_package X11rdp
-  if [ $PkgStatus -eq 2 ]
+  if [ $? -eq 0 ]
   then
     echo "Removing the currently installed X11rdp package."
     echo $LINE
@@ -812,7 +805,7 @@ calc_cpu_cores # find out how many cores we have to play with, and if >1, set a 
 
 update_repositories # perform an apt update to make sure we have a current list of available packages
 
-install_required_packages # install any packages required for xrdp/X11rdp (and libjpeg-turbo if needed) compilation
+install_required_packages ${REQUIREDPACKAGES[@]} # install any packages required for xrdp/X11rdp (and libjpeg-turbo if needed) compilation
 
 remove_existing_generated_packages # Yes my function names become ever more ridiculously long :D
 
