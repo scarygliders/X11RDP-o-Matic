@@ -389,7 +389,7 @@ compile_X11rdp_noninteractive()
 
 package_X11rdp_noninteractive()
 {
-  PKGDEST="$WRKDIR/packages/x11rdp"
+  PKGDEST="$PKGDIR/x11rdp"
 
   if [ ! -e "$PKGDEST" ]; then
     mkdir -p "$PKGDEST"
@@ -428,13 +428,14 @@ package_X11rdp_noninteractive()
 # Package xrdp using dh-make...
 compile_xrdp_noninteractive()
 {
+  PKGDEST="$PKGDIR/xrdp"
+
   echo $LINE
   echo "Preparing xrdp source to make a Debian package..."
   echo $LINE
 
-  if [ ! -e "$WRKDIR/packages/xrdp" ]
-  then
-    mkdir -p "$WRKDIR/packages/xrdp"
+  if [ ! -e "$PKGDEST" ]; then
+    mkdir -p "$PKGDEST"
   fi
 
   # Step 1: Link xrdp dir to xrdp-$VERSION for dh_make to work on...
@@ -467,7 +468,7 @@ compile_xrdp_noninteractive()
   cd ..
   dpkg-buildpackage -uc -us -tc -rfakeroot
   cd "$WRKDIR"
-  mv xrdp*.deb "$WRKDIR/packages/xrdp/"
+  mv xrdp*.deb "${PKGDIR}/xrdp/"
 }
 
 update_repositories()
@@ -627,22 +628,22 @@ install_generated_packages()
 
   if $BUILD_XRDP
   then
-    FILES=("$WRKDIR"/packages/x11rdp/x11rdp*.deb)
+    FILES=("$PKGDIR"/x11rdp/x11rdp*.deb)
     if [ ${#FILES[@]} -gt 0 ]
     then
       remove_currently_installed_X11rdp
-      SUDO_CMD dpkg -i "$WRKDIR"/packages/x11rdp/x11rdp*.deb
+      SUDO_CMD dpkg -i "$PKGDIR"/x11rdp/x11rdp*.deb
     else
       ERRORFOUND=1
       echo "We were supposed to have built X11rdp but I couldn't find a package file."
       echo "Please check that X11rdp built correctly. It probably didn't."
     fi
   fi
-  FILES=("$WRKDIR"/packages/xrdp/xrdp*.deb)
+  FILES=("$PKGDIR"/xrdp/xrdp*.deb)
   if [ ${#FILES[@]} -gt 0 ]
   then
     remove_currently_installed_xrdp
-    SUDO_CMD dpkg -i "$WRKDIR"/packages/xrdp/xrdp*.deb
+    SUDO_CMD dpkg -i "$PKGDIR"/xrdp/xrdp*.deb
   else
     echo "I couldn't find an xrdp Debian package to install."
     echo "Please check that xrdp compiled correctly. It probably didn't."
@@ -688,18 +689,18 @@ remove_existing_generated_packages()
 {
   echo "Checking for previously generated packages..."
   echo $LINE
-  if ls "$WRKDIR"/packages/xrdp/X11rdp*.deb >/dev/null 2>&1
+  if ls "$PKGDIR"/xrdp/X11rdp*.deb >/dev/null 2>&1
   then
     echo "Removing previously generated Debian X11rdp package file(s)."
     echo $LINE
-    rm "$WRKDIR"/packages/Xorg/*.deb
+    rm "$PKGDIR"/Xorg/*.deb
   fi
 
-  if ls "$WRKDIR"/packages/xrdp/xrdp*.deb >/dev/null 2>&1
+  if ls "$PKGDIR"/xrdp/xrdp*.deb >/dev/null 2>&1
   then
     echo "Removing previously generated Debian xrdp package file(s)."
     echo $LINE
-    rm "$WRKDIR"/packages/xrdp/*.deb
+    rm "$PKGDIR"/xrdp/*.deb
   fi
 }
 
