@@ -72,6 +72,25 @@ SUDO_CMD()
   return ${PIPESTATUS[0]}
 }
 
+echo_stderr()
+{
+  echo $@ 1>&2
+}
+
+error_exit()
+{
+  echo_stderr; echo_stderr
+  echo_stderr "Oops, something going wrong around line: $BASH_LINENO"
+  echo_stderr "See logs to get further information:"
+  echo_stderr "	$BUILD_LOG"
+  echo_stderr "	$SUDO_LOG"
+  echo_stderr "	$APT_LOG"
+  echo_stderr "Exitting..."
+  #[ -f .PID ] && [ "$(cat .PID)" = $$ ] && rm -f .PID
+  exit 1
+}
+
+
 # Get list of available branches from remote git repository
 get_branches()
 {
