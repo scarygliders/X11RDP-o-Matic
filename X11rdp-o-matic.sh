@@ -277,7 +277,7 @@ PARALLELMAKE=true   # Utilise all available CPU's for compilation by default.
 CLEANUP=false       # Keep the x11rdp and xrdp sources by default - to remove
                     # requires --cleanup command line switch
 INSTALL_XRDP=true   # Install xrdp and x11rdp on this system
-BUILD_XRDP=true     # Build and package x11rdp
+BUILD_X11RDP=true   # Build and package x11rdp
 BLEED=false         # Not bleeding-edge unless specified
 USE_TURBOJPEG=false # Turbo JPEG not selected by default
 GIT_USE_HTTPS=true  # Use firewall-friendry https:// instead of git:// to fetch git submodules
@@ -335,7 +335,7 @@ case "$1" in
     echo $LINE
     ;;
   --nox11rdp)
-    BUILD_XRDP=false
+    BUILD_X11RDP=false
     echo "Will not build and package x11rdp"
     echo $LINE
     ;;
@@ -545,7 +545,7 @@ calculate_version_num()
 # place all the built binaries and files.
 make_X11rdp_env()
 {
-  if [ -e "$X11RDPDEST" -a "$X11RDPDEST" != "/" ] && $BUILD_XRDP
+  if [ -e "$X11RDPDEST" -a "$X11RDPDEST" != "/" ] && $BUILD_X11RDP
   then
     SUDO_CMD rm -rf "$X11RDPDEST" || error_exit
     SUDO_CMD mkdir -p "$X11RDPDEST" || error_exit
@@ -602,7 +602,7 @@ install_generated_packages()
 {
   ERRORFOUND=0
 
-  if $BUILD_XRDP
+  if $BUILD_X11RDP
   then
     FILES=("$PKGDIR"/x11rdp/x11rdp*.deb)
     if [ ${#FILES[@]} -gt 0 ]
@@ -647,7 +647,7 @@ download_compile_noninteractively()
   # Compiles & packages using dh_make and dpkg-buildpackage
   compile_xrdp_noninteractive
 
-  if $BUILD_XRDP
+  if $BUILD_X11RDP
   then
     compile_X11rdp_noninteractive
     package_X11rdp_noninteractive
@@ -788,7 +788,7 @@ check_for_opt_directory
 # Figure out what version number to use for the debian packages
 calculate_version_num
 
-if $BUILD_XRDP
+if $BUILD_X11RDP
 then
   echo " *** Will remove the contents of $X11RDPDEST and $WRKDIR/xrdp-$VERSION ***"
   echo
@@ -822,7 +822,7 @@ if ! $INSTALL_XRDP # If not installing on this system...
 then
   # this is stupid but some Makefiles from X11rdp don't have an uninstall target (ex: Python!)
   # ... so instead of not installing X11rdp we remove it in the end
-  if $BUILD_XRDP # If we compiled X11rdp then remove the generated X11rdp files (from /opt)
+  if $BUILD_X11RDP # If we compiled X11rdp then remove the generated X11rdp files (from /opt)
   then
     rm -rf "$X11RDPDEST"
   fi
