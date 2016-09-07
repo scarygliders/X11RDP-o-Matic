@@ -794,13 +794,6 @@ then
   echo
 fi
 
-if ! $INSTALL_XRDP
-then
-  INSTOPT="no"
-else
-  INSTOPT="yes"
-fi
-
 make_X11rdp_env
 
 calc_cpu_cores # find out how many cores we have to play with, and if >1, set a possible make command
