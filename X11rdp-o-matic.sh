@@ -166,6 +166,18 @@ get_branches()
   echo $LINE
 }
 
+first_of_all()
+{
+  clear
+  echo 'Allow X11RDP-o-Matic to gain root privileges.'
+  echo 'Type your password if required.'
+  sudo -v
+
+  SUDO_CMD apt-get update >> $APT_LOG || error_exit
+}
+
+# main routines here
+first_of_all
 
 # If first switch = --help, display the help/usage message then exit.
 if [ $1 = "--help" ]
@@ -492,12 +504,6 @@ compile_xrdp_noninteractive()
   mv xrdp*.deb "${PKGDIR}/xrdp/"
 }
 
-update_repositories()
-{
-    SUDO_CMD apt-get update >> $APT_LOG || error_exit
-}
-
-
 calc_cpu_cores()
 {
   Cores=$(nproc)
@@ -801,8 +807,6 @@ fi
 make_X11rdp_env
 
 calc_cpu_cores # find out how many cores we have to play with, and if >1, set a possible make command
-
-update_repositories # perform an apt update to make sure we have a current list of available packages
 
 install_required_packages ${REQUIREDPACKAGES[@]} # install any packages required for xrdp/X11rdp (and libjpeg-turbo if needed) compilation
 
