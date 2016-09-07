@@ -59,6 +59,7 @@ WRKDIR=$(mktemp --directory --suffix .X11RDP-o-Matic)
 BASEDIR=$(dirname $(readlink -f $0))
 PKGDIR=${BASEDIR}/packages
 PATCHDIR=${BASEDIR}/patch
+PIDFILE=${BASEDIR}/.PID
 # log dir
 APT_LOG=${WRKDIR}/apt.log
 BUILD_LOG=${WRKDIR}/build.log
@@ -99,7 +100,7 @@ error_exit()
   echo_stderr "	$SUDO_LOG"
   echo_stderr "	$APT_LOG"
   echo_stderr "Exitting..."
-  #[ -f .PID ] && [ "$(cat .PID)" = $$ ] && rm -f .PID
+  [ -f "${PIDFILE}" ] && [ "$(cat "${PIDFILE}")" = $$ ] && rm -f "${PIDFILE}"
   exit 1
 }
 
@@ -108,6 +109,7 @@ user_interrupt_exit()
   echo_stderr; echo_stderr
   echo_stderr "Script stopped due to user interrupt, exitting..."
   cd "$BASEDIR"
+  [ -f "${PIDFILE}" ] && [ "$(cat "${PIDFILE}")" = $$ ] && rm -f "${PIDFILE}"
   exit 1
 }
 
@@ -168,6 +170,14 @@ get_branches()
 first_of_all()
 {
   clear
+
+  if [ -f "${PIDFILE}" ]; then
+    echo_stderr "Another instance of $0 is already running." 2>&1
+    error_exit
+  else
+    echo $$ > "${PIDFILE}"
+  fi
+
   echo 'Allow X11RDP-o-Matic to gain root privileges.'
   echo 'Type your password if required.'
   sudo -v
@@ -845,3 +855,5 @@ else # Install the packages on the system
   echo "Or use the RDPsesconfig.sh utility to configure a session's desktop."
   echo $LINE
 fi
+
+[ -f "${PIDFILE}" ] && [ "$(cat ${PIDFILE})" = $$ ] && rm -rf "${PIDFILE}"
