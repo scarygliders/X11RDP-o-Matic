@@ -465,8 +465,7 @@ compile_xrdp_noninteractive()
 
   # Step 2: Run the bootstrap and configure scripts
   cd "$WRKDIR/xrdp-$VERSION"
-  ./bootstrap
-  ./configure "${CONFIGUREFLAGS[@]}"
+  ./bootstrap && ./configure "${CONFIGUREFLAGS[@]}" || error_exit
 
   # Step 3 : Use dh-make to create the debian directory package template...
   dh_make_y --single --copyright apache --createorig
