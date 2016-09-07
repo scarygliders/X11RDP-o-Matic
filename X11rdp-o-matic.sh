@@ -130,21 +130,10 @@ install_required_packages()
 }
 
 # check if given package is installed
-# returns 0 if installed, returns 1 if not installed
 check_package()
 {
-  DpkgStatus=$(dpkg-query -s "$1" 2>&1)
-  case "$DpkgStatus" in
-    *"is not installed and no info"*)
-      return 1 # not installed
-    ;;
-    *"deinstall ok config-files"*)
-      return 1 # deinstalled, config files are still on system
-    ;;
-    *"install ok installed"*)
-      return 0 # installed
-    ;;
-  esac
+  # if not installed, the last command's exit code will be 1
+  dpkg-query -W --showformat='${Status}\n' "$1" 2>/dev/null | grep -q -e "deinstall ok" -e "not installed" 
 }
 
 install_package()
