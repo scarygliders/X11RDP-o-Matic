@@ -133,7 +133,7 @@ install_required_packages()
 check_package()
 {
   # if not installed, the last command's exit code will be 1
-  dpkg-query -W --showformat='${Status}\n' "$1" 2>/dev/null | grep -q -e "deinstall ok" -e "not installed" 
+  dpkg-query -W --showformat='${Status}\n' "$1" 2>/dev/null | grep -v -q -e "deinstall ok" -e "not installed" 
 }
 
 install_package()
@@ -411,7 +411,7 @@ compile_X11rdp_noninteractive()
 
 package_X11rdp_noninteractive()
 {
-  PKGDEST="$PKGDIR/x11rdp"
+  local PKGDEST="$PKGDIR/x11rdp"
 
   if [ ! -e "$PKGDEST" ]; then
     mkdir -p "$PKGDEST"
@@ -450,7 +450,7 @@ package_X11rdp_noninteractive()
 # Package xrdp using dh-make...
 compile_xrdp_noninteractive()
 {
-  PKGDEST="$PKGDIR/xrdp"
+  local PKGDEST="$PKGDIR/xrdp"
 
   echo $LINE
   echo "Preparing xrdp source to make a Debian package..."
