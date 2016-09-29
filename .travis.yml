@@ -3,8 +3,13 @@ language: c
 
 env:
   matrix:
-    - OS_TYPE=debian OS_VERSION=8 BRANCH=devel
-    - OS_TYPE=ubuntu OS_VERSION=16.10 BRANCH=devel
+    - OS_TYPE=debian OS_VERSION=stable           BRANCH=devel
+    - OS_TYPE=debian OS_VERSION=stable-backports BRANCH=devel
+    - OS_TYPE=debian OS_VERSION=testing          BRANCH=devel
+    - OS_TYPE=debian OS_VERSION=unstable         BRANCH=devel
+    - OS_TYPE=ubuntu OS_VERSION=trusty           BRANCH=devel
+    - OS_TYPE=ubuntu OS_VERSION=latest           BRANCH=devel
+    - OS_TYPE=ubuntu OS_VERSION=devel            BRANCH=devel
 
 services:
   - docker
