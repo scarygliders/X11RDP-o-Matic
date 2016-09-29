@@ -509,7 +509,7 @@ compile_xrdp_noninteractive()
   echo "Preparation complete. Building and packaging xrdp..."
   echo $LINE
   cd ..
-  dpkg-buildpackage -uc -us -tc -rfakeroot | tee -a $BUILD_LOGa || error_exit
+  dpkg-buildpackage -uc -us -tc -rfakeroot | tee -a $BUILD_LOG || error_exit
   cd "$WRKDIR"
   mv xrdp*.deb "${PKGDIR}/xrdp/"
 }
