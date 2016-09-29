@@ -13,5 +13,5 @@ before_install:
   - docker pull ${OS_TYPE}:${OS_VERSION}
 
 script:
-  - docker run --rm --interactive --tty --volume=$PWD:$PWD ${OS_TYPE}:${OS_VERSION} bash -c "cd $PWD && bash .travis.sh --branch ${BRANCH} --nox11rdp"
+  - docker run --rm --interactive --tty --volume=$PWD:$PWD ${OS_TYPE}:${OS_VERSION} bash -c "cd $PWD && bash .travis.sh --branch ${BRANCH} --nox11rdp --noinstall"
 
