@@ -237,7 +237,7 @@ install_required_packages ${META_DEPENDS[@]} # install packages required to run 
 
 RELEASE=1 # release number for debian packages
 
-TMPFILE=/tmp/xrdpver
+TMPFILE=${WRKDIR}/xrdpver
 X11RDPDEST=/opt/X11rdp
 
 ARCH=$(dpkg --print-architecture)
