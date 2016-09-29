@@ -134,7 +134,8 @@ install_required_packages()
 check_package()
 {
   # if not installed, the last command's exit code will be 1
-  dpkg-query -W --showformat='${Status}\n' "$1" 2>/dev/null | grep -v -q -e "deinstall ok" -e "not installed" 
+  dpkg-query -W --showformat='${Status}\n' "$1" 2>/dev/null  \
+    | grep -v -q -e "deinstall ok" -e "not installed"  -e "not-installed"
 }
 
 install_package()
