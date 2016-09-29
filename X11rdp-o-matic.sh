@@ -481,14 +481,15 @@ compile_xrdp_noninteractive()
   fi
 
   # Step 1: Link xrdp dir to xrdp-$VERSION for dh_make to work on...
-  rsync -a --delete -- "${WRKDIR}/xrdp/" "${WRKDIR}/xrdp-${VERSION}"
+  rsync -a --delete -- "${WRKDIR}/xrdp/" "${WRKDIR}/xrdp-${VERSION}" 
 
   # Step 2: Run the bootstrap and configure scripts
   cd "$WRKDIR/xrdp-$VERSION"
-  ./bootstrap && ./configure "${CONFIGUREFLAGS[@]}" || error_exit
+  ./bootstrap | tee -a $BUILD_LOG || error_exit
+  ./configure "${CONFIGUREFLAGS[@]}" | tee -a $BUILD_LOG || error_exit
 
   # Step 3 : Use dh-make to create the debian directory package template...
-  dh_make_y --single --copyright apache --createorig
+  dh_make_y --single --copyright apache --createorig | tee -a $BUILD_LOG
 
   # Step 4 : edit/configure the debian directory...
   cd debian
@@ -507,7 +508,7 @@ compile_xrdp_noninteractive()
   echo "Preparation complete. Building and packaging xrdp..."
   echo $LINE
   cd ..
-  dpkg-buildpackage -uc -us -tc -rfakeroot
+  dpkg-buildpackage -uc -us -tc -rfakeroot | tee -a $BUILD_LOGa || error_exit
   cd "$WRKDIR"
   mv xrdp*.deb "${PKGDIR}/xrdp/"
 }
@@ -541,7 +542,7 @@ cpu_cores_noninteractive()
 calculate_version_num()
 {
   README="https://raw.github.com/${GH_ACCOUNT}/${GH_PROJECT}/${GH_BRANCH}/readme.txt"
-  wget --no-check-certificate -O "$TMPFILE" "$README" >& /dev/null
+  wget --no-check-certificate -O "$TMPFILE" "$README" >& /dev/null || error_exit
   VERSION=$(grep xrdp "$TMPFILE" | head -1 | cut -d " " -f2)
   rm -f "$TMPFILE"
   if [ "${XRDPBRANCH#v}" = "$GH_BRANCH" ]
@@ -578,17 +579,17 @@ alter_xrdp_source()
   # which should speed up compilation. It will make a backup copy of the original buildx.sh.
   if $PARALLELMAKE
   then
-    patch -b -d "$WRKDIR/xrdp/xorg/X11R7.6" buildx.sh < "$PATCHDIR/buildx_patch.diff"
+    patch -b -d "$WRKDIR/xrdp/xorg/X11R7.6" buildx.sh < "$PATCHDIR/buildx_patch.diff" || error_exit
   fi
 
   # Patch rdp Makefile
-  patch -b -d "$WRKDIR/xrdp/xorg/X11R7.6/rdp" Makefile < "$PATCHDIR/rdp_Makefile.patch"
+  patch -b -d "$WRKDIR/xrdp/xorg/X11R7.6/rdp" Makefile < "$PATCHDIR/rdp_Makefile.patch" || error_exit
 
   # Patch v0.7 buildx.sh, as the file download location for Mesa has changed...
   if [[ $GH_BRANCH = "v0.7"* ]] # branch v0.7 has a moved libmesa
   then
       echo "Patching mesa download location..."
-      patch -b -d "$WRKDIR/xrdp/xorg/X11R7.6" buildx.sh < "$PATCHDIR/mesa.patch"
+      patch -b -d "$WRKDIR/xrdp/xorg/X11R7.6" buildx.sh < "$PATCHDIR/mesa.patch" || error_exit
   fi
 }
 
@@ -599,7 +600,7 @@ make_X11rdp_symbolic_link()
   then
     if [ -e "$X11RDPDEST/bin/X11rdp" ]
     then
-      SUDO_CMD ln -s "$X11RDPDEST/bin/X11rdp" /usr/bin/X11rdp
+      SUDO_CMD ln -s "$X11RDPDEST/bin/X11rdp" /usr/bin/X11rdp || error_exit
     else
       clear
       echo "There was a problem... the /opt/X11rdp/bin/X11rdp binary could not be found. Did the compilation complete?"
@@ -619,7 +620,7 @@ install_generated_packages()
     if [ ${#FILES[@]} -gt 0 ]
     then
       remove_currently_installed_X11rdp
-      SUDO_CMD dpkg -i "$PKGDIR"/x11rdp/x11rdp*.deb
+      SUDO_CMD dpkg -i "$PKGDIR"/x11rdp/x11rdp*.deb || error_exit
     else
       ERRORFOUND=1
       echo "We were supposed to have built X11rdp but I couldn't find a package file."
@@ -630,7 +631,7 @@ install_generated_packages()
   if [ ${#FILES[@]} -gt 0 ]
   then
     remove_currently_installed_xrdp
-    SUDO_CMD dpkg -i "$PKGDIR"/xrdp/xrdp*.deb
+    SUDO_CMD dpkg -i "$PKGDIR"/xrdp/xrdp*.deb || error_exit
   else
     echo "I couldn't find an xrdp Debian package to install."
     echo "Please check that xrdp compiled correctly. It probably didn't."
