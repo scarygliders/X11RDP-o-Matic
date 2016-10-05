@@ -424,13 +424,13 @@ clone()
   echo 'done'
 }
 
-compile_X11rdp_noninteractive()
+compile_X11rdp()
 {
   cd "$WRKDIR/xrdp/xorg/X11R7.6/"
   SUDO_CMD sh buildx.sh "$X11RDPDEST" || error_exit
 }
 
-package_X11rdp_noninteractive()
+package_X11rdp()
 {
   local PKGDEST="$PKGDIR/x11rdp"
 
@@ -469,7 +469,7 @@ package_X11rdp_noninteractive()
 }
 
 # Package xrdp using dh-make...
-compile_xrdp_noninteractive()
+compile_xrdp()
 {
   local PKGDEST="$PKGDIR/xrdp"
 
@@ -526,7 +526,7 @@ calc_cpu_cores()
   fi
 }
 
-cpu_cores_noninteractive()
+cpu_cores()
 {
   if [ ! -e "$WRKDIR/PARALLELMAKE" ] # No need to perform this if for some reason we've been here before...
   then
@@ -646,24 +646,24 @@ install_generated_packages()
 
 
 
-download_compile_noninteractively()
+download_compile()
 {
   clone
   if $PARALLELMAKE
   then
-    cpu_cores_noninteractive
+    cpu_cores
   fi
 
   alter_xrdp_source # Patches the downloaded source
 
   # New method...
   # Compiles & packages using dh_make and dpkg-buildpackage
-  compile_xrdp_noninteractive
+  compile_xrdp
 
   if $BUILD_X11RDP
   then
-    compile_X11rdp_noninteractive
-    package_X11rdp_noninteractive
+    compile_X11rdp
+    package_X11rdp
     make_X11rdp_symbolic_link
   fi
 }
@@ -817,7 +817,7 @@ remove_existing_generated_packages # Yes my function names become ever more ridi
 
 check_v08_and_turbojpeg # v0.8 branch needs libturbojpeg to be in /opt
 
-download_compile_noninteractively
+download_compile
 
 if $CLEANUP # Also remove the xrdp source tree if asked to.
 then
