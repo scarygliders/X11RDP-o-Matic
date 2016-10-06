@@ -108,7 +108,7 @@ error_exit()
 clean_exit()
 {
   [ -f "${PIDFILE}" ] && [ "$(cat "${PIDFILE}")" = $$ ] && rm -f "${PIDFILE}"
-  exit 1
+  exit 0
 }
 
 user_interrupt_exit()
