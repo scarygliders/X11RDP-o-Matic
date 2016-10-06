@@ -55,13 +55,13 @@ GH_ACCOUNT=neutrinolabs
 GH_PROJECT=xrdp
 GH_BRANCH=master
 GH_URL=https://github.com/${GH_ACCOUNT}/${GH_PROJECT}.git
-# working directories
+
+# working directories and logs
 WRKDIR=$(mktemp --directory --suffix .X11RDP-o-Matic)
 BASEDIR=$(dirname $(readlink -f $0))
 PKGDIR=${BASEDIR}/packages
 PATCHDIR=${BASEDIR}/patch
 PIDFILE=${BASEDIR}/.PID
-# log dir
 APT_LOG=${WRKDIR}/apt.log
 BUILD_LOG=${WRKDIR}/build.log
 SUDO_LOG=${WRKDIR}/sudo.log
@@ -359,13 +359,8 @@ install_required_packages ${META_DEPENDS[@]} # install packages required to run 
 #################################################################
 
 RELEASE=1 # release number for debian packages
-
 X11RDPDEST=/opt/X11rdp
-
 ARCH=$(dpkg --print-architecture)
-
-# Would have used /tmp for this, but some distros I tried mount /tmp as tmpfs
-# and filled up.
 CONFIGUREFLAGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse)
 
 # Declare a list of packages required to download sources/compile them...
