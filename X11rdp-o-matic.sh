@@ -442,7 +442,7 @@ package_X11rdp()
   then
     # usually reach here
     cd "$WRKDIR/xrdp/xorg/debuild"
-    ./debX11rdp.sh "$VERSION" "$RELEASE" "$X11RDPDEST" "$PKGDEST"
+    ./debX11rdp.sh "$X11RDP_VERSION" "$RELEASE" "$X11RDPDEST" "$PKGDEST"
   else
     mkdir -p "$WRKDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN"
     cp "$BASEDIR/debian/x11rdp_control" "$WRKDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/control"
@@ -451,17 +451,17 @@ package_X11rdp()
     PACKDIR=x11rdp-files
     DESTDIR="$PACKDIR/opt"
     NAME=x11rdp
-    sed -i -e "s/DUMMYVERINFO/$VERSION-$RELEASE/" "$PACKDIR/DEBIAN/control"
+    sed -i -e "s/DUMMYVERINFO/$X11RDP_VERSION-$RELEASE/" "$PACKDIR/DEBIAN/control"
     sed -i -e "s/DUMMYARCHINFO/$ARCH/" "$PACKDIR/DEBIAN/control"
     # need a different delimiter, since it has a path
     sed -i -e "s,DUMMYDIRINFO,$X11RDPDEST," "$PACKDIR/DEBIAN/postinst"
     mkdir -p "$DESTDIR"
     cp -Rf "$X11RDPDEST" "$DESTDIR"
-    dpkg-deb --build "$PACKDIR" "$PKGDEST/${NAME}_$VERSION-${RELEASE}_${ARCH}.deb"
-    XORGPKGNAME="${NAME}_$VERSION-${RELEASE}_${ARCH}.deb"
+    dpkg-deb --build "$PACKDIR" "$PKGDEST/${NAME}_$X11RDP_VERSION-${RELEASE}_${ARCH}.deb"
+    XORGPKGNAME="${NAME}_$X11RDP_VERSION-${RELEASE}_${ARCH}.deb"
     # revert to initial state
     rm -rf "$DESTDIR"
-    sed -i -e "s/$VERSION-$RELEASE/DUMMYVERINFO/" "$PACKDIR/DEBIAN/control"
+    sed -i -e "s/$X11RDP_VERSION-$RELEASE/DUMMYVERINFO/" "$PACKDIR/DEBIAN/control"
     sed -i -e "s/$ARCH/DUMMYARCHINFO/" "$PACKDIR/DEBIAN/control"
     # need a different delimiter, since it has a path
     sed -i -e "s,$X11RDPDEST,DUMMYDIRINFO," "$PACKDIR/DEBIAN/postinst"
@@ -482,10 +482,10 @@ compile_xrdp()
   fi
 
   # Step 1: Link xrdp dir to xrdp-$VERSION for dh_make to work on...
-  rsync -a --delete -- "${WRKDIR}/xrdp/" "${WRKDIR}/xrdp-${VERSION}" 
+  rsync -a --delete -- "${WRKDIR}/xrdp/" "${WRKDIR}/xrdp-${XRDP_VERSION}" 
 
   # Step 2: Run the bootstrap and configure scripts
-  cd "$WRKDIR/xrdp-$VERSION"
+  cd "${WRKDIR}/xrdp-${XRDP_VERSION}"
   ./bootstrap | tee -a $BUILD_LOG || error_exit
   ./configure "${CONFIGUREFLAGS[@]}" | tee -a $BUILD_LOG || error_exit
 
@@ -536,22 +536,6 @@ cpu_cores()
       touch "$WRKDIR/PARALLELMAKE"
     fi
   fi
-}
-
-# Create a useful version number for creating Debian packages.
-# Worked out from the chosen branch.
-calculate_version_num()
-{
-  README="https://raw.github.com/${GH_ACCOUNT}/${GH_PROJECT}/${GH_BRANCH}/readme.txt"
-  wget --no-check-certificate -O "$TMPFILE" "$README" >& /dev/null || error_exit
-  VERSION=$(grep xrdp "$TMPFILE" | head -1 | cut -d " " -f2)
-  rm -f "$TMPFILE"
-  if [ "${GH_BRANCH#v}" = "$GH_BRANCH" ]
-  then
-    VERSION="$VERSION+$GH_BRANCH"
-  fi
-  echo "Debian package version number will be : $VERSION"
-  echo $LINE
 }
 
 # bran new version calculation
@@ -820,12 +804,14 @@ cleanup()
 # Check for existence of a /opt directory, and create it if it doesn't exist.
 check_for_opt_directory
 
+clone
+
 # Figure out what version number to use for the debian packages
-calculate_version_num
+bran_new_calculate_version_num
 
 if $BUILD_X11RDP
 then
-  echo " *** Will remove the contents of $X11RDPDEST and $WRKDIR/xrdp-$VERSION ***"
+  echo " *** Will remove the contents of ${X11RDPDEST} and ${WRKDIR}/xrdp-${XRDP_VERSION} ***"
   echo
 fi
 
