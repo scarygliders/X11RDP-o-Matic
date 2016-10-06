@@ -538,9 +538,11 @@ bran_new_calculate_version_num()
   cd ${WRKDIR}/xrdp || error_exit
   local _XRDP_VERSION=$(grep xrdp readme.txt| head -1 | cut -d ' ' -f 2)
   local _XRDP_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-  local _XRDP_DATE_HASH=$(git log -1 --date=format:%Y%m%d --format="~%cd+git%h" .)
-  local _X11RDP_DATE_HASH=$(git log -1 --date=format:%Y%m%d --format="~%cd+git%h" xorg/X11R7.6)
-  local _XORGXRDP_DATE_HASH=$(git log -1 --date=format:%Y%m%d --format="~%cd+git%h" xorgxrdp)
+  # hack for git 2.1.x
+  # in latest git, this can be written: git log -1 --date=format:%Y%m%d --format="~%cd+git%h" .
+  local _XRDP_DATE_HASH=$(git log -1 --date=short --format="~%cd+git%h" . | tr -d -)
+  local _X11RDP_DATE_HASH=$(git log -1 --date=short --format="~%cd+git%h" xorg/X11R7.6 | tr -d -)
+  local _XORGXRDP_DATE_HASH=$(git log -1 --date=shortd --format="~%cd+git%h" xorgxrdp | tr -d -)
   cd ${_PWD} || error_exit
 
   XRDP_VERSION=${_XRDP_VERSION}${_XRDP_DATE_HASH}+${_XRDP_BRANCH}
