@@ -67,8 +67,9 @@ BUILD_LOG=${WRKDIR}/build.log
 SUDO_LOG=${WRKDIR}/sudo.log
 
 # packages to run this utility
-META_DEPENDS=(lsb-release rsync)
+META_DEPENDS=(lsb-release rsync git build-essentials dh-make)
 XRDP_CONFIGURE_ARGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse)
+XRDP_BUILD_DEPENDS=(autoconf libssl-dev libtool libpam0g-dev libx11-dev libxfixes-dev libxrandr-dev libfuse-dev pkg-config)
 RELEASE=1 # release number for debian packages
 X11RDPDEST=/opt/X11rdp
 
@@ -121,7 +122,7 @@ xfonts-utils)
 # libtool binaries are separated to libtool-bin package since Ubuntu 15.04
 # if libtool-bin package exists, add it to REQUIREDPACKAGES
 apt-cache search ^libtool-bin | grep -q libtool-bin && \
-  REQUIREDPACKAGES+=(libtool-bin)
+  REQUIREDPACKAGES+=(libtool-bin) XRDP_BUILD_DEPENDS+=(libtool-bin)
 
 #############################################
 # Common function declarations begin here...#
@@ -344,25 +345,25 @@ OPTIONS
       ;;
     --withjpeg)
       XRDP_CONFIGURE_ARGS+=(--enable-jpeg)
-      REQUIREDPACKAGES+=(libjpeg8-dev)
+      XRDP_BUILD_DEPENDS+=(libjpeg8-dev)
       ;;
     --withturbojpeg)
       XRDP_CONFIGURE_ARGS+=(--enable-tjpeg)
       if [[ $GH_BRANCH = "v0.8"* ]] # branch v0.8 has a hard-coded requirement for libjpeg-turbo to be in /opt
       then
-        REQUIREDPACKAGES+=(nasm curl) # Need these for downloading and compiling libjpeg-turbo, later.
+        XRDP_BUILD_DEPENDS+=(nasm curl) # Need these for downloading and compiling libjpeg-turbo, later.
       else
-        REQUIREDPACKAGES+=(libturbojpeg1 libturbojpeg1-dev) # The distro packages suffice for 0.9 onwards.
+        XRDP_BUILD_DEPENDS+=(libturbojpeg1 libturbojpeg1-dev) # The distro packages suffice for 0.9 onwards.
       fi
       USE_TURBOJPEG=true
       ;;
     --withsimplesound)
       XRDP_CONFIGURE_ARGS+=(--enable-simplesound)
-      REQUIREDPACKAGES+=(libpulse-dev)
+      XRDP_BUILD_DEPENDS+=(libpulse-dev)
       ;;
     --withpulse)
       XRDP_CONFIGURE_ARGS+=(--enable-loadpulsemodules)
-      REQUIREDPACKAGES+=(libpulse-dev)
+      XRDP_BUILD_DEPENDS+=(libpulse-dev)
       ;;
     --withdebug)
       XRDP_CONFIGURE_ARGS+=(--enable-xrdpdebug)
@@ -375,7 +376,7 @@ OPTIONS
       ;;
     --withxrdpvr)
       XRDP_CONFIGURE_ARGS+=(--enable-xrdpvr)
-      REQUIREDPACKAGES+=(libavcodec-dev libavformat-dev)
+      XRDP_BUILD_DEPENDS+=(libavcodec-dev libavformat-dev)
       ;;
     --withnopam)
       XRDP_CONFIGURE_ARGS+=(--disable-pam)
@@ -385,7 +386,7 @@ OPTIONS
       ;;
     --withfreerdp)
       XRDP_CONFIGURE_ARGS+=(--enable-freerdp1)
-      REQUIREDPACKAGES+=(libfreerdp-dev)
+      XRDP_BUILD_DEPENDS+=(libfreerdp-dev)
       ;;
   esac
   shift
@@ -807,7 +808,7 @@ make_X11rdp_env
 
 calc_cpu_cores # find out how many cores we have to play with, and if >1, set a possible make command
 
-install_required_packages ${REQUIREDPACKAGES[@]} # install any packages required for xrdp/X11rdp (and libjpeg-turbo if needed) compilation
+install_required_packages ${XRDP_BUILD_DEPENDS[@]}
 
 remove_existing_generated_packages # Yes my function names become ever more ridiculously long :D
 
