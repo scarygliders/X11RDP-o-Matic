@@ -67,7 +67,7 @@ BUILD_LOG=${WRKDIR}/build.log
 SUDO_LOG=${WRKDIR}/sudo.log
 
 # packages to run this utility
-META_DEPENDS=(lsb-release rsync git build-essentials dh-make)
+META_DEPENDS=(lsb-release rsync git build-essential dh-make wget)
 XRDP_CONFIGURE_ARGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse)
 XRDP_BUILD_DEPENDS=(autoconf libssl-dev libtool libpam0g-dev libx11-dev libxfixes-dev libxrandr-dev libfuse-dev pkg-config)
 RELEASE=1 # release number for debian packages
