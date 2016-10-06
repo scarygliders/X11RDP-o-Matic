@@ -137,7 +137,7 @@ install_required_packages()
   for f in $@
   do
     echo -n "Checking for ${f}... "
-    check_package $f
+    check_if_installed $f
     if [ $? -eq 0 ]; then
       echo "yes"
     else
@@ -149,7 +149,7 @@ install_required_packages()
 }
 
 # check if given package is installed
-check_package()
+check_if_installed()
 {
   # if not installed, the last command's exit code will be 1
   dpkg-query -W --showformat='${Status}\n' "$1" 2>/dev/null  \
@@ -698,7 +698,7 @@ remove_installed_packages()
 {
   for f in $@; do
     echo -n "Removing installed ${f}... "
-    check_package ${f}
+    check_if_installed ${f}
     if [ $? -eq 0 ]; then
       SUDO_CMD apt-get -y remove ${f} || error_exit
     fi
