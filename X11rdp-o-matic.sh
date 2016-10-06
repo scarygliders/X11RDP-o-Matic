@@ -360,7 +360,6 @@ install_required_packages ${META_DEPENDS[@]} # install packages required to run 
 
 RELEASE=1 # release number for debian packages
 X11RDPDEST=/opt/X11rdp
-ARCH=$(dpkg --print-architecture)
 CONFIGUREFLAGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse)
 
 # Declare a list of packages required to download sources/compile them...
@@ -428,7 +427,7 @@ clone()
 compile_X11rdp()
 {
   cd "$WRKDIR/xrdp/xorg/X11R7.6/"
-  SUDO_CMD sh buildx.sh "$X11RDPDEST" || error_exit
+  SUDO_CMD sh buildx.sh "$X11RDPDEST" | tee -a $BUILD_LOG || error_exit
 }
 
 package_X11rdp()
@@ -445,6 +444,7 @@ package_X11rdp()
     cd "$WRKDIR/xrdp/xorg/debuild"
     ./debX11rdp.sh "$X11RDP_VERSION" "$RELEASE" "$X11RDPDEST" "$PKGDEST"
   else
+    local ARCH=$(dpkg --print-architecture)
     mkdir -p "$WRKDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN"
     cp "$BASEDIR/debian/x11rdp_control" "$WRKDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/control"
     cp -a "$BASEDIR/debian/x11rdp_postinst" "$WRKDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN/postinst"
@@ -839,7 +839,7 @@ then
   # ... so instead of not installing X11rdp we remove it in the end
   if $BUILD_X11RDP # If we compiled X11rdp then remove the generated X11rdp files (from /opt)
   then
-    rm -rf "$X11RDPDEST"
+    SUDO_CMD rm -rf "$X11RDPDEST" || error_exit
   fi
 
   echo $LINE
