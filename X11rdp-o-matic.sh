@@ -554,6 +554,28 @@ calculate_version_num()
   echo $LINE
 }
 
+# bran new version calculation
+# new version number includes git last commit date, hash and branch.
+bran_new_calculate_version_num()
+{
+  local _PWD=$PWD
+  cd ${WRKDIR}/xrdp || error_exit
+  local _XRDP_VERSION=$(grep xrdp readme.txt| head -1 | cut -d ' ' -f 2)
+  local _XRDP_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  local _XRDP_DATE_HASH=$(git log -1 --date=format:%Y%m%d --format="~%cd+git%h" .)
+  local _X11RDP_DATE_HASH=$(git log -1 --date=format:%Y%m%d --format="~%cd+git%h" xorg/X11R7.6)
+  local _XORGXRDP_DATE_HASH=$(git log -1 --date=format:%Y%m%d --format="~%cd+git%h" xorgxrdp)
+  cd ${_PWD} || error_exit
+
+  XRDP_VERSION=${_XRDP_VERSION}${_XRDP_DATE_HASH}+${_XRDP_BRANCH}
+  X11RDP_VERSION=${_XRDP_VERSION}${_X11RDP_DATE_HASH}+${_XRDP_BRANCH}
+  XORGXRDP_VERSION=${_XRDP_VERSION}${_XORGXRDP_DATE_HASH}+${_XRDP_BRANCH}
+
+  echo xrdp=${XRDP_VERSION}
+  echo x11rdp=${X11RDP_VERSION}
+  echo xorgxrdp=${XORGXRDP_VERSION}
+}
+
 # Make a directory, to which the X11rdp build system will
 # place all the built binaries and files.
 make_X11rdp_env()
