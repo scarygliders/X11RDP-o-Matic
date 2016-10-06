@@ -70,6 +70,7 @@ SUDO_LOG=${WRKDIR}/sudo.log
 META_DEPENDS=(lsb-release rsync)
 XRDP_CONFIGURE_ARGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse)
 RELEASE=1 # release number for debian packages
+X11RDPDEST=/opt/X11rdp
 
 # flags
 PARALLELMAKE=true   # Utilise all available CPU's for compilation by default.
@@ -84,6 +85,47 @@ GIT_USE_HTTPS=true  # Use firewall-friendry https:// instead of git:// to fetch 
 [ -z "$(pidof systemd)" ] && \
   USING_SYSTEMD=false || \
   USING_SYSTEMD=true
+
+# Declare a list of packages required to download sources/compile them...
+REQUIREDPACKAGES=(build-essential checkinstall automake git
+git-core libssl-dev libpam0g-dev zlib1g-dev libtool libx11-dev libxfixes-dev
+pkg-config flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2
+g++ xutils libfuse-dev libxrandr-dev libdrm-dev libpixman-1-dev
+x11proto-xf86dri-dev
+x11proto-video-dev
+x11proto-resource-dev
+x11proto-dmx-dev
+x11proto-xf86dga-dev
+x11proto-xinerama-dev
+x11proto-render-dev
+x11proto-bigreqs-dev
+x11proto-kb-dev
+x11proto-randr-dev
+x11proto-gl-dev
+x11proto-record-dev
+x11proto-input-dev
+x11proto-fixes-dev
+x11proto-xf86vidmode-dev
+x11proto-xext-dev
+x11proto-scrnsaver-dev
+x11proto-damage-dev
+x11proto-xf86bigfont-dev
+x11proto-composite-dev
+x11proto-core-dev
+x11proto-xcmisc-dev
+x11proto-dri2-dev
+x11proto-fonts-dev
+libgl1-mesa-dev libxkbfile-dev libxfont-dev libpciaccess-dev dh-make gettext
+xfonts-utils)
+
+# libtool binaries are separated to libtool-bin package since Ubuntu 15.04
+# if libtool-bin package exists, add it to REQUIREDPACKAGES
+apt-cache search ^libtool-bin | grep -q libtool-bin && \
+  REQUIREDPACKAGES+=(libtool-bin)
+
+#############################################
+# Common function declarations begin here...#
+#############################################
 
 SUDO_CMD()
 {
@@ -351,61 +393,6 @@ OPTIONS
 }
 
 
-# main routines here
-parse_commandline_args $@
-first_of_all
-install_required_packages ${META_DEPENDS[@]} # install packages required to run this utility
-
-#################################################################
-# Initialise variables and parse any command line switches here #
-#################################################################
-
-X11RDPDEST=/opt/X11rdp
-
-# Declare a list of packages required to download sources/compile them...
-REQUIREDPACKAGES=(build-essential checkinstall automake git
-git-core libssl-dev libpam0g-dev zlib1g-dev libtool libx11-dev libxfixes-dev
-pkg-config flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2
-g++ xutils libfuse-dev libxrandr-dev libdrm-dev libpixman-1-dev
-x11proto-xf86dri-dev
-x11proto-video-dev
-x11proto-resource-dev
-x11proto-dmx-dev
-x11proto-xf86dga-dev
-x11proto-xinerama-dev
-x11proto-render-dev
-x11proto-bigreqs-dev
-x11proto-kb-dev
-x11proto-randr-dev
-x11proto-gl-dev
-x11proto-record-dev
-x11proto-input-dev
-x11proto-fixes-dev
-x11proto-xf86vidmode-dev
-x11proto-xext-dev
-x11proto-scrnsaver-dev
-x11proto-damage-dev
-x11proto-xf86bigfont-dev
-x11proto-composite-dev
-x11proto-core-dev
-x11proto-xcmisc-dev
-x11proto-dri2-dev
-x11proto-fonts-dev
-libgl1-mesa-dev libxkbfile-dev libxfont-dev libpciaccess-dev dh-make gettext
-xfonts-utils)
-
-# libtool binaries are separated to libtool-bin package since Ubuntu 15.04
-# if libtool-bin package exists, add it to REQUIREDPACKAGES
-apt-cache search ^libtool-bin | grep -q libtool-bin && \
-  REQUIREDPACKAGES+=(libtool-bin)
-
-
-echo "Using the following xrdp configuration : "$XRDP_CONFIGURE_ARGS
-echo $LINE
-
-#############################################
-# Common function declarations begin here...#
-#############################################
 
 clone()
 {
@@ -476,6 +463,8 @@ compile_xrdp()
 {
   local PKGDEST="$PKGDIR/xrdp"
 
+  echo $LINE
+  echo "Using the following xrdp configuration : "${XRDP_CONFIGURE_ARGS[@]}
   echo $LINE
   echo "Preparing xrdp source to make a Debian package..."
   echo $LINE
@@ -653,8 +642,6 @@ install_generated_packages()
   fi
 }
 
-
-
 download_compile()
 {
   clone
@@ -796,6 +783,9 @@ cleanup()
 ##########################
 # Main stuff starts here #
 ##########################
+parse_commandline_args $@
+first_of_all
+install_required_packages ${META_DEPENDS[@]} # install packages required to run this utility
 
 # Check for existence of a /opt directory, and create it if it doesn't exist.
 check_for_opt_directory
