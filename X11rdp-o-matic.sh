@@ -420,8 +420,10 @@ clone()
     else
       git clone --resursive ${GH_URL} --branch ${GH_BRANCH} ${CLONE_DEST} >> $BUILD_LOG 2>&1 || error_exit
     fi
+    echo 'done'
+  else
+    echo 'already exists'
   fi
-  echo 'done'
 }
 
 compile_X11rdp()
