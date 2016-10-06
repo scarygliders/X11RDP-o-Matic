@@ -69,6 +69,15 @@ SUDO_LOG=${WRKDIR}/sudo.log
 # packages to run this utility
 META_DEPENDS=(lsb-release rsync wget)
 
+# flags
+PARALLELMAKE=true   # Utilise all available CPU's for compilation by default.
+CLEANUP=false       # Keep the x11rdp and xrdp sources by default - to remove
+                    # requires --cleanup command line switch
+INSTALL_XRDP=true   # Install xrdp and x11rdp on this system
+BUILD_X11RDP=true   # Build and package x11rdp
+USE_TURBOJPEG=false # Turbo JPEG not selected by default
+GIT_USE_HTTPS=true  # Use firewall-friendry https:// instead of git:// to fetch git submodules
+
 # check if the system is using systemd or not
 [ -z "$(pidof systemd)" ] && \
   USING_SYSTEMD=false || \
@@ -193,14 +202,13 @@ first_of_all()
   SUDO_CMD apt-get update >> $APT_LOG || error_exit
 }
 
-# main routines here
-first_of_all
-
+parse_commandline_args()
+{
 # If first switch = --help, display the help/usage message then exit.
-if [ $1 = "--help" ]
-then
-  clear
-  echo "usage: $0 OPTIONS
+  if [ $1 = "--help" ]
+  then
+    clear
+    echo "usage: $0 OPTIONS
 
 OPTIONS
 -------
@@ -229,14 +237,121 @@ OPTIONS
   --withxrdpvr       : build the xrdpvr module
   --withnopam        : don't include PAM support
   --withpamuserpass  : build with pam userpass support
-  --withfreerdp      : build the freerdp1 module
-  "
-  get_branches
-  exit
-fi
+  --withfreerdp      : build the freerdp1 module"
+    get_branches
+    rmdir "${WRDKDIR}"
+    exit
+  fi
 
-clear
+  # Parse the command line for any arguments
+  while [ $# -gt 0 ]; do
+  case "$1" in
+    --justdoit)
+      echo
+      echo "NOTICE: --justdoit options is deprecated since it is now default behaviour"
+      echo
+      echo "Okay, will just do the install from start to finish with no user interaction..."
+      echo $LINE
+      ;;
+    --branch)
+      get_branches
+      ok=0
+      for check in ${BRANCHES[@]}
+      do
+        if [ "$check" = "$2" ]
+        then
+          ok=1
+        fi
+      done
+      if [ $ok -eq 0 ]
+      then
+        echo "**** Error detected in branch selection. Argument after --branch was : $2 ."
+        echo "**** Available branches : "$BRANCHES
+        exit 1
+      fi
+      GH_BRANCH="$2"
+      echo "Using branch ==>> ${GH_BRANCH} <<=="
+      if [ "$GH_BRANCH" = "devel" ]
+      then
+        echo "Note : using the bleeding-edge version may result in problems :)"
+      fi
+      echo $LINE
+      shift
+      ;;
+    --nocpuoptimize)
+      PARALLELMAKE=false
+      echo "Will not utilize additional CPU's for compilation..."
+      echo $LINE
+      ;;
+    --cleanup)
+      CLEANUP=true
+      echo "Will remove the xrdp and x11rdp sources in the working directory after compilation/installation..."
+      echo $LINE
+      ;;
+    --noinstall)
+      INSTALL_XRDP=false
+      echo "Will not install anything on the system but will build the packages"
+      echo $LINE
+      ;;
+    --nox11rdp)
+      BUILD_X11RDP=false
+      echo "Will not build and package x11rdp"
+      echo $LINE
+      ;;
+    --withjpeg)
+      CONFIGUREFLAGS+=(--enable-jpeg)
+      REQUIREDPACKAGES+=(libjpeg8-dev)
+      ;;
+    --withturbojpeg)
+      CONFIGUREFLAGS+=(--enable-tjpeg)
+      if [[ $GH_BRANCH = "v0.8"* ]] # branch v0.8 has a hard-coded requirement for libjpeg-turbo to be in /opt
+      then
+        REQUIREDPACKAGES+=(nasm curl) # Need these for downloading and compiling libjpeg-turbo, later.
+      else
+        REQUIREDPACKAGES+=(libturbojpeg1 libturbojpeg1-dev) # The distro packages suffice for 0.9 onwards.
+      fi
+      USE_TURBOJPEG=true
+      ;;
+    --withsimplesound)
+      CONFIGUREFLAGS+=(--enable-simplesound)
+      REQUIREDPACKAGES+=(libpulse-dev)
+      ;;
+    --withpulse)
+      CONFIGUREFLAGS+=(--enable-loadpulsemodules)
+      REQUIREDPACKAGES+=(libpulse-dev)
+      ;;
+    --withdebug)
+      CONFIGUREFLAGS+=(--enable-xrdpdebug)
+      ;;
+    --withneutrino)
+      CONFIGUREFLAGS+=(--enable-neutrinordp)
+      ;;
+    --withkerberos)
+      CONFIGUREFLAGS+=(--enable-kerberos)
+      ;;
+    --withxrdpvr)
+      CONFIGUREFLAGS+=(--enable-xrdpvr)
+      REQUIREDPACKAGES+=(libavcodec-dev libavformat-dev)
+      ;;
+    --withnopam)
+      CONFIGUREFLAGS+=(--disable-pam)
+      ;;
+    --withpamuserpass)
+      CONFIGUREFLAGS+=(--enable-pamuserpass)
+      ;;
+    --withfreerdp)
+      CONFIGUREFLAGS+=(--enable-freerdp1)
+      REQUIREDPACKAGES+=(libfreerdp-dev)
+      ;;
+  esac
+  shift
+  done
+}
 
+
+# main routines here
+parse_commandline_args $@
+first_of_all
 install_required_packages ${META_DEPENDS[@]} # install packages required to run this utility
 
 #################################################################
@@ -290,118 +405,6 @@ xfonts-utils)
 apt-cache search ^libtool-bin | grep -q libtool-bin && \
   REQUIREDPACKAGES+=(libtool-bin)
 
-PARALLELMAKE=true   # Utilise all available CPU's for compilation by default.
-CLEANUP=false       # Keep the x11rdp and xrdp sources by default - to remove
-                    # requires --cleanup command line switch
-INSTALL_XRDP=true   # Install xrdp and x11rdp on this system
-BUILD_X11RDP=true   # Build and package x11rdp
-USE_TURBOJPEG=false # Turbo JPEG not selected by default
-GIT_USE_HTTPS=true  # Use firewall-friendry https:// instead of git:// to fetch git submodules
-
-# Parse the command line for any arguments
-while [ $# -gt 0 ]
-do
-case "$1" in
-  --justdoit)
-    echo
-    echo "NOTICE: --justdoit options is deprecated since it is now default behaviour"
-    echo
-    echo "Okay, will just do the install from start to finish with no user interaction..."
-    echo $LINE
-    ;;
-  --branch)
-    get_branches
-    ok=0
-    for check in ${BRANCHES[@]}
-    do
-      if [ "$check" = "$2" ]
-      then
-        ok=1
-      fi
-    done
-    if [ $ok -eq 0 ]
-    then
-      echo "**** Error detected in branch selection. Argument after --branch was : $2 ."
-      echo "**** Available branches : "$BRANCHES
-      exit 1
-    fi
-    GH_BRANCH="$2"
-    echo "Using branch ==>> ${GH_BRANCH} <<=="
-    if [ "$GH_BRANCH" = "devel" ]
-    then
-      echo "Note : using the bleeding-edge version may result in problems :)"
-    fi
-    echo $LINE
-    shift
-    ;;
-  --nocpuoptimize)
-    PARALLELMAKE=false
-    echo "Will not utilize additional CPU's for compilation..."
-    echo $LINE
-    ;;
-  --cleanup)
-    CLEANUP=true
-    echo "Will remove the xrdp and x11rdp sources in the working directory after compilation/installation..."
-    echo $LINE
-    ;;
-  --noinstall)
-    INSTALL_XRDP=false
-    echo "Will not install anything on the system but will build the packages"
-    echo $LINE
-    ;;
-  --nox11rdp)
-    BUILD_X11RDP=false
-    echo "Will not build and package x11rdp"
-    echo $LINE
-    ;;
-  --withjpeg)
-    CONFIGUREFLAGS+=(--enable-jpeg)
-    REQUIREDPACKAGES+=(libjpeg8-dev)
-    ;;
-  --withturbojpeg)
-    CONFIGUREFLAGS+=(--enable-tjpeg)
-    if [[ $GH_BRANCH = "v0.8"* ]] # branch v0.8 has a hard-coded requirement for libjpeg-turbo to be in /opt
-    then
-      REQUIREDPACKAGES+=(nasm curl) # Need these for downloading and compiling libjpeg-turbo, later.
-    else
-      REQUIREDPACKAGES+=(libturbojpeg1 libturbojpeg1-dev) # The distro packages suffice for 0.9 onwards.
-    fi
-    USE_TURBOJPEG=true
-    ;;
-  --withsimplesound)
-    CONFIGUREFLAGS+=(--enable-simplesound)
-    REQUIREDPACKAGES+=(libpulse-dev)
-    ;;
-  --withpulse)
-    CONFIGUREFLAGS+=(--enable-loadpulsemodules)
-    REQUIREDPACKAGES+=(libpulse-dev)
-    ;;
-  --withdebug)
-    CONFIGUREFLAGS+=(--enable-xrdpdebug)
-    ;;
-  --withneutrino)
-    CONFIGUREFLAGS+=(--enable-neutrinordp)
-    ;;
-  --withkerberos)
-    CONFIGUREFLAGS+=(--enable-kerberos)
-    ;;
-  --withxrdpvr)
-    CONFIGUREFLAGS+=(--enable-xrdpvr)
-    REQUIREDPACKAGES+=(libavcodec-dev libavformat-dev)
-    ;;
-  --withnopam)
-    CONFIGUREFLAGS+=(--disable-pam)
-    ;;
-  --withpamuserpass)
-    CONFIGUREFLAGS+=(--enable-pamuserpass)
-    ;;
-  --withfreerdp)
-    CONFIGUREFLAGS+=(--enable-freerdp1)
-    REQUIREDPACKAGES+=(libfreerdp-dev)
-    ;;
-esac
-shift
-done
 
 echo "Using the following xrdp configuration : "$CONFIGUREFLAGS
 echo $LINE
