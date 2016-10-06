@@ -105,6 +105,12 @@ error_exit()
   exit 1
 }
 
+clean_exit()
+{
+  [ -f "${PIDFILE}" ] && [ "$(cat "${PIDFILE}")" = $$ ] && rm -f "${PIDFILE}"
+  exit 1
+}
+
 user_interrupt_exit()
 {
   echo_stderr; echo_stderr
