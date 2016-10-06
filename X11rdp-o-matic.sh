@@ -239,7 +239,6 @@ install_required_packages ${META_DEPENDS[@]} # install packages required to run 
 
 RELEASE=1 # release number for debian packages
 
-TMPFILE=${WRKDIR}/xrdpver
 X11RDPDEST=/opt/X11rdp
 
 ARCH=$(dpkg --print-architecture)
@@ -290,7 +289,6 @@ CLEANUP=false       # Keep the x11rdp and xrdp sources by default - to remove
                     # requires --cleanup command line switch
 INSTALL_XRDP=true   # Install xrdp and x11rdp on this system
 BUILD_X11RDP=true   # Build and package x11rdp
-BLEED=false         # Not bleeding-edge unless specified
 USE_TURBOJPEG=false # Turbo JPEG not selected by default
 GIT_USE_HTTPS=true  # Use firewall-friendry https:// instead of git:// to fetch git submodules
 
@@ -326,7 +324,6 @@ case "$1" in
     if [ "$GH_BRANCH" = "devel" ]
     then
       echo "Note : using the bleeding-edge version may result in problems :)"
-      BLEED=true
     fi
     echo $LINE
     shift
