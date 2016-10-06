@@ -627,7 +627,7 @@ install_generated_packages()
     FILES=("$PKGDIR"/x11rdp/x11rdp*.deb)
     if [ ${#FILES[@]} -gt 0 ]
     then
-      remove_currently_installed_X11rdp
+      remove_installed_packages x11rdp
       SUDO_CMD dpkg -i "$PKGDIR"/x11rdp/x11rdp*.deb || error_exit
     else
       ERRORFOUND=1
@@ -638,7 +638,7 @@ install_generated_packages()
   FILES=("$PKGDIR"/xrdp/xrdp*.deb)
   if [ ${#FILES[@]} -gt 0 ]
   then
-    remove_currently_installed_xrdp
+    remove_installed_packages xrdp
     SUDO_CMD dpkg -i "$PKGDIR"/xrdp/xrdp*.deb || error_exit
   else
     echo "I couldn't find an xrdp Debian package to install."
@@ -694,26 +694,16 @@ remove_existing_generated_packages()
   fi
 }
 
-remove_currently_installed_xrdp()
+remove_installed_packages()
 {
-  check_package xrdp
-  if [ $? -eq 0 ]
-  then
-    echo "Removing the currently installed xrdp package."
-    echo $LINE
-    SUDO_CMD apt-get -y remove xrdp || error_exit
-  fi
-}
-
-remove_currently_installed_X11rdp()
-{
-  check_package x11rdp
-  if [ $? -eq 0 ]
-  then
-    echo "Removing the currently installed X11rdp package."
-    echo $LINE
-    SUDO_CMD apt-get -y remove x11rdp || error_exit
-  fi
+  for f in $@; do
+    echo -n "Removing installed ${f}... "
+    check_package ${f}
+    if [ $? -eq 0 ]; then
+      SUDO_CMD apt-get -y remove ${f} || error_exit
+    fi
+    echo "done"
+  done
 }
 
 check_for_opt_directory()
