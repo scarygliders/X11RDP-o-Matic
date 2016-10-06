@@ -797,7 +797,10 @@ check_v08_and_turbojpeg()
 
 cleanup()
 {
-  rm -rf "$WRKDIR/xrdp-$VERSION"
+  $CLEANUP || return
+  echo -n "Cleaning up working directory: ${WRKDIR} ... "
+  rm -rf "$WRKDIR"
+  echo "done"
 }
 
 ##########################
@@ -830,10 +833,7 @@ check_v08_and_turbojpeg # v0.8 branch needs libturbojpeg to be in /opt
 
 download_compile
 
-if $CLEANUP # Also remove the xrdp source tree if asked to.
-then
-  cleanup
-fi
+cleanup
 
 if ! $INSTALL_XRDP # If not installing on this system...
 then
