@@ -849,7 +849,6 @@ then
   echo "Packages have been placed under their respective directories in the"
   echo "packages directory."
   echo $LINE
-  exit
 
 else # Install the packages on the system
   # stop xrdp if running
@@ -870,4 +869,4 @@ else # Install the packages on the system
   echo $LINE
 fi
 
-[ -f "${PIDFILE}" ] && [ "$(cat ${PIDFILE})" = $$ ] && rm -rf "${PIDFILE}"
+clean_exit
