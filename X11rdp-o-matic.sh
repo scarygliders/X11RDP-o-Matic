@@ -67,7 +67,9 @@ BUILD_LOG=${WRKDIR}/build.log
 SUDO_LOG=${WRKDIR}/sudo.log
 
 # packages to run this utility
-META_DEPENDS=(lsb-release rsync wget)
+META_DEPENDS=(lsb-release rsync)
+XRDP_CONFIGURE_ARGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse)
+RELEASE=1 # release number for debian packages
 
 # flags
 PARALLELMAKE=true   # Utilise all available CPU's for compilation by default.
@@ -299,11 +301,11 @@ OPTIONS
       echo $LINE
       ;;
     --withjpeg)
-      CONFIGUREFLAGS+=(--enable-jpeg)
+      XRDP_CONFIGURE_ARGS+=(--enable-jpeg)
       REQUIREDPACKAGES+=(libjpeg8-dev)
       ;;
     --withturbojpeg)
-      CONFIGUREFLAGS+=(--enable-tjpeg)
+      XRDP_CONFIGURE_ARGS+=(--enable-tjpeg)
       if [[ $GH_BRANCH = "v0.8"* ]] # branch v0.8 has a hard-coded requirement for libjpeg-turbo to be in /opt
       then
         REQUIREDPACKAGES+=(nasm curl) # Need these for downloading and compiling libjpeg-turbo, later.
@@ -313,34 +315,34 @@ OPTIONS
       USE_TURBOJPEG=true
       ;;
     --withsimplesound)
-      CONFIGUREFLAGS+=(--enable-simplesound)
+      XRDP_CONFIGURE_ARGS+=(--enable-simplesound)
       REQUIREDPACKAGES+=(libpulse-dev)
       ;;
     --withpulse)
-      CONFIGUREFLAGS+=(--enable-loadpulsemodules)
+      XRDP_CONFIGURE_ARGS+=(--enable-loadpulsemodules)
       REQUIREDPACKAGES+=(libpulse-dev)
       ;;
     --withdebug)
-      CONFIGUREFLAGS+=(--enable-xrdpdebug)
+      XRDP_CONFIGURE_ARGS+=(--enable-xrdpdebug)
       ;;
     --withneutrino)
-      CONFIGUREFLAGS+=(--enable-neutrinordp)
+      XRDP_CONFIGURE_ARGS+=(--enable-neutrinordp)
       ;;
     --withkerberos)
-      CONFIGUREFLAGS+=(--enable-kerberos)
+      XRDP_CONFIGURE_ARGS+=(--enable-kerberos)
       ;;
     --withxrdpvr)
-      CONFIGUREFLAGS+=(--enable-xrdpvr)
+      XRDP_CONFIGURE_ARGS+=(--enable-xrdpvr)
       REQUIREDPACKAGES+=(libavcodec-dev libavformat-dev)
       ;;
     --withnopam)
-      CONFIGUREFLAGS+=(--disable-pam)
+      XRDP_CONFIGURE_ARGS+=(--disable-pam)
       ;;
     --withpamuserpass)
-      CONFIGUREFLAGS+=(--enable-pamuserpass)
+      XRDP_CONFIGURE_ARGS+=(--enable-pamuserpass)
       ;;
     --withfreerdp)
-      CONFIGUREFLAGS+=(--enable-freerdp1)
+      XRDP_CONFIGURE_ARGS+=(--enable-freerdp1)
       REQUIREDPACKAGES+=(libfreerdp-dev)
       ;;
   esac
@@ -358,9 +360,7 @@ install_required_packages ${META_DEPENDS[@]} # install packages required to run 
 # Initialise variables and parse any command line switches here #
 #################################################################
 
-RELEASE=1 # release number for debian packages
 X11RDPDEST=/opt/X11rdp
-CONFIGUREFLAGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse)
 
 # Declare a list of packages required to download sources/compile them...
 REQUIREDPACKAGES=(build-essential checkinstall automake git
@@ -400,7 +400,7 @@ apt-cache search ^libtool-bin | grep -q libtool-bin && \
   REQUIREDPACKAGES+=(libtool-bin)
 
 
-echo "Using the following xrdp configuration : "$CONFIGUREFLAGS
+echo "Using the following xrdp configuration : "$XRDP_CONFIGURE_ARGS
 echo $LINE
 
 #############################################
@@ -488,7 +488,7 @@ compile_xrdp()
   # Step 2: Run the bootstrap and configure scripts
   cd "${WRKDIR}/xrdp-${XRDP_VERSION}"
   ./bootstrap | tee -a $BUILD_LOG || error_exit
-  ./configure "${CONFIGUREFLAGS[@]}" | tee -a $BUILD_LOG || error_exit
+  ./configure "${XRDP_CONFIGURE_ARGS[@]}" | tee -a $BUILD_LOG || error_exit
 
   # Step 3 : Use dh-make to create the debian directory package template...
   dh_make_y --single --copyright apache --createorig | tee -a $BUILD_LOG
