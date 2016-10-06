@@ -321,8 +321,8 @@ case "$1" in
       echo "**** Available branches : "$BRANCHES
       exit 1
     fi
-    XRDPBRANCH="$2"
-    echo "Using branch ==>> $2 <<=="
+    GH_BRANCH="$2"
+    echo "Using branch ==>> ${GH_BRANCH} <<=="
     if [ "$GH_BRANCH" = "devel" ]
     then
       echo "Note : using the bleeding-edge version may result in problems :)"
@@ -546,7 +546,7 @@ calculate_version_num()
   wget --no-check-certificate -O "$TMPFILE" "$README" >& /dev/null || error_exit
   VERSION=$(grep xrdp "$TMPFILE" | head -1 | cut -d " " -f2)
   rm -f "$TMPFILE"
-  if [ "${XRDPBRANCH#v}" = "$GH_BRANCH" ]
+  if [ "${GH_BRANCH#v}" = "$GH_BRANCH" ]
   then
     VERSION="$VERSION+$GH_BRANCH"
   fi
