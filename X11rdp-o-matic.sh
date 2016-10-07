@@ -394,7 +394,6 @@ OPTIONS
 }
 
 
-
 clone()
 {
   local CLONE_DEST="${WRKDIR}/xrdp"
@@ -417,7 +416,7 @@ clone()
 compile_X11rdp()
 {
   cd "$WRKDIR/xrdp/xorg/X11R7.6/"
-  SUDO_CMD sh buildx.sh "$X11RDPDEST" | tee -a $BUILD_LOG || error_exit
+  SUDO_CMD sh buildx.sh "$X11RDPBASE" >> $BUILD_LOG || error_exit
 }
 
 package_X11rdp()
@@ -479,11 +478,11 @@ compile_xrdp()
 
   # Step 2: Run the bootstrap and configure scripts
   cd "${WRKDIR}/xrdp-${XRDP_VERSION}"
-  ./bootstrap | tee -a $BUILD_LOG || error_exit
-  ./configure "${XRDP_CONFIGURE_ARGS[@]}" | tee -a $BUILD_LOG || error_exit
+  ./bootstrap >> $BUILD_LOG || error_exit
+  ./configure "${XRDP_CONFIGURE_ARGS[@]}" >> $BUILD_LOG || error_exit
 
   # Step 3 : Use dh-make to create the debian directory package template...
-  dh_make_y --single --copyright apache --createorig | tee -a $BUILD_LOG
+  dh_make_y --single --copyright apache --createorig >> $BUILD_LOG || error_exit
 
   # Step 4 : edit/configure the debian directory...
   cd debian
