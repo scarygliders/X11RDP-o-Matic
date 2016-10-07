@@ -476,13 +476,14 @@ compile_xrdp()
   # Step 1: Link xrdp dir to xrdp-$VERSION for dh_make to work on...
   rsync -a --delete -- "${WRKDIR}/xrdp/" "${WRKDIR}/xrdp-${XRDP_VERSION}" 
 
-  # Step 2: Run the bootstrap and configure scripts
+  # Step 2 : Use dh-make to create the debian directory package template...
   cd "${WRKDIR}/xrdp-${XRDP_VERSION}"
+  dh_make_y --single --copyright apache --createorig >> $BUILD_LOG || error_exit
+
+  # Step 3: Run the bootstrap and configure scripts
   ./bootstrap >> $BUILD_LOG || error_exit
   ./configure "${XRDP_CONFIGURE_ARGS[@]}" >> $BUILD_LOG || error_exit
 
-  # Step 3 : Use dh-make to create the debian directory package template...
-  dh_make_y --single --copyright apache --createorig >> $BUILD_LOG || error_exit
 
   # Step 4 : edit/configure the debian directory...
   cd debian
