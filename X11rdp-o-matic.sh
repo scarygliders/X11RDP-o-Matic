@@ -68,8 +68,9 @@ SUDO_LOG=${WRKDIR}/sudo.log
 
 # packages to run this utility
 META_DEPENDS=(lsb-release rsync git build-essential dh-make wget)
-XRDP_CONFIGURE_ARGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse)
-XRDP_BUILD_DEPENDS=(autoconf libssl-dev libtool libpam0g-dev libx11-dev libxfixes-dev libxrandr-dev libfuse-dev pkg-config)
+XRDP_CONFIGURE_ARGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse --enable-jpeg --enable-opus)
+XRDP_BUILD_DEPENDS=(debhelper autoconf automake dh-systemd libfuse-dev libjpeg-dev libopus-dev libpam0g-dev libssl-dev libtool libx11-dev libxfixes-dev libxrandr-dev pkg-config)
+X11RDP_BUILD_DEPENDS=(autoconf automake libtool flex bison python-libxml2 libxml2-dev gettext intltool xsltproc make gcc g++ xutils-dev xutils)
 RELEASE=1 # release number for debian packages
 X11RDPBASE=/opt/X11rdp
 
@@ -122,7 +123,7 @@ xfonts-utils)
 # libtool binaries are separated to libtool-bin package since Ubuntu 15.04
 # if libtool-bin package exists, add it to REQUIREDPACKAGES
 apt-cache search ^libtool-bin | grep -q libtool-bin && \
-  REQUIREDPACKAGES+=(libtool-bin) XRDP_BUILD_DEPENDS+=(libtool-bin)
+  REQUIREDPACKAGES+=(libtool-bin) XRDP_BUILD_DEPENDS+=(libtool-bin) X11RDP_BUILD_DEPENDS+=(libtool-bin)
 
 #############################################
 # Common function declarations begin here...#
@@ -485,8 +486,8 @@ compile_xrdp()
   ./configure "${XRDP_CONFIGURE_ARGS[@]}" >> $BUILD_LOG || error_exit
 
   # Step 4 : edit/configure the debian directory...
-  rm debian/*.{ex,EX} README.{Debian,source}
-  cp "${BASEDIR}/debian/{control,docs,postinst,prerm}" debian/
+  rm debian/*.{ex,EX} debian/README.{Debian,source}
+  cp "${BASEDIR}/debian/"{control,docs,postinst,prerm} debian/
   cp COPYING debian/copyright
   cp readme.txt debian/README
 
