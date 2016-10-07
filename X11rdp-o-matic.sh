@@ -484,24 +484,16 @@ compile_xrdp()
   ./bootstrap >> $BUILD_LOG || error_exit
   ./configure "${XRDP_CONFIGURE_ARGS[@]}" >> $BUILD_LOG || error_exit
 
-
   # Step 4 : edit/configure the debian directory...
-  cd debian
-  rm *.ex *.EX # remove the example templates
-  rm README.Debian
-  rm README.source
-  cp ../COPYING copyright # use the xrdp copyright file
-  cp ../readme.txt README # use the xrdp readme.txt as the README file
-  cp "$BASEDIR/debian/postinst" postinst # postinst to create xrdp init.d defaults
-  cp "$BASEDIR/debian/control" control # use a generic control file
-  cp "$BASEDIR/debian/prerm" prerm # pre-removal script
-  cp "$BASEDIR/debian/docs" docs # use xrdp docs list
+  rm debian/*.{ex,EX} README.{Debian,source}
+  cp "${BASEDIR}/debian/{control,docs,postinst,prerm}" debian/
+  cp COPYING debian/copyright
+  cp readme.txt debian/README
 
   # Step 5 : run dpkg-buildpackage to compile xrdp and build a package...
   echo $LINE
   echo "Preparation complete. Building and packaging xrdp..."
   echo $LINE
-  cd ..
   dpkg-buildpackage -uc -us -tc -rfakeroot | tee -a $BUILD_LOG || error_exit
   cd "$WRKDIR"
   mv xrdp*.deb "${PKGDIR}/xrdp/"
