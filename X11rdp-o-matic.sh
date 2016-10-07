@@ -808,7 +808,7 @@ make_X11rdp_env
 
 calc_cpu_cores # find out how many cores we have to play with, and if >1, set a possible make command
 
-install_required_packages ${XRDP_BUILD_DEPENDS[@]}
+install_required_packages ${XRDP_BUILD_DEPENDS[@]} ${X11RDP_BUILD_DEPENDS[@]}
 
 remove_existing_generated_packages # Yes my function names become ever more ridiculously long :D
 
