@@ -1,18 +1,39 @@
 Source: xrdp
-Section: unknown
+Section: net
 Priority: optional
 Maintainer: System Maintainer <root@your-system>
-Build-Depends: debhelper (>= 8.0.0), autotools-dev
+Build-Depends: debhelper (>= 8.0.0),
+               autoconf (>=2.59),
+               automake,
+               libfuse-dev,
+               libopus-dev,
+               libpam0g-dev,
+               libssl-dev,
+               libtool,
+               libx11-dev,
+               libxfixes-dev,
+               libxrandr-dev,
+               pkg-config
+
 Standards-Version: 3.9.4
 Homepage: https://github.com/neutrinolabs/xrdp
 
 Package: xrdp
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         adduser
 Description: Remote Desktop Protocol (RDP) server
- Based on research work by the rdesktop project, xrdp uses the Remote
- Desktop Protocol to present a graphical login to a remote client.
- xrdp can connect to a VNC server or another RDP server.
+ xrdp offers a graphical login to a remote client using
+ RDP (the Remote Desktop Protocol). xrdp can connect to
+ a locally created X.org session with the xorgxrdp drivers,
+ to a VNC X11 server, and forward to another RDP server.
  .
- Microsoft Windows users can connect to a system running xrdp without
- installing additional software.
+ xrdp accepts connections from freerdp, rdesktop, and the
+ built-in terminal server / remote desktop clients of
+ Microsoft Windows operating systems.
+ In the xorgxrdp (which replaces X11RDP) and VNC modes,
+ it provides a fully functional Linux terminal server,
+ offering an X-Window desktop to the user. In the RDP
+ or VNC forwarding mode, any sort of desktop can be used.
+
