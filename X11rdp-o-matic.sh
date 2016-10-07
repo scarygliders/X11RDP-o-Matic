@@ -71,7 +71,7 @@ META_DEPENDS=(lsb-release rsync git build-essential dh-make wget)
 XRDP_CONFIGURE_ARGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse)
 XRDP_BUILD_DEPENDS=(autoconf libssl-dev libtool libpam0g-dev libx11-dev libxfixes-dev libxrandr-dev libfuse-dev pkg-config)
 RELEASE=1 # release number for debian packages
-X11RDPDEST=/opt/X11rdp
+X11RDPBASE=/opt/X11rdp
 
 # flags
 PARALLELMAKE=true   # Utilise all available CPU's for compilation by default.
@@ -432,7 +432,7 @@ package_X11rdp()
   then
     # usually reach here
     cd "$WRKDIR/xrdp/xorg/debuild"
-    ./debX11rdp.sh "$X11RDP_VERSION" "$RELEASE" "$X11RDPDEST" "$PKGDEST"
+    ./debX11rdp.sh "$X11RDP_VERSION" "$RELEASE" "$X11RDPBASE" "$PKGDEST"
   else
     local ARCH=$(dpkg --print-architecture)
     mkdir -p "$WRKDIR/xrdp/xorg/debuild/x11rdp-files/DEBIAN"
@@ -445,9 +445,9 @@ package_X11rdp()
     sed -i -e "s/DUMMYVERINFO/$X11RDP_VERSION-$RELEASE/" "$PACKDIR/DEBIAN/control"
     sed -i -e "s/DUMMYARCHINFO/$ARCH/" "$PACKDIR/DEBIAN/control"
     # need a different delimiter, since it has a path
-    sed -i -e "s,DUMMYDIRINFO,$X11RDPDEST," "$PACKDIR/DEBIAN/postinst"
+    sed -i -e "s,DUMMYDIRINFO,$X11RDPBASE," "$PACKDIR/DEBIAN/postinst"
     mkdir -p "$DESTDIR"
-    cp -Rf "$X11RDPDEST" "$DESTDIR"
+    cp -Rf "$X11RDPBASE" "$DESTDIR"
     dpkg-deb --build "$PACKDIR" "$PKGDEST/${NAME}_$X11RDP_VERSION-${RELEASE}_${ARCH}.deb"
     XORGPKGNAME="${NAME}_$X11RDP_VERSION-${RELEASE}_${ARCH}.deb"
     # revert to initial state
@@ -455,7 +455,7 @@ package_X11rdp()
     sed -i -e "s/$X11RDP_VERSION-$RELEASE/DUMMYVERINFO/" "$PACKDIR/DEBIAN/control"
     sed -i -e "s/$ARCH/DUMMYARCHINFO/" "$PACKDIR/DEBIAN/control"
     # need a different delimiter, since it has a path
-    sed -i -e "s,$X11RDPDEST,DUMMYDIRINFO," "$PACKDIR/DEBIAN/postinst"
+    sed -i -e "s,$X11RDPBASE,DUMMYDIRINFO," "$PACKDIR/DEBIAN/postinst"
   fi
 }
 
@@ -559,10 +559,10 @@ bran_new_calculate_version_num()
 # place all the built binaries and files.
 make_X11rdp_env()
 {
-  if [ -e "$X11RDPDEST" -a "$X11RDPDEST" != "/" ] && $BUILD_X11RDP
+  if [ -e "$X11RDPBASE" -a "$X11RDPBASE" != "/" ] && $BUILD_X11RDP
   then
-    SUDO_CMD rm -rf "$X11RDPDEST" || error_exit
-    SUDO_CMD mkdir -p "$X11RDPDEST" || error_exit
+    SUDO_CMD rm -rf "$X11RDPBASE" || error_exit
+    SUDO_CMD mkdir -p "$X11RDPBASE" || error_exit
   fi
 
   if [ -e "$WRKDIR/xrdp" ]
@@ -600,9 +600,9 @@ make_X11rdp_symbolic_link()
 {
   if [ ! -e /usr/bin/X11rdp ]
   then
-    if [ -e "$X11RDPDEST/bin/X11rdp" ]
+    if [ -e "$X11RDPBASE/bin/X11rdp" ]
     then
-      SUDO_CMD ln -s "$X11RDPDEST/bin/X11rdp" /usr/bin/X11rdp || error_exit
+      SUDO_CMD ln -s "$X11RDPBASE/bin/X11rdp" /usr/bin/X11rdp || error_exit
     else
       clear
       echo "There was a problem... the /opt/X11rdp/bin/X11rdp binary could not be found. Did the compilation complete?"
@@ -800,7 +800,7 @@ bran_new_calculate_version_num
 
 if $BUILD_X11RDP
 then
-  echo " *** Will remove the contents of ${X11RDPDEST} and ${WRKDIR}/xrdp-${XRDP_VERSION} ***"
+  echo " *** Will remove the contents of ${X11RDPBASE} and ${WRKDIR}/xrdp-${XRDP_VERSION} ***"
   echo
 fi
 
@@ -824,7 +824,7 @@ then
   # ... so instead of not installing X11rdp we remove it in the end
   if $BUILD_X11RDP # If we compiled X11rdp then remove the generated X11rdp files (from /opt)
   then
-    SUDO_CMD rm -rf "$X11RDPDEST" || error_exit
+    SUDO_CMD rm -rf "$X11RDPBASE" || error_exit
   fi
 
   echo $LINE
