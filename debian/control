@@ -14,7 +14,6 @@ Build-Depends: debhelper (>= 8.0.0),
                libxfixes-dev,
                libxrandr-dev,
                pkg-config
-
 Standards-Version: 3.9.4
 Homepage: https://github.com/neutrinolabs/xrdp
 
