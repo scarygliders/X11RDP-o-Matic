@@ -80,7 +80,6 @@ CLEANUP=false       # Keep the x11rdp and xrdp sources by default - to remove
                     # requires --cleanup command line switch
 INSTALL_XRDP=true   # Install xrdp and x11rdp on this system
 BUILD_X11RDP=true   # Build and package x11rdp
-USE_TURBOJPEG=false # Turbo JPEG not selected by default
 GIT_USE_HTTPS=true  # Use firewall-friendry https:// instead of git:// to fetch git submodules
 
 # check if the system is using systemd or not
@@ -273,8 +272,6 @@ OPTIONS
   --nox11rdp         : only build xrdp, do not build the x11rdp backend
   --withjpeg         : build jpeg module
                        (uses Independent JPEG Group's JPEG runtime library)
-  --withturbojpeg    : build turbo jpeg module
-                       (As used by TigerVNC and other users of the past TurboJPEG library)
   --withsimplesound  : build the simple pulseaudio interface
   --withpulse        : build code to load pulse audio modules
   --withdebug        : build with debug enabled
@@ -347,16 +344,6 @@ OPTIONS
     --withjpeg)
       XRDP_CONFIGURE_ARGS+=(--enable-jpeg)
       XRDP_BUILD_DEPENDS+=(libjpeg8-dev)
-      ;;
-    --withturbojpeg)
-      XRDP_CONFIGURE_ARGS+=(--enable-tjpeg)
-      if [[ $GH_BRANCH = "v0.8"* ]] # branch v0.8 has a hard-coded requirement for libjpeg-turbo to be in /opt
-      then
-        XRDP_BUILD_DEPENDS+=(nasm curl) # Need these for downloading and compiling libjpeg-turbo, later.
-      else
-        XRDP_BUILD_DEPENDS+=(libturbojpeg1 libturbojpeg1-dev) # The distro packages suffice for 0.9 onwards.
-      fi
-      USE_TURBOJPEG=true
       ;;
     --withsimplesound)
       XRDP_CONFIGURE_ARGS+=(--enable-simplesound)
@@ -681,72 +668,6 @@ check_for_opt_directory()
 }
 
 
-download_and_extract_libturbojpeg()
-{
-  cd "$WRKDIR"
-  echo "TurboJPEG library needs to be built and installed to /opt... downloading and extracting source..."
-  [ -d libjpeg-turbo ] && return 0
-  [ -s libjpeg-turbo-1.3.1.tar.gz ] ||
-  curl -O -J -L http://sourceforge.net/projects/libjpeg-turbo/files/1.3.1/libjpeg-turbo-1.3.1.tar.gz/download#
-  tar xf libjpeg-turbo-1.3.1.tar.gz
-  ln -s libjpeg-turbo-1.3.1 libjpeg-turbo
-}
-
-build_turbojpeg()
-{
-  cd "$WRKDIR/libjpeg-turbo"
-  echo "Configuring Turbo JPEG..."
-  ./configure
-  echo "Building TurboJPEG..."
-  make
-  echo $LINE
-  echo "Installing TurboJPEG to default /opt directory..."
-  make install
-  echo $LINE
-  if [ -e /opt/libjpeg-turbo/lib64 ] # Make symbolic link to libjpeg-turbo's lib64 if it doesn't already exist
-  then
-    if [ ! -e /opt/libjpeg-turbo/lib ]
-    then
-      echo "Making symbolic link to /opt/libjpeg-turbo/lib64..."
-      ln -s /opt/libjpeg-turbo/lib64 /opt/libjpeg-turbo/lib
-    fi
-  fi
-
-  if [ -e /opt/libjpeg-turbo/lib32 ] # Make symbolic link to libjpeg-turbo's lib32 if it doesn't already exist
-  then
-    if [ ! -e /opt/libjpeg-turbo/lib ]
-    then
-      echo "Making symbolic link to /opt/libjpeg-turbo/lib32..."
-      ln -s /opt/libjpeg-turbo/lib32 /opt/libjpeg-turbo/lib
-    fi
-  fi
-  echo "Continuing with building xrdp..."
-  echo $LINE
-  cd "$WRKDIR"
-}
-
-# if v0.8 selected and --withturbojpeg also selected, we need to build turbojpeg
-check_v08_and_turbojpeg()
-{
-  if [[ "$GH_BRANCH" = "v0.8"* ]]
-  then
-    if $USE_TURBOJPEG
-    then
-      echo $LINE
-      echo "v0.8 branch selected and --withturbojpeg. Checking for existing lib in /opt ..."
-      echo $LINE
-      if [ ! -e /opt/libjpeg-turbo ] # If the library hasn't already been downloaded & built, then do so
-      then                             # Otherwise, assume it has already been built and do nothing more.
-        download_and_extract_libturbojpeg
-        build_turbojpeg
-      else
-        echo "The necessary turbojpeg lib already exists in /opt so no need to build it again. Waiting 5 seconds..."
-        echo $LINE
-      fi
-    fi
-  fi
-}
-
 cleanup()
 {
   $CLEANUP || return
@@ -784,7 +705,6 @@ install_required_packages ${XRDP_BUILD_DEPENDS[@]} ${X11RDP_BUILD_DEPENDS[@]}
 
 remove_existing_generated_packages # Yes my function names become ever more ridiculously long :D
 
-check_v08_and_turbojpeg # v0.8 branch needs libturbojpeg to be in /opt
 
 download_compile
 
