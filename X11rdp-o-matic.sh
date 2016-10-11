@@ -272,7 +272,6 @@ OPTIONS
   --nox11rdp         : only build xrdp, do not build the x11rdp backend
   --withjpeg         : build jpeg module
                        (uses Independent JPEG Group's JPEG runtime library)
-  --withsimplesound  : build the simple pulseaudio interface
   --withpulse        : build code to load pulse audio modules
   --withdebug        : build with debug enabled
   --withneutrino     : build the neutrinordp module
@@ -344,10 +343,6 @@ OPTIONS
     --withjpeg)
       XRDP_CONFIGURE_ARGS+=(--enable-jpeg)
       XRDP_BUILD_DEPENDS+=(libjpeg8-dev)
-      ;;
-    --withsimplesound)
-      XRDP_CONFIGURE_ARGS+=(--enable-simplesound)
-      XRDP_BUILD_DEPENDS+=(libpulse-dev)
       ;;
     --withpulse)
       XRDP_CONFIGURE_ARGS+=(--enable-loadpulsemodules)
