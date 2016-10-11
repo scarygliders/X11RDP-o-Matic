@@ -1,0 +1,41 @@
+:
+
+LC_ALL=C PATH=/sbin:/usr/sbin:/bin:/usr/bin
+export LC_ALL PATH
+unset LANGUAGE
+
+case $(id -u) in
+(0) ;;
+(*)
+	echo >&2 "E: need root"
+	exit 4
+	;;
+esac
+
+if ! test -d /var/run/xrdp; then
+	mkdir /var/run/xrdp || exit 1
+	chown root:xrdp /var/run/xrdp || exit 1
+	chmod 2775 /var/run/xrdp || exit 1
+fi
+case $(stat -c '%a,%u,%G,%F' /var/run/xrdp) in
+(2775,0,xrdp,directory) ;;
+(*)
+	echo >&2 "E: /var/run/xrdp has wrong permissions"
+	exit 1
+	;;
+esac
+
+if ! test -d /var/run/xrdp/sockdir; then
+	mkdir /var/run/xrdp/sockdir || exit 1
+	chown root:xrdp /var/run/xrdp/sockdir || exit 1
+	chmod 3777 /var/run/xrdp/sockdir || exit 1
+fi
+case $(stat -c '%a,%u,%G,%F' /var/run/xrdp/sockdir) in
+(3777,0,xrdp,directory) ;;
+(*)
+	echo >&2 "E: /var/run/xrdp/sockdir has wrong permissions"
+	exit 1
+	;;
+esac
+
+:

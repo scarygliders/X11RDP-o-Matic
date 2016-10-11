@@ -482,22 +482,25 @@ compile_xrdp()
   dh_make_y --single --copyright apache --createorig >> $BUILD_LOG || error_exit
 
   # Step 3: Run the bootstrap and configure scripts
-  ./bootstrap >> $BUILD_LOG || error_exit
-  ./configure "${XRDP_CONFIGURE_ARGS[@]}" >> $BUILD_LOG || error_exit
+  #./bootstrap >> $BUILD_LOG || error_exit
+  #./configure "${XRDP_CONFIGURE_ARGS[@]}" >> $BUILD_LOG || error_exit
 
   # Step 4 : edit/configure the debian directory...
   rm debian/*.{ex,EX} debian/README.{Debian,source}
-  cp "${BASEDIR}/debian/"{control,docs,postinst,prerm} debian/
+  cp "${BASEDIR}/debian/"{control,docs,postinst,prerm,install,socksetup,startwm.sh} debian/
+  cp -r "${BASEDIR}/debian/"patches debian/
   cp COPYING debian/copyright
   cp readme.txt debian/README
+  sed -e "s|%%XRDP_CONFIGURE_ARGS%%|${XRDP_CONFIGURE_ARGS[*]}|g" \
+       "${BASEDIR}/debian/rules.in" > debian/rules
+  chmod 0755 debian/rules
 
   # Step 5 : run dpkg-buildpackage to compile xrdp and build a package...
   echo $LINE
   echo "Preparation complete. Building and packaging xrdp..."
   echo $LINE
-  dpkg-buildpackage -uc -us -tc -rfakeroot | tee -a $BUILD_LOG || error_exit
-  cd "$WRKDIR"
-  mv xrdp*.deb "${PKGDIR}/xrdp/"
+  dpkg-buildpackage -uc -us -tc -rfakeroot >> $BUILD_LOG || error_exit
+  cp "${WRKDIR}"/*.deb "${PKGDEST}"
 }
 
 calc_cpu_cores()
