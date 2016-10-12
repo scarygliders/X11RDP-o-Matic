@@ -71,6 +71,8 @@ META_DEPENDS=(lsb-release rsync git build-essential dh-make wget)
 XRDP_CONFIGURE_ARGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse --enable-jpeg --enable-opus)
 XRDP_BUILD_DEPENDS=(debhelper autoconf automake dh-systemd libfuse-dev libjpeg-dev libopus-dev libpam0g-dev libssl-dev libtool libx11-dev libxfixes-dev libxrandr-dev pkg-config)
 X11RDP_BUILD_DEPENDS=(autoconf automake libtool flex bison python-libxml2 libxml2-dev gettext intltool xsltproc make gcc g++ xutils-dev xutils)
+
+ARCH=$(dpkg --print-architecture)
 RELEASE=1 # release number for debian packages
 X11RDPBASE=/opt/X11rdp
 
@@ -393,33 +395,27 @@ compile_X11rdp()
 
 package_X11rdp()
 {
-  local PKGDEST="$PKGDIR/x11rdp"
-
-  if [ ! -e "$PKGDEST" ]; then
-    mkdir -p "$PKGDEST"
-  fi
+  X11RDP_DEB="x11rdp_${X11RDP_VERSION}-${RELEASE}_${ARCH}.deb"
 
   if [ -f "$WRKDIR/xrdp/xorg/debuild/debX11rdp.sh" ]
   then
     cd "$WRKDIR/xrdp/xorg/debuild"
-    ./debX11rdp.sh "$X11RDP_VERSION" "$RELEASE" "$X11RDPBASE" "$PKGDEST"
+    ./debX11rdp.sh "$X11RDP_VERSION" "$RELEASE" "$X11RDPBASE" "$WRKDIR" || error_exit
   fi
+
+  cp "${WRKDIR}/${X11RDP_DEB}" "${PKGDIR}" || error_exit
 }
 
 # Package xrdp using dh-make...
 compile_xrdp()
 {
-  local PKGDEST="$PKGDIR/xrdp"
+  XRDP_DEB="xrdp_${XRDP_VERSION}-${RELEASE}_${ARCH}.deb" 
 
   echo $LINE
   echo "Using the following xrdp configuration : "${XRDP_CONFIGURE_ARGS[@]}
   echo $LINE
   echo "Preparing xrdp source to make a Debian package..."
   echo $LINE
-
-  if [ ! -e "$PKGDEST" ]; then
-    mkdir -p "$PKGDEST"
-  fi
 
   # Step 1: Link xrdp dir to xrdp-$VERSION for dh_make to work on...
   rsync -a --delete -- "${WRKDIR}/xrdp/" "${WRKDIR}/xrdp-${XRDP_VERSION}" 
@@ -447,7 +443,7 @@ compile_xrdp()
   echo "Preparation complete. Building and packaging xrdp..."
   echo $LINE
   dpkg-buildpackage -uc -us -tc -rfakeroot >> $BUILD_LOG || error_exit
-  cp "${WRKDIR}"/*.deb "${PKGDEST}"
+  cp "${WRKDIR}/${XRDP_DEB}" "${PKGDIR}" || error_exit
 }
 
 calc_cpu_cores()
@@ -557,35 +553,15 @@ make_X11rdp_symbolic_link()
 
 install_generated_packages()
 {
-  ERRORFOUND=0
+  $INSTALL_XRDP || return # do nothing if "--noinstall"
 
-  if $BUILD_X11RDP
-  then
-    FILES=("$PKGDIR"/x11rdp/x11rdp*.deb)
-    if [ ${#FILES[@]} -gt 0 ]
-    then
-      remove_installed_packages x11rdp
-      SUDO_CMD dpkg -i "$PKGDIR"/x11rdp/x11rdp*.deb || error_exit
-    else
-      ERRORFOUND=1
-      echo "We were supposed to have built X11rdp but I couldn't find a package file."
-      echo "Please check that X11rdp built correctly. It probably didn't."
-    fi
+  if ${BUILD_X11RDP}; then
+    remove_installed_packages x11rdp
+    SUDO_CMD dpkg -i "${PKGDIR}/${X11RDP_DEB}" || error_exit
   fi
-  FILES=("$PKGDIR"/xrdp/xrdp*.deb)
-  if [ ${#FILES[@]} -gt 0 ]
-  then
-    remove_installed_packages xrdp
-    SUDO_CMD dpkg -i "$PKGDIR"/xrdp/xrdp*.deb || error_exit
-  else
-    echo "I couldn't find an xrdp Debian package to install."
-    echo "Please check that xrdp compiled correctly. It probably didn't."
-    ERRORFOUND=1
-  fi
-  if [ $ERRORFOUND -eq 1 ]
-  then
-    exit
-  fi
+
+  remove_installed_packages xrdp
+  SUDO_CMD dpkg -i "${PKGDIR}/${XRDP_DEB}" || error_exit
 }
 
 download_compile()
@@ -607,25 +583,6 @@ download_compile()
     compile_X11rdp
     package_X11rdp
     make_X11rdp_symbolic_link
-  fi
-}
-
-remove_existing_generated_packages()
-{
-  echo "Checking for previously generated packages..."
-  echo $LINE
-  if ls "$PKGDIR"/xrdp/X11rdp*.deb >/dev/null 2>&1
-  then
-    echo "Removing previously generated Debian X11rdp package file(s)."
-    echo $LINE
-    rm "$PKGDIR"/Xorg/*.deb
-  fi
-
-  if ls "$PKGDIR"/xrdp/xrdp*.deb >/dev/null 2>&1
-  then
-    echo "Removing previously generated Debian xrdp package file(s)."
-    echo $LINE
-    rm "$PKGDIR"/xrdp/*.deb
   fi
 }
 
@@ -686,9 +643,6 @@ make_X11rdp_env
 calc_cpu_cores # find out how many cores we have to play with, and if >1, set a possible make command
 
 install_required_packages ${XRDP_BUILD_DEPENDS[@]} ${X11RDP_BUILD_DEPENDS[@]}
-
-remove_existing_generated_packages # Yes my function names become ever more ridiculously long :D
-
 
 download_compile
 
