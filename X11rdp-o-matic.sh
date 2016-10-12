@@ -270,8 +270,6 @@ OPTIONS
   --cleanup          : remove X11rdp / xrdp source code after installation. (Default is to keep it).
   --noinstall        : do not install anything, just build the packages
   --nox11rdp         : only build xrdp, do not build the x11rdp backend
-  --withjpeg         : build jpeg module
-                       (uses Independent JPEG Group's JPEG runtime library)
   --withdebug        : build with debug enabled
   --withneutrino     : build the neutrinordp module
   --withkerberos     : build support for kerberos
@@ -338,10 +336,6 @@ OPTIONS
       BUILD_X11RDP=false
       echo "Will not build and package x11rdp"
       echo $LINE
-      ;;
-    --withjpeg)
-      XRDP_CONFIGURE_ARGS+=(--enable-jpeg)
-      XRDP_BUILD_DEPENDS+=(libjpeg8-dev)
       ;;
     --withdebug)
       XRDP_CONFIGURE_ARGS+=(--enable-xrdpdebug)
