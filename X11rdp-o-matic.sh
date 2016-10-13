@@ -482,31 +482,30 @@ bran_new_calculate_version_num()
   # in latest git, this can be written: git log -1 --date=format:%Y%m%d --format="~%cd+git%h" .
   local _XRDP_DATE_HASH=$(git log -1 --date=short --format="~%cd+git%h" . | tr -d -)
   local _X11RDP_DATE_HASH=$(git log -1 --date=short --format="~%cd+git%h" xorg/X11R7.6 | tr -d -)
-  local _XORGXRDP_DATE_HASH=$(git log -1 --date=short --format="~%cd+git%h" xorgxrdp | tr -d -)
+  #local _XORGXRDP_DATE_HASH=$(git log -1 --date=short --format="~%cd+git%h" xorgxrdp | tr -d -)
   cd ${_PWD} || error_exit
 
   XRDP_VERSION=${_XRDP_VERSION}${_XRDP_DATE_HASH}+${_XRDP_BRANCH}
   X11RDP_VERSION=${_XRDP_VERSION}${_X11RDP_DATE_HASH}+${_XRDP_BRANCH}
-  XORGXRDP_VERSION=${_XRDP_VERSION}${_XORGXRDP_DATE_HASH}+${_XRDP_BRANCH}
+  #XORGXRDP_VERSION=${_XRDP_VERSION}${_XORGXRDP_DATE_HASH}+${_XRDP_BRANCH}
+  XORGXRDP_VERSION=${XRDP_VERSION}
 
-  echo xrdp=${XRDP_VERSION}
-  echo x11rdp=${X11RDP_VERSION}
-  echo xorgxrdp=${XORGXRDP_VERSION}
+  echo -e "\t" xrdp=${XRDP_VERSION}
+  echo -e "\t" x11rdp=${X11RDP_VERSION}
+  echo -e "\t" xorgxrdp=${XORGXRDP_VERSION}
 }
 
 # Make a directory, to which the X11rdp build system will
 # place all the built binaries and files.
 make_X11rdp_env()
 {
-  if [ -e "$X11RDPBASE" -a "$X11RDPBASE" != "/" ] && $BUILD_X11RDP
+  $BUILD_X11RDP || return
+
+  if [ -e "$X11RDPBASE" -a "$X11RDPBASE" != "/" ]
   then
+    remove_installed_packages x11rdp
     SUDO_CMD rm -rf "$X11RDPBASE" || error_exit
     SUDO_CMD mkdir -p "$X11RDPBASE" || error_exit
-  fi
-
-  if [ -e "$WRKDIR/xrdp" ]
-  then
-    rm -rf "$WRKDIR/xrdp"
   fi
 }
 
