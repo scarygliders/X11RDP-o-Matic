@@ -200,6 +200,12 @@ get_branches()
   echo $LINE
 }
 
+install_targets_depends()
+{
+  install_required_packages ${XRDP_BUILD_DEPENDS[@]} ${XORGXRDP_BUILD_DEPENDS[@]}
+  $BUILD_X11RDP && install_required_packages ${X11RDP_BUILD_DEPENDS[@]}
+}
+
 first_of_all()
 {
   if [ -f "${PIDFILE}" ]; then
@@ -359,7 +365,7 @@ package_X11rdp()
   fi
 }
 
-# Package xrdp using dh-make...
+# Compile and make xrdp package
 compile_xrdp()
 {
   XRDP_DEB="xrdp_${XRDP_VERSION}-${RELEASE}_${ARCH}.deb" 
@@ -367,8 +373,6 @@ compile_xrdp()
 
   echo $LINE
   echo "Using the following xrdp configuration : "${XRDP_CONFIGURE_ARGS[@]}
-  echo $LINE
-  echo "Preparing xrdp source to make a Debian package..."
   echo $LINE
 
   # Step 1: Link xrdp dir to xrdp-$VERSION for dh_make to work on...
@@ -378,11 +382,7 @@ compile_xrdp()
   cd "${WRKDIR}/xrdp-${XRDP_VERSION}"
   dh_make_y --single --copyright apache --createorig >> $BUILD_LOG 2>&1 || error_exit
 
-  # Step 3: Run the bootstrap and configure scripts
-  #./bootstrap >> $BUILD_LOG || error_exit
-  #./configure "${XRDP_CONFIGURE_ARGS[@]}" >> $BUILD_LOG || error_exit
-
-  # Step 4 : edit/configure the debian directory...
+  # Step 3 : edit/configure the debian directory...
   rm debian/*.{ex,EX} debian/README.{Debian,source}
   cp "${BASEDIR}/debian/"{control,docs,postinst,prerm,install,socksetup,startwm.sh} debian/
   cp -r "${BASEDIR}/debian/"patches debian/
@@ -392,7 +392,7 @@ compile_xrdp()
        "${BASEDIR}/debian/rules.in" > debian/rules
   chmod 0755 debian/rules
 
-  # Step 5 : run dpkg-buildpackage to compile xrdp and build a package...
+  # Step 4 : run dpkg-buildpackage to compile xrdp and build a package...
   echo $LINE
   echo "Preparation complete. Building and packaging xrdp..."
   echo $LINE
@@ -413,8 +413,10 @@ calc_cpu_cores()
   fi
 }
 
-cpu_cores()
+apply_cpu_cores()
 {
+  $PARALLELMAKE || return
+
   if [ ! -e "$WRKDIR/PARALLELMAKE" ] # No need to perform this if for some reason we've been here before...
   then
     if $PARALLELMAKE
@@ -429,6 +431,7 @@ cpu_cores()
 # new version number includes git last commit date, hash and branch.
 bran_new_calculate_version_num()
 {
+  clone
   local _PWD=$PWD
   cd ${WRKDIR}/xrdp || error_exit
   local _XRDP_VERSION=$(grep xrdp readme.txt| head -1 | cut -d ' ' -f 2)
@@ -508,22 +511,19 @@ install_generated_packages()
   echo 'done'
 }
 
-download_compile()
+build_dpkg()
 {
   clone
-  if $PARALLELMAKE
-  then
-    cpu_cores
-  fi
+  apply_cpu_cores
 
   alter_xrdp_source # Patches the downloaded source
 
-  # New method...
-  # Compiles & packages using dh_make and dpkg-buildpackage
-  compile_xrdp
+  compile_xrdp # Compiles & packages using dh_make and dpkg-buildpackage
 
+  # build and make x11rdp package
   if $BUILD_X11RDP
   then
+    make_X11rdp_env
     compile_X11rdp
     package_X11rdp
   fi
@@ -564,32 +564,16 @@ cleanup()
 ##########################
 # Main stuff starts here #
 ##########################
+
 parse_commandline_args $@
 first_of_all
 install_required_packages ${META_DEPENDS[@]} # install packages required to run this utility
-
-# Check for existence of a /opt directory, and create it if it doesn't exist.
-check_for_opt_directory
-
+check_for_opt_directory # Check for existence of a /opt directory, and create it if it doesn't exist.
 clone
-
-# Figure out what version number to use for the debian packages
 bran_new_calculate_version_num
-
-if $BUILD_X11RDP
-then
-  echo " *** Will remove the contents of ${X11RDPBASE} and ${WRKDIR}/xrdp-${XRDP_VERSION} ***"
-  echo
-fi
-
-make_X11rdp_env
-
 calc_cpu_cores # find out how many cores we have to play with, and if >1, set a possible make command
-
-install_required_packages ${XRDP_BUILD_DEPENDS[@]} ${X11RDP_BUILD_DEPENDS[@]} ${XORGXRDP_BUILD_DEPENDS[@]}
-
-download_compile
-
+install_targets_depends
+build_dpkg
 cleanup
 install_generated_packages
 clean_exit
