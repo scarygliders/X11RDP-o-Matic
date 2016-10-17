@@ -81,7 +81,7 @@ X11RDPBASE=/opt/X11rdp
 PARALLELMAKE=true   # Utilise all available CPU's for compilation by default.
 CLEANUP=false       # Keep the x11rdp and xrdp sources by default - to remove
                     # requires --cleanup command line switch
-INSTALL_XRDP=true   # Install xrdp and x11rdp on this system
+INSTALL_PKGS=true   # Install xrdp and x11rdp on this system
 BUILD_X11RDP=true   # Build and package x11rdp
 GIT_USE_HTTPS=true  # Use firewall-friendry https:// instead of git:// to fetch git submodules
 
@@ -331,7 +331,7 @@ OPTIONS
       echo $LINE
       ;;
     --noinstall)
-      INSTALL_XRDP=false
+      INSTALL_PKGS=false
       echo "Will not install anything on the system but will build the packages"
       echo $LINE
       ;;
@@ -537,7 +537,7 @@ alter_xrdp_source()
 
 install_generated_packages()
 {
-  $INSTALL_XRDP || return # do nothing if "--noinstall"
+  $INSTALL_PKGS || return # do nothing if "--noinstall"
 
   if ${BUILD_X11RDP}; then
     remove_installed_packages x11rdp
