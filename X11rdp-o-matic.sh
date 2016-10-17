@@ -482,13 +482,6 @@ alter_xrdp_source()
 
   # Patch rdp Makefile
   patch -b -d "$WRKDIR/xrdp/xorg/X11R7.6/rdp" Makefile < "$PATCHDIR/rdp_Makefile.patch" >> $BUILD_LOG  || error_exit
-
-  # Patch v0.7 buildx.sh, as the file download location for Mesa has changed...
-  if [[ $GH_BRANCH = "v0.7"* ]] # branch v0.7 has a moved libmesa
-  then
-      echo "Patching mesa download location..."
-      patch -b -d "$WRKDIR/xrdp/xorg/X11R7.6" buildx.sh < "$PATCHDIR/mesa.patch" || error_exit
-  fi
 }
 
 install_generated_packages()
