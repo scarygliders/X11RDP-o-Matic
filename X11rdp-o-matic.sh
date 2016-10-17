@@ -279,23 +279,15 @@ OPTIONS
       ;;
     --nocpuoptimize)
       PARALLELMAKE=false
-      echo "Will not utilize additional CPU's for compilation..."
-      echo $LINE
       ;;
     --cleanup)
       CLEANUP=true
-      echo "Will remove the xrdp and x11rdp sources in the working directory after compilation/installation..."
-      echo $LINE
       ;;
     --noinstall)
       INSTALL_PKGS=false
-      echo "Will not install anything on the system but will build the packages"
-      echo $LINE
       ;;
     --nox11rdp)
       BUILD_X11RDP=false
-      echo "Will not build and package x11rdp"
-      echo $LINE
       ;;
     --withdebug)
       XRDP_CONFIGURE_ARGS+=(--enable-xrdpdebug)
