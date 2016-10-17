@@ -280,7 +280,7 @@ OPTIONS
   --withpamuserpass  : build with pam userpass support
   --withfreerdp      : build the freerdp1 module"
     get_branches
-    rmdir "${WRDKDIR}"
+    rmdir "${WRKDIR}"
     exit
   fi
 
