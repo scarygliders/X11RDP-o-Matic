@@ -390,7 +390,7 @@ clone()
 compile_X11rdp()
 {
   cd "$WRKDIR/xrdp/xorg/X11R7.6/"
-  SUDO_CMD sh buildx.sh "$X11RDPBASE" >> $BUILD_LOG || error_exit
+  SUDO_CMD sh buildx.sh "$X11RDPBASE" >> $BUILD_LOG 2>&1 || error_exit
 }
 
 package_X11rdp()
@@ -423,7 +423,7 @@ compile_xrdp()
 
   # Step 2 : Use dh-make to create the debian directory package template...
   cd "${WRKDIR}/xrdp-${XRDP_VERSION}"
-  dh_make_y --single --copyright apache --createorig >> $BUILD_LOG || error_exit
+  dh_make_y --single --copyright apache --createorig >> $BUILD_LOG 2>&1 || error_exit
 
   # Step 3: Run the bootstrap and configure scripts
   #./bootstrap >> $BUILD_LOG || error_exit
@@ -443,7 +443,7 @@ compile_xrdp()
   echo $LINE
   echo "Preparation complete. Building and packaging xrdp..."
   echo $LINE
-  dpkg-buildpackage -uc -us -tc -rfakeroot >> $BUILD_LOG || error_exit
+  dpkg-buildpackage -uc -us -tc -rfakeroot >> $BUILD_LOG  2>&1 || error_exit
   cp "${WRKDIR}/${XRDP_DEB}" "${PKGDIR}" || error_exit
   cp "${WRKDIR}/${XORGXRDP_DEB}" "${PKGDIR}" || error_exit
 }
@@ -521,11 +521,11 @@ alter_xrdp_source()
   # which should speed up compilation. It will make a backup copy of the original buildx.sh.
   if $PARALLELMAKE
   then
-    patch -b -d "$WRKDIR/xrdp/xorg/X11R7.6" buildx.sh < "$PATCHDIR/buildx_patch.diff" || error_exit
+    patch -b -d "$WRKDIR/xrdp/xorg/X11R7.6" buildx.sh < "$PATCHDIR/buildx_patch.diff" >> $BUILD_LOG || error_exit
   fi
 
   # Patch rdp Makefile
-  patch -b -d "$WRKDIR/xrdp/xorg/X11R7.6/rdp" Makefile < "$PATCHDIR/rdp_Makefile.patch" || error_exit
+  patch -b -d "$WRKDIR/xrdp/xorg/X11R7.6/rdp" Makefile < "$PATCHDIR/rdp_Makefile.patch" >> $BUILD_LOG  || error_exit
 
   # Patch v0.7 buildx.sh, as the file download location for Mesa has changed...
   if [[ $GH_BRANCH = "v0.7"* ]] # branch v0.7 has a moved libmesa
