@@ -202,8 +202,6 @@ get_branches()
 
 first_of_all()
 {
-  clear
-
   if [ -f "${PIDFILE}" ]; then
     echo_stderr "Another instance of $0 is already running." 2>&1
     error_exit
@@ -223,7 +221,6 @@ parse_commandline_args()
 # If first switch = --help, display the help/usage message then exit.
   if [ $1 = "--help" ]
   then
-    clear
     echo "usage: $0 OPTIONS
 
 OPTIONS
