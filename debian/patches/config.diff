@@ -1,0 +1,58 @@
+# DP: config patches for Debian
+# DP: move -logfile /dev/null to last, for easy commenting out
+
+--- a/sesman/sesman.ini
++++ b/sesman/sesman.ini
+@@ -84,12 +84,11 @@ param7=96
+ param0=Xorg
+ param1=-config
+ param2=xrdp/xorg.conf
+-param3=-logfile
+-param4=/dev/null
+-param5=-noreset
+-param6=-ac
+-param7=-nolisten
+-param8=tcp
++param3=-noreset
++param4=-ac
++param5=-nolisten
++param6=tcp
++param7=-retro
+ 
+ [Chansrv]
+ # drive redirection, defaults to xrdp_client if not set
+--- a/xorgxrdp/xrdpdev/xorg.conf
++++ b/xorgxrdp/xrdpdev/xorg.conf
+@@ -12,10 +12,9 @@ Section "ServerFlags"
+ EndSection
+ 
+ Section "Files"
+-    FontPath "/usr/X11R6/lib/X11/fonts/misc/:unscaled"
+-    FontPath "/usr/X11R6/lib/X11/fonts/75dpi/:unscaled"
+-    FontPath "/usr/X11R6/lib/X11/fonts/100dpi/:unscaled"
+-    FontPath "/usr/X11R6/lib/X11/fonts/viewtouch"
++    FontPath "/usr/share/fonts/X11/misc/:unscaled"
++    FontPath "/usr/share/fonts/X11/75dpi/:unscaled"
++    FontPath "/usr/share/fonts/X11/100dpi/:unscaled"
+ EndSection
+ 
+ Section "Module"
+--- a/xrdp/xrdp.ini
++++ b/xrdp/xrdp.ini
+@@ -144,14 +144,14 @@ tcutils=true
+ # chansrvport=/tmp/.xrdp/xrdp_chansrv_socket_7210
+ 
+ [xrdp1]
+-name=sesman-X11rdp
++name=sesman-xorgxrdp
+ lib=libxup.so
+ username=ask
+ password=ask
+ ip=127.0.0.1
+ port=-1
+ xserverbpp=24
+-code=10
++code=20
+ 
+ [xrdp2]
+ name=sesman-Xvnc
