@@ -35,15 +35,14 @@ endif
 override_dh_auto_configure:
 	./bootstrap
 	if [ -f librfxcodec/Makefile ]; then : ; fi
-	if [ -f librfxcodec/bootstrap ]; then cd librfxcodec && ./bootstrap \
+	if [ -f librfxcodec/bootstrap ]; then cd librfxcodec && ./bootstrap && \
 	    ./configure ${CONFIGURE_ARGS} \
 	        --disable-shared \
 	        --enable-static ; fi
-	#if [ -f xorgxrdp/bootstrap ]; then  cd xorgxrdp && ./bootstrap && ./configure ${CONFIGURE_ARGS}; fi
+	if [ -f xorgxrdp/bootstrap ]; then  cd xorgxrdp && ./bootstrap && ./configure ${CONFIGURE_ARGS}; fi
 	./configure ${CONFIGURE_ARGS} %%XRDP_CONFIGURE_ARGS%%
 	find . -name Makefile -print0 | \
 	    xargs -0 perl -pi -e 's!XRDP_PID_PATH.*?/run!$$&/xrdp!g' --
-
 
 override_dh_auto_install:
 	dh_auto_install -v --destdir=debian/xrdp
@@ -55,6 +54,10 @@ override_dh_auto_install:
 	# strip library
 	find debian/xrdp/usr/lib/ -name \*.a -print0 | \
 	    xargs -0 strip --strip-debug -R .comment --
+	# package split
+	mkdir -p debian/xorgxrdp/etc debian/xorgxrdp/usr/lib
+	mv debian/xrdp/etc/X11 debian/xorgxrdp/etc/
+	mv debian/xrdp/usr/lib/xorg debian/xorgxrdp/usr/lib/
 
 override_dh_installinit:
 	dh_installinit --no-restart-on-upgrade
@@ -64,6 +67,13 @@ override_dh_systemd_start:
 
 override_dh_shlibdeps:
 	# That's a plugin, use appropriate warning level:
-	#dh_shlibdeps -pxorgxrdp -- --warnings=6
+	dh_shlibdeps -pxorgxrdp -- --warnings=6
 	# Use default levels for everything else:
 	dh_shlibdeps --remaining-packages
+
+override_dh_gencontrol:
+	echo >>debian/xorgxrdp.substvars "xdriver:Depends=$$( \
+	    (cd /usr/share/xserver-xorg && cat videodrvdep xinputdep) | \
+	    sed 's/, /\n/g' | sort -u | \
+	    perl -0e 'print join(", ", split(/\n/, <>));')"
+	dh_gencontrol

@@ -71,6 +71,7 @@ META_DEPENDS=(lsb-release rsync git build-essential dh-make wget)
 XRDP_CONFIGURE_ARGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse --enable-jpeg --enable-opus)
 XRDP_BUILD_DEPENDS=(debhelper autoconf automake dh-systemd libfuse-dev libjpeg-dev libopus-dev libpam0g-dev libssl-dev libtool libx11-dev libxfixes-dev libxrandr-dev pkg-config)
 X11RDP_BUILD_DEPENDS=(autoconf automake libtool flex bison python-libxml2 libxml2-dev gettext intltool xsltproc make gcc g++ xutils-dev xutils)
+XORGXRDP_BUILD_DEPENDS=(automake autoconf libtool pkg-config nasm xserver-xorg-dev)
 
 ARCH=$(dpkg --print-architecture)
 RELEASE=1 # release number for debian packages
@@ -367,7 +368,6 @@ OPTIONS
   done
 }
 
-
 clone()
 {
   local CLONE_DEST="${WRKDIR}/xrdp"
@@ -410,6 +410,7 @@ package_X11rdp()
 compile_xrdp()
 {
   XRDP_DEB="xrdp_${XRDP_VERSION}-${RELEASE}_${ARCH}.deb" 
+  XORGXRDP_DEB="xorgxrdp_${XRDP_VERSION}-${RELEASE}_${ARCH}.deb" 
 
   echo $LINE
   echo "Using the following xrdp configuration : "${XRDP_CONFIGURE_ARGS[@]}
@@ -444,6 +445,7 @@ compile_xrdp()
   echo $LINE
   dpkg-buildpackage -uc -us -tc -rfakeroot >> $BUILD_LOG || error_exit
   cp "${WRKDIR}/${XRDP_DEB}" "${PKGDIR}" || error_exit
+  cp "${WRKDIR}/${XORGXRDP_DEB}" "${PKGDIR}" || error_exit
 }
 
 calc_cpu_cores()
@@ -556,11 +558,18 @@ install_generated_packages()
 
   if ${BUILD_X11RDP}; then
     remove_installed_packages x11rdp
+    echo -n 'Installing built x11rdp... '
     SUDO_CMD dpkg -i "${PKGDIR}/${X11RDP_DEB}" || error_exit
+    echo 'done'
   fi
 
-  remove_installed_packages xrdp
+  remove_installed_packages xrdp xorgxrdp
+  echo -n 'Installing built xrdp... '
   SUDO_CMD dpkg -i "${PKGDIR}/${XRDP_DEB}" || error_exit
+  echo 'done'
+  echo -n 'Installing built xorgxrdp... '
+  SUDO_CMD dpkg -i "${PKGDIR}/${XORGXRDP_DEB}" || error_exit
+  echo 'done'
 }
 
 download_compile()
@@ -641,44 +650,10 @@ make_X11rdp_env
 
 calc_cpu_cores # find out how many cores we have to play with, and if >1, set a possible make command
 
-install_required_packages ${XRDP_BUILD_DEPENDS[@]} ${X11RDP_BUILD_DEPENDS[@]}
+install_required_packages ${XRDP_BUILD_DEPENDS[@]} ${X11RDP_BUILD_DEPENDS[@]} ${XORGXRDP_BUILD_DEPENDS[@]}
 
 download_compile
 
 cleanup
-
-if ! $INSTALL_XRDP # If not installing on this system...
-then
-  # this is stupid but some Makefiles from X11rdp don't have an uninstall target (ex: Python!)
-  # ... so instead of not installing X11rdp we remove it in the end
-  if $BUILD_X11RDP # If we compiled X11rdp then remove the generated X11rdp files (from /opt)
-  then
-    SUDO_CMD rm -rf "$X11RDPBASE" || error_exit
-  fi
-
-  echo $LINE
-  echo "Will exit now, since we are not installing on this system..."
-  echo "Packages have been placed under their respective directories in the"
-  echo "packages directory."
-  echo $LINE
-
-else # Install the packages on the system
-  # stop xrdp if running
-  if $USING_SYSTEMD
-  then
-    SUDO_CMD systemctl stop xrdp
-  else
-    SUDO_CMD service xrdp stop
-  fi
-
-  install_generated_packages
-
-  echo $LINE
-  echo "X11rdp and xrdp should now be fully installed, configured, and running on this system."
-  echo "One last thing to do now is to configure which desktop will be presented to the user after they log in via RDP."
-  echo "You may not have to do this - test by logging into xrdp now."
-  echo "Or use the RDPsesconfig.sh utility to configure a session's desktop."
-  echo $LINE
-fi
-
+install_generated_packages
 clean_exit

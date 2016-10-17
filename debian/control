@@ -36,3 +36,20 @@ Description: Remote Desktop Protocol (RDP) server
  offering an X-Window desktop to the user. In the RDP
  or VNC forwarding mode, any sort of desktop can be used.
 
+Package: xorgxrdp
+Architecture: any
+Depends:
+ ${misc:Depends},
+ ${shlibs:Depends},
+ ${xdriver:Depends},
+Recommends:
+ xorg,
+Provides:
+ xorg-driver-input,
+ xorg-driver-video,
+Description: Remote Desktop Protocol (RDP) modules for X.org
+ xorgxrdp is a set of drivers (screen device, keyboard, and mouse)
+ for X.org enabling use through an RDP session with xrdp. For full
+ operation, most standard X11 fonts and tools need to be installed;
+ the Recommended xorg metapackage is a superset of what’s actually
+ needed but will do.
