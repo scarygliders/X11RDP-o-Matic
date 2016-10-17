@@ -590,6 +590,7 @@ remove_installed_packages()
 
 check_for_opt_directory()
 {
+  $BUILD_X11RDP || return
   if [ ! -e /opt ]
   then
     echo "Did not find a /opt directory... creating it."
