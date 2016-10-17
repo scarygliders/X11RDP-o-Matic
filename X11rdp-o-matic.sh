@@ -535,23 +535,6 @@ alter_xrdp_source()
   fi
 }
 
-# make the /usr/bin/X11rdp symbolic link if it doesn't exist...
-make_X11rdp_symbolic_link()
-{
-  if [ ! -e /usr/bin/X11rdp ]
-  then
-    if [ -e "$X11RDPBASE/bin/X11rdp" ]
-    then
-      SUDO_CMD ln -s "$X11RDPBASE/bin/X11rdp" /usr/bin/X11rdp || error_exit
-    else
-      clear
-      echo "There was a problem... the /opt/X11rdp/bin/X11rdp binary could not be found. Did the compilation complete?"
-      echo "Stopped. Please investigate what went wrong."
-      exit
-    fi
-  fi
-}
-
 install_generated_packages()
 {
   $INSTALL_XRDP || return # do nothing if "--noinstall"
@@ -590,7 +573,6 @@ download_compile()
   then
     compile_X11rdp
     package_X11rdp
-    make_X11rdp_symbolic_link
   fi
 }
 
