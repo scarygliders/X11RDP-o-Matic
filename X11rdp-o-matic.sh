@@ -404,6 +404,10 @@ package_X11rdp()
   fi
 
   cp "${WRKDIR}/${X11RDP_DEB}" "${PKGDIR}" || error_exit
+
+  if [ -d "${X11RDPBASE}" ]; then
+    SUDO_CMD find "${X11RDPBASE}" -delete
+  fi
 }
 
 # Package xrdp using dh-make...
