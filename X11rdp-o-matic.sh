@@ -229,7 +229,6 @@ parse_commandline_args()
 OPTIONS
 -------
   --help             : show this help.
-  --justdoit         : perform a complete compile and install with sane defaults and no user interaction.
   --branch <branch>  : use one of the available xrdp branches listed below...
                        Examples:
                        --branch v0.8    - use the 0.8 branch.
@@ -256,13 +255,6 @@ OPTIONS
   # Parse the command line for any arguments
   while [ $# -gt 0 ]; do
   case "$1" in
-    --justdoit)
-      echo
-      echo "NOTICE: --justdoit options is deprecated since it is now default behaviour"
-      echo
-      echo "Okay, will just do the install from start to finish with no user interaction..."
-      echo $LINE
-      ;;
     --branch)
       get_branches
       ok=0
