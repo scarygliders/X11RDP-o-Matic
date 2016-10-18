@@ -371,9 +371,8 @@ compile_xrdp()
   XRDP_DEB="xrdp_${XRDP_VERSION}-${RELEASE}_${ARCH}.deb" 
   XORGXRDP_DEB="xorgxrdp_${XRDP_VERSION}-${RELEASE}_${ARCH}.deb" 
 
-  echo $LINE
-  echo "Using the following xrdp configuration : "${XRDP_CONFIGURE_ARGS[@]}
-  echo $LINE
+  echo "Using the following xrdp configuration: "
+  echo "	"${XRDP_CONFIGURE_ARGS[@]}
 
   # Step 1: Link xrdp dir to xrdp-$VERSION for dh_make to work on...
   rsync -a --delete -- "${WRKDIR}/xrdp/" "${WRKDIR}/xrdp-${XRDP_VERSION}" 
@@ -393,9 +392,6 @@ compile_xrdp()
   chmod 0755 debian/rules
 
   # Step 4 : run dpkg-buildpackage to compile xrdp and build a package...
-  echo $LINE
-  echo "Preparation complete. Building and packaging xrdp..."
-  echo $LINE
   dpkg-buildpackage -uc -us -tc -rfakeroot >> $BUILD_LOG  2>&1 || error_exit
   cp "${WRKDIR}/${XRDP_DEB}" "${PKGDIR}" || error_exit
   cp "${WRKDIR}/${XORGXRDP_DEB}" "${PKGDIR}" || error_exit
@@ -488,6 +484,10 @@ build_dpkg()
 {
   clone
   alter_xrdp_source # Patches the downloaded source
+
+  echo 'Building packages started, please be patient...'
+  echo 'Do the following command to see build progress.'
+  echo "	$ tail -f $BUILD_LOG"
   compile_xrdp # Compiles & packages using dh_make and dpkg-buildpackage
 
   # build and make x11rdp package
