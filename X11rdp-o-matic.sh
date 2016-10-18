@@ -475,7 +475,7 @@ install_generated_packages()
     echo 'done'
   fi
 
-  remove_installed_packages xrdp xorgxrdp
+  remove_installed_packages xorgxrdp xrdp
   echo -n 'Installing built xrdp... '
   SUDO_CMD dpkg -i "${PKGDIR}/${XRDP_DEB}" || error_exit
   echo 'done'
