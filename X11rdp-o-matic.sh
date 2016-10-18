@@ -67,7 +67,7 @@ BUILD_LOG=${WRKDIR}/build.log
 SUDO_LOG=${WRKDIR}/sudo.log
 
 # packages to run this utility
-META_DEPENDS=(lsb-release rsync git build-essential dh-make wget)
+META_DEPENDS=(lsb-release rsync git build-essential dh-make wget gdebi)
 XRDP_CONFIGURE_ARGS=(--prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-fuse --enable-jpeg --enable-opus)
 XRDP_BUILD_DEPENDS=(debhelper autoconf automake dh-systemd libfuse-dev libjpeg-dev libopus-dev libpam0g-dev libssl-dev libtool libx11-dev libxfixes-dev libxrandr-dev pkg-config)
 X11RDP_BUILD_DEPENDS=(autoconf automake libtool flex bison python-libxml2 libxml2-dev gettext intltool xsltproc make gcc g++ xutils-dev xutils)
@@ -467,16 +467,16 @@ install_generated_packages()
   if ${BUILD_X11RDP}; then
     remove_installed_packages x11rdp
     echo -n 'Installing built x11rdp... '
-    SUDO_CMD dpkg -i "${PKGDIR}/${X11RDP_DEB}" || error_exit
+    SUDO_CMD gdebi --n "${PKGDIR}/${X11RDP_DEB}" >> $APT_LOG || error_exit
     echo 'done'
   fi
 
   remove_installed_packages xorgxrdp xrdp
-  echo -n 'Installing built xrdp... '
-  SUDO_CMD dpkg -i "${PKGDIR}/${XRDP_DEB}" || error_exit
-  echo 'done'
   echo -n 'Installing built xorgxrdp... '
-  SUDO_CMD dpkg -i "${PKGDIR}/${XORGXRDP_DEB}" || error_exit
+  SUDO_CMD gdebi --n "${PKGDIR}/${XORGXRDP_DEB}" >> $APT_LOG || error_exit
+  echo 'done'
+  echo -n 'Installing built xrdp... '
+  SUDO_CMD gdebi --n "${PKGDIR}/${XRDP_DEB}" >> $APT_LOG || error_exit
   echo 'done'
 }
 
@@ -506,7 +506,7 @@ remove_installed_packages()
     echo -n "Removing installed ${f}... "
     check_if_installed ${f}
     if [ $? -eq 0 ]; then
-      SUDO_CMD apt-get -y remove ${f} || error_exit
+      SUDO_CMD apt-get -y remove ${f} >> $APT_LOG || error_exit
     fi
     echo "done"
   done
