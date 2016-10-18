@@ -401,29 +401,16 @@ compile_xrdp()
   cp "${WRKDIR}/${XORGXRDP_DEB}" "${PKGDIR}" || error_exit
 }
 
-calc_cpu_cores()
-{
-  Cores=$(nproc)
-  if [ $Cores -gt 1 ]
-  then
-    let "MakesystemWorkHarder = $Cores + 1"
-    makeCommand="make -j $MakesystemWorkHarder"
-  else
-    PARALLELMAKE=false
-  fi
-}
-
-apply_cpu_cores()
+# cpu cores utilization has been merged in devel
+# TO BE DELETED
+utilize_all_cpus()
 {
   $PARALLELMAKE || return
 
-  if [ ! -e "$WRKDIR/PARALLELMAKE" ] # No need to perform this if for some reason we've been here before...
+  Cores=$(nproc)
+  if [ $Cores -gt 1 ]
   then
-    if $PARALLELMAKE
-    then
-      sed -i -e "s/make -j 1/$makeCommand/g" "$PATCHDIR/buildx_patch.diff"
-      touch "$WRKDIR/PARALLELMAKE"
-    fi
+    sed -i -e "s/make -C/make -j ${Cores}/g" ${WRKDIR}/xorg/X11R7.6/buildx.sh
   fi
 }
 
@@ -472,13 +459,6 @@ make_X11rdp_env()
 alter_xrdp_source()
 {
   cd "$WRKDIR"
-  # Patch Jay's buildx.sh.
-  # This will patch the make command for parallel makes if that was requested,
-  # which should speed up compilation. It will make a backup copy of the original buildx.sh.
-  if $PARALLELMAKE
-  then
-    patch -b -d "$WRKDIR/xrdp/xorg/X11R7.6" buildx.sh < "$PATCHDIR/buildx_patch.diff" >> $BUILD_LOG || error_exit
-  fi
 
   # Patch rdp Makefile
   patch -b -d "$WRKDIR/xrdp/xorg/X11R7.6/rdp" Makefile < "$PATCHDIR/rdp_Makefile.patch" >> $BUILD_LOG  || error_exit
@@ -507,15 +487,13 @@ install_generated_packages()
 build_dpkg()
 {
   clone
-  apply_cpu_cores
-
   alter_xrdp_source # Patches the downloaded source
-
   compile_xrdp # Compiles & packages using dh_make and dpkg-buildpackage
 
   # build and make x11rdp package
   if $BUILD_X11RDP
   then
+    utilize_all_cpus
     make_X11rdp_env
     compile_X11rdp
     package_X11rdp
@@ -545,7 +523,6 @@ check_for_opt_directory()
   fi
 }
 
-
 cleanup()
 {
   $CLEANUP || return
@@ -564,7 +541,6 @@ install_required_packages ${META_DEPENDS[@]} # install packages required to run 
 check_for_opt_directory # Check for existence of a /opt directory, and create it if it doesn't exist.
 clone
 bran_new_calculate_version_num
-calc_cpu_cores # find out how many cores we have to play with, and if >1, set a possible make command
 install_targets_depends
 build_dpkg
 cleanup
