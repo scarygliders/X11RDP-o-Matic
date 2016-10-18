@@ -482,7 +482,6 @@ install_generated_packages()
 
 build_dpkg()
 {
-  clone
   alter_xrdp_source # Patches the downloaded source
 
   echo 'Building packages started, please be patient...'
@@ -539,7 +538,6 @@ parse_commandline_args $@
 first_of_all
 install_required_packages ${META_DEPENDS[@]} # install packages required to run this utility
 check_for_opt_directory # Check for existence of a /opt directory, and create it if it doesn't exist.
-clone
 bran_new_calculate_version_num
 install_targets_depends
 build_dpkg
