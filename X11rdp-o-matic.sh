@@ -356,6 +356,9 @@ package_X11rdp()
   then
     cd "$WRKDIR/xrdp/xorg/debuild"
     ./debX11rdp.sh "$X11RDP_VERSION" "$RELEASE" "$X11RDPBASE" "$WRKDIR" || error_exit
+
+    echo "Built packages are located in ${PKGDIR}."
+    ls -1 ${PKGDIR}/${X11RDP_DEB}
   fi
 
   cp "${WRKDIR}/${X11RDP_DEB}" "${PKGDIR}" || error_exit
@@ -395,6 +398,9 @@ compile_xrdp()
   dpkg-buildpackage -uc -us -tc -rfakeroot >> $BUILD_LOG  2>&1 || error_exit
   cp "${WRKDIR}/${XRDP_DEB}" "${PKGDIR}" || error_exit
   cp "${WRKDIR}/${XORGXRDP_DEB}" "${PKGDIR}" || error_exit
+
+  echo "Built packages are located in ${PKGDIR}."
+  ls -1 ${PKGDIR}/${XRDP_DEB} ${PKGDIR}/${XORGXRDP_DEB}
 }
 
 # cpu cores utilization has been merged in devel
@@ -543,4 +549,5 @@ install_targets_depends
 build_dpkg
 cleanup
 install_generated_packages
+echo; echo 'Everything is done!'
 clean_exit
