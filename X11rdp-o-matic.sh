@@ -501,8 +501,13 @@ build_dpkg()
   echo "Built packages are located in ${PKGDIR}."
   ls -1 \
     ${PKGDIR}/${XRDP_DEB} \
-    ${PKGDIR}/${XORGXRDP_DEB} \
-    ${PKGDIR}/${X11RDP_DEB}
+    ${PKGDIR}/${XORGXRDP_DEB}
+
+  if $BUILD_X11RDP
+  then
+    ls -1 \
+      ${PKGDIR}/${X11RDP_DEB}
+  fi
 }
 
 remove_installed_packages()
