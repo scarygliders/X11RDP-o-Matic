@@ -49,19 +49,3 @@
  CFLAGS="$save_CFLAGS"
  
  AC_SUBST([moduledir], '${libdir}/xrdp')
---- a/xrdpapi/Makefile.am
-+++ b/xrdpapi/Makefile.am
-@@ -4,6 +4,7 @@ EXTRA_LIBS =
- EXTRA_FLAGS =
- 
- AM_CPPFLAGS = \
-+  -I$(top_srcdir)/common \
-   $(EXTRA_DEFINES) \
-   $(EXTRA_INCLUDES)
- 
-@@ -18,4 +19,5 @@ libxrdpapi_la_LDFLAGS = \
-   $(EXTRA_FLAGS)
- 
- libxrdpapi_la_LIBADD = \
-+  $(top_builddir)/common/libcommon.la \
-   $(EXTRA_LIBS)
