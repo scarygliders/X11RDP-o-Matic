@@ -1,0 +1,53 @@
+# DP: attempt to fix connection problem between xrdp-sesman (running
+# DP: as root) and xrdp (running as xrdp) by creating the socket for
+# DP: the xorgxrdp server as 0660 in a sgid-xrdp directory, since we
+# DP: can’t easily chgrp here; also fix retval check for listen(2)
+
+--- a/common/os_calls.c
++++ b/common/os_calls.c
+@@ -122,7 +122,7 @@ g_mk_temp_dir(const char *app_name)
+                 return 1;
+             }
+         }
+-        g_chmod_hex("/tmp/.xrdp", 0x1777);
++        g_chmod_hex("/tmp/.xrdp", 0x3777);
+     }
+     return 0;
+ }
+--- a/xorg/X11R7.6/rdp/rdpup.c
++++ b/xorg/X11R7.6/rdp/rdpup.c
+@@ -1242,7 +1242,7 @@ rdpup_init(void)
+             return 0;
+         }
+ 
+-        g_chmod_hex("/tmp/.xrdp", 0x1777);
++        g_chmod_hex("/tmp/.xrdp", 0x3777);
+     }
+ 
+     i = atoi(display);
+--- a/xorgxrdp/module/rdpClientCon.c
++++ b/xorgxrdp/module/rdpClientCon.c
+@@ -1127,7 +1127,7 @@ rdpClientConInit(rdpPtr dev)
+                 return 0;
+             }
+         }
+-        g_chmod_hex("/tmp/.xrdp", 0x1777);
++        g_chmod_hex("/tmp/.xrdp", 0x3777);
+     }
+     i = atoi(display);
+     if (i < 1)
+@@ -1145,7 +1145,13 @@ rdpClientConInit(rdpPtr dev)
+             LLOGLN(0, ("rdpClientConInit: g_tcp_local_bind failed"));
+             return 1;
+         }
+-        g_sck_listen(dev->listen_sck);
++        if (g_sck_listen(dev->listen_sck) != 0)
++        {
++            LLOGLN(0, ("rdpClientConInit: g_sck_listen failed"));
++            unlink(dev->uds_data);
++            return 1;
++        }
++        g_chmod_hex(dev->uds_data, 0x0660);
+         AddEnabledDevice(dev->listen_sck);
+     }
+     return 0;
