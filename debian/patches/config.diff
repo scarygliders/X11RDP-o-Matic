@@ -3,20 +3,12 @@
 
 --- a/sesman/sesman.ini
 +++ b/sesman/sesman.ini
-@@ -84,12 +84,11 @@ param7=96
- param0=Xorg
- param1=-config
- param2=xrdp/xorg.conf
--param3=-logfile
--param4=/dev/null
--param5=-noreset
--param6=-ac
--param7=-nolisten
--param8=tcp
-+param3=-noreset
-+param4=-ac
-+param5=-nolisten
-+param6=tcp
+@@ -88,8 +88,7 @@ param3=-noreset
+ param4=-ac
+ param5=-nolisten
+ param6=tcp
+-param7=-logfile
+-param8=/dev/null
 +param7=-retro
  
  [Chansrv]
