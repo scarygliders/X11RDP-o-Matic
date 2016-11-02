@@ -236,19 +236,19 @@
              }
 --- a/xrdp/xrdp.ini
 +++ b/xrdp/xrdp.ini
-@@ -138,10 +138,10 @@ xrdpvr=true
+@@ -139,10 +139,10 @@ xrdpvr=true
  tcutils=true
- 
+
  # for debugging xrdp, in section xrdp1, change port=-1 to this:
 -# port=/tmp/.xrdp/xrdp_display_10
 +# port=/var/run/xrdp/sockdir/xrdp_display_10
- 
+
  # for debugging xrdp, add following line to section xrdp1
 -# chansrvport=/tmp/.xrdp/xrdp_chansrv_socket_7210
 +# chansrvport=/var/run/xrdp/sockdir/xrdp_chansrv_socket_7210
- 
- [xrdp1]
- name=sesman-xorgxrdp
+
+ [Xorg]
+ name=Xorg
 --- a/xrdpapi/xrdpapi.c
 +++ b/xrdpapi/xrdpapi.c
 @@ -145,7 +145,7 @@ WTSVirtualChannelOpenEx(unsigned int Ses
