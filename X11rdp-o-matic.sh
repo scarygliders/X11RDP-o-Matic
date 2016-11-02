@@ -51,9 +51,9 @@ fi
 LINE="----------------------------------------------------------------------"
 
 # xrdp repository
-GH_ACCOUNT=neutrinolabs
-GH_PROJECT=xrdp
-GH_BRANCH=master
+: ${GH_ACCOUNT:=neutrinolabs}
+: ${GH_PROJECT:=xrdp}
+: ${GH_BRANCH:=master}
 GH_URL=https://github.com/${GH_ACCOUNT}/${GH_PROJECT}.git
 
 # working directories and logs

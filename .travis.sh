@@ -9,4 +9,4 @@ sed -i.bak \
 useradd -m -G sudo travis
 # Docker issue #2259
 chown -R travis:travis ~travis
-sudo -u travis ./X11rdp-o-matic.sh ${ARGS}
+sudo -E -u travis ./X11rdp-o-matic.sh ${ARGS}
