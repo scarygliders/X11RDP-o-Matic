@@ -3,7 +3,7 @@ language: c
 
 env:
   matrix:
-    - OS_TYPE=debian OS_VERSION=oldstable        BRANCH=devel
+    #- OS_TYPE=debian OS_VERSION=oldstable        BRANCH=devel
     - OS_TYPE=debian OS_VERSION=stable           BRANCH=devel
     - OS_TYPE=debian OS_VERSION=stable-backports BRANCH=devel
     #- OS_TYPE=debian OS_VERSION=testing          BRANCH=devel
