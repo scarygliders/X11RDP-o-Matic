@@ -388,7 +388,12 @@ compile_xrdp()
   # Step 3 : edit/configure the debian directory...
   rm debian/*.{ex,EX} debian/README.{Debian,source}
   cp "${BASEDIR}/debian/"{control,docs,postinst,prerm,install,socksetup,startwm.sh} debian/
-  cp -r "${BASEDIR}/debian/"patches debian/
+  #
+  # not copying patches here because dpkg-source doesn't accept any fuzz
+  # patches in debian/patches directory are applied in alter_xrdp_source()
+  #
+  # cp -r "${BASEDIR}/debian/"patches debian/
+  #
   cp COPYING debian/copyright
   cp readme.txt debian/README
   sed -e "s|%%XRDP_CONFIGURE_ARGS%%|${XRDP_CONFIGURE_ARGS[*]}|g" \
@@ -454,14 +459,23 @@ make_X11rdp_env()
   fi
 }
 
-# Alter xrdp source code Makefile.am so the PID file is now in /var/run/xrdp/
-# Also patch rdp Makefile to tell Ubuntu linker to include GL symbols - pesky Ubuntu...
+# apply patches not using dpkg-source
 alter_xrdp_source()
 {
   cd "$WRKDIR"
 
   # Patch rdp Makefile
   patch -b -d "$WRKDIR/xrdp/xorg/X11R7.6/rdp" Makefile < "$PATCHDIR/rdp_Makefile.patch" >> $BUILD_LOG  || error_exit
+
+  # do not use dpkg-source to apply patches because it doesn't accept any fuzz
+  while read p
+  do
+    patch \
+      -d "${WRKDIR}/xrdp" \
+      -p1 --batch --forward --unified  --version-control never \
+      --remove-empty-files --backup < "${BASEDIR}/debian/patches/${p}" \
+      >> $BUILD_LOG 2>&1 || error_exit
+  done < "${BASEDIR}/debian/patches/series"
 }
 
 install_generated_packages()
@@ -486,7 +500,7 @@ install_generated_packages()
 
 build_dpkg()
 {
-  alter_xrdp_source # Patches the downloaded source
+  alter_xrdp_source # apply patches
 
   echo 'Building packages started, please be patient...'
   echo 'Do the following command to see build progress.'
