@@ -336,6 +336,10 @@ clone()
     else
       git clone --resursive ${GH_URL} --branch ${GH_BRANCH} ${CLONE_DEST} >> $BUILD_LOG 2>&1 || error_exit
     fi
+    # if commit hash specified, use it
+    if [ -n "${GH_COMMIT}" ]; then
+      (cd $CLONE_DEST && git reset --hard "${GH_COMMIT}" ) >> $BUILD_LOG 2>&1 || error_exit
+    fi
     echo 'done'
   else
     echo 'already exists'
