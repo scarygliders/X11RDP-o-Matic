@@ -1,5 +1,5 @@
 #!/bin/bash
-set -u # warn undefined variables
+#set -u # warn undefined variables
 # vim:ts=2:sw=2:sts=0:number:expandtab
 
 # Automatic Xrdp/X11rdp Compiler/Installer
