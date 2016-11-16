@@ -3,13 +3,13 @@
 
 --- a/sesman/sesman.ini
 +++ b/sesman/sesman.ini
-@@ -88,8 +88,7 @@ param3=-noreset
- param4=-ac
- param5=-nolisten
- param6=tcp
--param7=-logfile
--param8=/dev/null
-+param7=-retro
+@@ -88,8 +88,7 @@ param=-noreset
+ param=-ac
+ param=-nolisten
+ param=tcp
+-param=-logfile
+-param=/dev/null
++param=-retro
  
  [Chansrv]
  # drive redirection, defaults to xrdp_client if not set
