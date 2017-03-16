@@ -82,6 +82,7 @@ PARALLELMAKE=true   # Utilise all available CPU's for compilation by default.
 CLEANUP=false       # Keep the x11rdp and xrdp sources by default - to remove
                     # requires --cleanup command line switch
 INSTALL_PKGS=true   # Install xrdp and x11rdp on this system
+MAINTAINER=false    # maintainer mode
 BUILD_X11RDP=true   # Build and package x11rdp
 GIT_USE_HTTPS=true  # Use firewall-friendry https:// instead of git:// to fetch git submodules
 
@@ -126,6 +127,13 @@ error_exit()
   echo_stderr "	$SUDO_LOG"
   echo_stderr "	$APT_LOG"
   echo_stderr "Exitting..."
+  if ${MAINTAINER}; then
+    echo_stderr
+    echo_stderr 'Maintainer mode detected, showing build log...'
+    echo_stderr
+    tail -n 100 ${BUILD_LOG} 1>&2
+    echo_stderr
+  fi
   [ -f "${PIDFILE}" ] && [ "$(cat "${PIDFILE}")" = $$ ] && rm -f "${PIDFILE}"
   exit 1
 }
@@ -289,6 +297,11 @@ OPTIONS
     --cleanup)
       CLEANUP=true
       ;;
+
+    --maintainer)
+      MAINTAINER=true
+      ;;
+
     --noinstall)
       INSTALL_PKGS=false
       ;;
@@ -327,7 +340,7 @@ clone()
 {
   local CLONE_DEST="${WRKDIR}/xrdp"
   echo -n 'Cloning source code... '
- 
+
   if [ ! -d "$CLONE_DEST" ]; then
     if $GIT_USE_HTTPS; then
       git clone ${GH_URL} --branch ${GH_BRANCH} ${CLONE_DEST} >> $BUILD_LOG 2>&1 || error_exit
@@ -372,14 +385,14 @@ package_X11rdp()
 # Compile and make xrdp package
 compile_xrdp()
 {
-  XRDP_DEB="xrdp_${XRDP_VERSION}-${RELEASE}_${ARCH}.deb" 
-  XORGXRDP_DEB="xorgxrdp_${XRDP_VERSION}-${RELEASE}_${ARCH}.deb" 
+  XRDP_DEB="xrdp_${XRDP_VERSION}-${RELEASE}_${ARCH}.deb"
+  XORGXRDP_DEB="xorgxrdp_${XRDP_VERSION}-${RELEASE}_${ARCH}.deb"
 
   echo "Using the following xrdp configuration: "
   echo "	"${XRDP_CONFIGURE_ARGS[@]}
 
   # Step 1: Link xrdp dir to xrdp-$VERSION for dh_make to work on...
-  rsync -a --delete -- "${WRKDIR}/xrdp/" "${WRKDIR}/xrdp-${XRDP_VERSION}" 
+  rsync -a --delete -- "${WRKDIR}/xrdp/" "${WRKDIR}/xrdp-${XRDP_VERSION}"
 
   # Step 2 : Use dh-make to create the debian directory package template...
   cd "${WRKDIR}/xrdp-${XRDP_VERSION}"
