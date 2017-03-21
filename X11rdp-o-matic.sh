@@ -445,7 +445,7 @@ bran_new_calculate_version_num()
   # in latest git, this can be written: git log -1 --date=format:%Y%m%d --format="~%cd+git%h" .
   local _XRDP_DATE_HASH=$(git log -1 --date=short --format="~%cd+git%h" . | tr -d -)
   local _X11RDP_DATE_HASH=$(git log -1 --date=short --format="~%cd+git%h" xorg/X11R7.6 | tr -d -)
-  #local _XORGXRDP_DATE_HASH=$(git log -1 --date=short --format="~%cd+git%h" xorgxrdp | tr -d -)
+  #local _XORGXRDP_DATE_HASH=$(cd xorgxrdp; git log -1 --date=short --format="~%cd+git%h" . | tr -d -)
   cd ${_PWD} || error_exit
 
   XRDP_VERSION=${_XRDP_VERSION}${_XRDP_DATE_HASH}+${_XRDP_BRANCH}
